@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEB Config Generator - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-box.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status-box.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status-box.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loader.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .info-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-section li {
+            padding: 8px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .info-section li::before {
+            content: "✓ ";
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 SEB Config Generator</h1>
+        <p class="subtitle">Generate Safe Exam Browser configuration files for testing</p>
+
+        <form id="configForm">
+            <div class="form-group">
+                <label for="examId">Exam ID *</label>
+                <input 
+                    type="text" 
+                    id="examId" 
+                    placeholder="507f1f77bcf86cd799439011"
+                    value="507f1f77bcf86cd799439011"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="studentId">Student ID *</label>
+                <input 
+                    type="text" 
+                    id="studentId" 
+                    placeholder="507f1f77bcf86cd799439012"
+                    value="507f1f77bcf86cd799439012"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="token">Token Scenario *</label>
+                <select id="token" required>
+                    <option value="valid-token">Valid Token (Success)</option>
+                    <option value="invalid-token">Invalid Token (Error)</option>
+                    <option value="cannot-attempt">Cannot Attempt (Error)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="backendUrl">Backend URL *</label>
+                <input 
+                    type="text" 
+                    id="backendUrl" 
+                    placeholder="http://localhost:3000"
+                    value="http://localhost:3000"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="sebFrontendUrl">SEB Frontend URL *</label>
+                <input 
+                    type="text" 
+                    id="sebFrontendUrl" 
+                    placeholder="http://localhost:5174"
+                    value="http://localhost:5174"
+                    required
+                >
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn-primary">
+                    📥 Generate & Download
+                </button>
+                <button type="button" class="btn-secondary" onclick="resetForm()">
+                    🔄 Reset
+                </button>
+            </div>
+        </form>
+
+        <div id="loader" class="loader">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Generating configuration...</p>
+        </div>
+
+        <div id="status" class="status-box"></div>
+
+        <div class="info-section">
+            <h3>ℹ️ Test Scenarios</h3>
+            <ul>
+                <li>Valid Token: Generates working SEB config</li>
+                <li>Invalid Token: Tests token validation error</li>
+                <li>Cannot Attempt: Tests exam access restriction</li>
+            </ul>
+        </div>
+
+        <div class="info-section">
+            <h3>📋 Requirements</h3>
+            <ul>
+                <li>API Server running on http://localhost:4000</li>
+                <li>Mock Backend running on http://localhost:3000</li>
+                <li>Safe Exam Browser installed (to test .seb file)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('configForm');
+        const loader = document.getElementById('loader');
+        const status = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await generateConfig();
+        });
+
+        async function generateConfig() {
+            // Get form values
+            const examId = document.getElementById('examId').value;
+            const studentId = document.getElementById('studentId').value;
+            const token = document.getElementById('token').value;
+            const backendUrl = document.getElementById('backendUrl').value;
+            const sebFrontendUrl = document.getElementById('sebFrontendUrl').value;
+
+            // Show loader
+            loader.classList.add('active');
+            status.style.display = 'none';
+
+            try {
+                const response = await fetch('http://localhost:4000/api/seb/generate-seb-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        examId,
+                        studentId,
+                        token,
+                        backendUrl,
+                        sebFrontendUrl
+                    })
+                });
+
+                // Hide loader
+                loader.classList.remove('active');
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to generate configuration');
+                }
+
+                // Download the file
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `secure-exam-${examId}-${Date.now()}.seb`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                // Show success message
+                showStatus('success', '✅ Configuration generated and downloaded successfully!');
+            } catch (error) {
+                // Hide loader
+                loader.classList.remove('active');
+                
+                // Show error message
+                showStatus('error', `❌ Error: ${error.message}`);
+                console.error('Error:', error);
+            }
+        }
+
+        function showStatus(type, message) {
+            status.className = `status-box ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function resetForm() {
+            form.reset();
+            status.style.display = 'none';
+            
+            // Reset to default values
+            document.getElementById('examId').value = '507f1f77bcf86cd799439011';
+            document.getElementById('studentId').value = '507f1f77bcf86cd799439012';
+            document.getElementById('backendUrl').value = 'http://localhost:3000';
+            document.getElementById('sebFrontendUrl').value = 'http://localhost:5174';
+        }
+    </script>
+</body>
+</html>
