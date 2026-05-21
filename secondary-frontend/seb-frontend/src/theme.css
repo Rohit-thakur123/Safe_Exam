@@ -1,0 +1,57 @@
+@import "tailwindcss/theme" layer(theme);
+
+@layer theme {
+  :root {
+    --color-primary: 37 99 235; /* #2563eb */
+    --color-success: 16 185 129; /* #10b981 */
+    --color-warning: 245 158 11; /* #f59e0b */
+    --color-danger: 239 68 68; /* #ef4444 */
+    --color-neutral: 107 114 128; /* #6b7280 */
+  }
+}
+
+@layer utilities {
+  .text-primary {
+    color: rgb(var(--color-primary));
+  }
+  
+  .bg-primary {
+    background-color: rgb(var(--color-primary));
+  }
+  
+  .border-primary {
+    border-color: rgb(var(--color-primary));
+  }
+  
+  .text-success {
+    color: rgb(var(--color-success));
+  }
+  
+  .bg-success {
+    background-color: rgb(var(--color-success));
+  }
+  
+  .text-warning {
+    color: rgb(var(--color-warning));
+  }
+  
+  .bg-warning {
+    background-color: rgb(var(--color-warning));
+  }
+  
+  .text-danger {
+    color: rgb(var(--color-danger));
+  }
+  
+  .bg-danger {
+    background-color: rgb(var(--color-danger));
+  }
+  
+  .text-neutral {
+    color: rgb(var(--color-neutral));
+  }
+  
+  .bg-neutral {
+    background-color: rgb(var(--color-neutral));
+  }
+}
