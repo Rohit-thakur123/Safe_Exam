@@ -103,18 +103,57 @@ export const verifyExamLink = async (req, res) => {
             });
         }
 
-        if (exam.endDate && new Date(exam.endDate) < now) {
-            return res.status(403).json({
-                success: false,
-                error: 'Exam has ended',
-                code: 'EXAM_ENDED',
-                data: {
-                    exam: {
-                        title: exam.title,
-                        endDate: exam.endDate
+        // if (exam.endDate && new Date(exam.endDate) < now) {
+        //     return res.status(403).json({
+        //         success: false,
+        //         error: 'Exam has ended',
+        //         code: 'EXAM_ENDED',
+        //         data: {
+        //             exam: {
+        //                 title: exam.title,
+        //                 endDate: exam.endDate
+        //             }
+        //         }
+        //     });
+        // }
+
+        // Proper end date + end time validation
+         
+        if (exam.endDate) {
+
+            // Get end date
+            const endDate = new Date(exam.endDate);
+
+            // Add end time if available
+            if (exam.endTime) {
+
+                const [hours, minutes] = exam.endTime.split(':');
+
+                endDate.setHours(parseInt(hours));
+                endDate.setMinutes(parseInt(minutes));
+                endDate.setSeconds(59);
+
+            }
+
+            console.log('Current Time:', now);
+            console.log('Exam End Time:', endDate);
+
+            if (now > endDate) {
+
+                return res.status(403).json({
+                    success: false,
+                    error: 'Exam has ended',
+                    code: 'EXAM_ENDED',
+                    data: {
+                        exam: {
+                            title: exam.title,
+                            endDate: exam.endDate,
+                            endTime: exam.endTime
+                        }
                     }
-                }
-            });
+                });
+
+            }
         }
 
         // 6. Verify student exists and is active
@@ -201,28 +240,39 @@ export const verifyExamLink = async (req, res) => {
 
         // 10. All checks passed - student can attempt exam
         return res.status(200).json({
-            success: true,
-            message: 'Exam eligibility verified successfully',
-            data: {
-                canAttempt: true,
-                exam: {
-                    id: exam._id.toString(),
-                    title: exam.title,
-                    description: exam.description,
-                    duration: exam.duration,
-                    totalMarks: exam.totalMarks,
-                    passingMarks: exam.passingMarks,
-                    startDate: exam.startDate,
-                    endDate: exam.endDate,
-                    allowRetakes: exam.allowRetakes
-                },
-                student: {
-                    id: student._id.toString(),
-                    name: student.name,
-                    email: student.email
-                }
+        success: true,
+        message: 'Exam eligibility verified successfully',
+        data: {
+
+            examId: exam._id.toString(),
+
+            canAttempt: true,
+
+            exam: {
+                id: exam._id.toString(),
+                title: exam.title,
+                description: exam.description,
+                duration: exam.duration,
+                totalMarks: exam.totalMarks,
+                passingMarks: exam.passingMarks,
+                startDate: exam.startDate,
+                endDate: exam.endDate,
+                allowRetakes: exam.allowRetakes
+            },
+
+            student: {
+                id: student._id.toString(),
+                name: student.name,
+                email: student.email
+            },
+
+            attemptStatus: {
+                hasAttempted: false,
+                previousAttempts: 0,
+                allowRetakes: exam.allowRetakes
             }
-        });
+        }
+    });
 
     } catch (error) {
         console.error('Verify exam link error:', error);

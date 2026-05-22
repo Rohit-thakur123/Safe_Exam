@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -16,6 +17,7 @@ const Login: React.FC = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Check for session errors on component mount
   useEffect(() => {
@@ -37,8 +39,25 @@ const Login: React.FC = () => {
     setError('');
 
     try {
+      // await login(email, password, role);
+      // navigate(role === 'teacher' ? '/teacher' : '/student');
       await login(email, password, role);
-      navigate(role === 'teacher' ? '/teacher' : '/student');
+
+      const redirectTo = location.state?.redirectTo;
+
+      if (redirectTo) {
+
+        navigate(redirectTo);
+
+      } else {
+
+        navigate(
+          role === 'teacher'
+            ? '/teacher'
+            : '/student'
+        );
+
+      }
     } catch {
       setError('Login failed. Please try again.');
     } finally {

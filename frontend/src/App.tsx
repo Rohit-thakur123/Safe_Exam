@@ -30,10 +30,21 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | '
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  // if (!user) {
+  //   return <Navigate to="/login" replace />;
+  // }
+if (!user) {
 
+  return (
+    <Navigate
+      to="/login"
+      state={{
+        redirectTo: window.location.pathname
+      }}
+      replace
+    />
+  );
+}
   if (role && user.role !== role) {
     return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
   }
@@ -133,12 +144,16 @@ function App() {
               path="/exam/start" 
               element={<ExamStart />} 
             />
-            
+            {/* Handle path parameter format: /exam/:token */}
+            <Route 
+              path="/exam/:token" 
+              element={<ExamStart />} 
+            />
             {/* Handle path parameter format: /exam-verify/:examId/:studentId/:token */}
             <Route 
               path="/exam-verify/:examId/:studentId/:token" 
               element={<ExamVerification />} 
-            />
+            />            
           </Routes>
         </div>
       </Router>

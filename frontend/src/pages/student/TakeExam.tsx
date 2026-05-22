@@ -23,12 +23,25 @@ const TakeExam: React.FC = () => {
 
   useEffect(() => {
     const startExamAttempt = async () => {
-      if (!examId || !user) return;
+      // if (!examId || !user) return;
+      if (!examId) return;
+
+      if (!user) {
+
+        navigate('/login', {
+          state: {
+            redirectTo: `/student/exam/${examId}`
+          }
+        });
+
+        return;
+      }
       
       try {
         setLoading(true);
+        console.log('exam id:', examId);
         const response = await examAttemptAPI.start(examId);
-        
+        console.log('Exam attempt started:', response);
         setAttempt(response.attempt);
         setQuestions(response.attempt.exam?.questions || []);
         setTimeLeft((response.attempt.exam?.duration || 0) * 60); // Convert minutes to seconds
