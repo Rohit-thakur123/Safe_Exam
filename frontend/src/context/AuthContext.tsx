@@ -29,11 +29,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Check if user and token are stored in localStorage
       const storedUser = localStorage.getItem('user');
       const storedToken = localStorage.getItem('token');
-      
+
       if (storedUser && storedToken) {
         const user = JSON.parse(storedUser);
         setUser(user);
-        
+
         // Set authorization header for API requests
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       }
@@ -57,25 +57,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { user, token, refreshToken } = response.data;
-      
+
       // Store user data and tokens
       setUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
       localStorage.setItem('refreshToken', refreshToken);
-      
+
       // Set authorization header for future requests
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
+      //console.log("LOGIN RESPONSE USER:", user);
+
     } catch (error) {
       console.error('Login failed:', error);
       let errorMessage = 'Login failed. Please try again.';
-      
+
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { error?: string } } };
         errorMessage = axiosError.response?.data?.error || errorMessage;
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -93,21 +94,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { user } = response.data;
-      
+      console.log("FULL RESPONSE:", response.data);
       // After successful registration, automatically log in
       await login(email, password, role);
-      
+
     } catch (error) {
       console.error('Registration failed:', error);
       let errorMessage = 'Registration failed. Please try again.';
-      
+
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { data?: { error?: string; message?: string } } };
-        errorMessage = axiosError.response?.data?.error || 
-                      axiosError.response?.data?.message || 
-                      errorMessage;
+        errorMessage = axiosError.response?.data?.error ||
+          axiosError.response?.data?.message ||
+          errorMessage;
       }
-      
+
       throw new Error(errorMessage);
     } finally {
       setIsLoading(false);

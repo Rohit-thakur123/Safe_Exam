@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Question, Exam } from '../types';
 
 // Get API base URL from environment variable, fallback to localhost:4000
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -17,11 +17,11 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // Check for session-related errors
     const errorCode = error.response?.data?.code;
     const errorMessage = error.response?.data?.error;
-    
+
     // Handle session expired or concurrent session detected
     if (errorCode === 'SESSION_EXPIRED' || errorCode === 'CONCURRENT_SESSION_DETECTED') {
       // Clear all stored data
@@ -29,33 +29,33 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       delete api.defaults.headers.common['Authorization'];
-      
+
       // Store the error message and code for the login page to display
       localStorage.setItem('sessionError', JSON.stringify({
         code: errorCode,
         message: errorMessage
       }));
-      
+
       // Redirect to login
       window.location.href = '/login';
       return Promise.reject(error);
     }
-    
+
     // Handle token refresh for other 401 errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
           const response = await api.post('/auth/refresh', { refreshToken });
           const { token, refreshToken: newRefreshToken } = response.data;
-          
+
           localStorage.setItem('token', token);
           localStorage.setItem('refreshToken', newRefreshToken);
           api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           originalRequest.headers.Authorization = `Bearer ${token}`;
-          
+
           return api(originalRequest);
         } catch {
           // Refresh failed, redirect to login
@@ -67,7 +67,7 @@ api.interceptors.response.use(
         }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -78,17 +78,17 @@ export const authAPI = {
     const response = await api.post('/auth/login', { email, password, role });
     return response.data;
   },
-  
+
   register: async (name: string, email: string, password: string, role: 'teacher' | 'student') => {
     const response = await api.post('/auth/register', { name, email, password, role });
     return response.data;
   },
-  
+
   logout: async () => {
     const response = await api.post('/auth/logout');
     return response.data;
   },
-  
+
   refreshToken: async (refreshToken: string) => {
     const response = await api.post('/auth/refresh', { refreshToken });
     return response.data;
@@ -232,9 +232,9 @@ export const examAPI = {
 
   // Assign students to exam
   assignStudents: async (examId: string, studentIds: string[], sendEmailNotification = true) => {
-    const response = await api.post(`/exams/${examId}/assign-students`, { 
+    const response = await api.post(`/exams/${examId}/assign-students`, {
       studentIds,
-      sendEmailNotification 
+      sendEmailNotification
     });
     return response.data;
   },

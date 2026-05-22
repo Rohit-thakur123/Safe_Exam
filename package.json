@@ -3,21 +3,26 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "dependencies": {   
+  "dependencies": {
     "concurrently": "^9.2.1"
   },
   "scripts": {
-  "dev": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run sebfrontend\" \"npm run sebapi\"",
-
-  "backend": "cd Backend && node --watch src/index.js",
-
-  "frontend": "cd frontend && npm run dev",
-
-  "sebfrontend": "cd secondary-frontend/seb-frontend && npm run dev -- --port 5174",
-
-  "sebapi": "cd api-server && node --watch src/index.js"
-},
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run sebfrontend\" \"npm run sebapi\"",
+    "backend": "cd Backend && node --watch src/index.js",
+    "frontend": "cd frontend && npm run dev",
+    "sebfrontend": "cd secondary-frontend/seb-frontend && npm run dev -- --port 5174",
+    "sebapi": "cd api-server && node --watch src/index.js"
+  },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rohit-thakur123/Safe_Exam.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Rohit-thakur123/Safe_Exam/issues"
+  },
+  "homepage": "https://github.com/Rohit-thakur123/Safe_Exam#readme"
 }
