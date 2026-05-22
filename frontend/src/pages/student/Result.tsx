@@ -90,7 +90,7 @@ const Result: React.FC = () => {
     );
   }
 
-  const percentage = Math.round((result.score / result.totalQuestions) * 100);
+  const percentage = Math.round((result.correctAnswers / result.totalQuestions) * 100);
   const isPassed = result.passed;
 
   return (
@@ -135,7 +135,8 @@ const Result: React.FC = () => {
               
               <div className="text-center">
                 <div className="text-4xl font-bold text-gray-900">
-                  {result.score}/{result.totalQuestions}
+                  {/* {result.score}/{result.totalQuestions} */}
+                  {result.correctAnswers}/{result.totalQuestions}
                 </div>
                 <div className="text-sm text-gray-600">Correct Answers</div>
               </div>
