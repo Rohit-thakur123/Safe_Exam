@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { sebAPI } from '../../services/api';
@@ -37,6 +37,7 @@ interface ExamInfo {
 
 const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tokenOverride }) => {
   const params = useParams<{ examId: string; studentId: string; token: string }>();
+  const navigate = useNavigate();
   
   // Use override props if provided (from query params), otherwise use URL params
   const examId = examIdOverride || params.examId;
@@ -182,17 +183,23 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
+  if (!dateString) return 'N/A';
+
+  const date = new Date(dateString);
+
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+
+};
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -379,15 +386,17 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
           </div>
 
           {/* Attempt Status */}
-          {examInfo?.attemptStatus.hasAttempted && (
+          {examInfo?.attemptStatus?.hasAttempted && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
               <div className="flex">
                 <AlertTriangle className="h-5 w-5 text-yellow-400" />
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-yellow-800">Previous Attempts</h3>
                   <p className="mt-1 text-sm text-yellow-700">
-                    You have already attempted this exam {examInfo.attemptStatus.previousAttempts} time(s).
-                    {!examInfo.attemptStatus.allowRetakes && ' Retakes are not allowed for this exam.'}
+                    You have already attempted this exam {examInfo?.attemptStatus?.previousAttempts} time(s).
+                    {!examInfo?.attemptStatus?.allowRetakes &&
+                      ' Retakes are not allowed for this exam.'
+                    }
                   </p>
                 </div>
               </div>
@@ -439,7 +448,7 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
 
           {/* Action Button */}
           <div className="flex justify-center pt-4">
-            {examInfo?.canAttempt ? (
+            {/* {examInfo?.canAttempt ? (
               <Button 
                 onClick={handleLaunchSecureExam}
                 disabled={downloading}
@@ -463,8 +472,33 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
                 <XCircle className="w-5 h-5 mr-2" />
                 Exam Not Available
               </Button>
-            )}
-          </div>
+            )} */}
+            {examInfo?.canAttempt ? (
+            <Button
+              onClick={() => {
+                console.log("EXAM INFO:", examInfo);
+                // window.location.href = `/student/exam/${examInfo?.examId}`;
+                if (!examInfo || !examInfo.examId) {
+
+                alert('Exam ID not found');
+
+                return;
+              }
+
+              navigate(`/student/exam/${examInfo.examId}`);
+              }}
+              className="px-8 py-3 text-lg"
+              size="lg"
+            >
+              Start Exam
+            </Button>
+          ) : (
+            <Button disabled className="px-8 py-3 text-lg" size="lg">
+              <XCircle className="w-5 h-5 mr-2" />
+              Exam Not Available
+            </Button>
+          )}
+        </div>
         </CardContent>
       </Card>
     </div>
