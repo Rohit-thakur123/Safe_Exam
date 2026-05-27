@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { sebAPI } from '../../services/api';
 import { Clock, Calendar, CheckCircle, XCircle, AlertTriangle, Download, BookOpen } from 'lucide-react';
 
+const verificationRequests = new Map<string, Promise<any>>();
+
 interface ExamVerificationProps {
   examIdOverride?: string;
   tokenOverride?: string;
@@ -93,7 +95,18 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
 
       try {
         setLoading(true);
-        const response = await sebAPI.verifyExamLink(examId, resolvedStudentId, token);
+        const verificationKey = `${examId}:${resolvedStudentId}:${token}`;
+        let verificationRequest = verificationRequests.get(verificationKey);
+
+        if (!verificationRequest) {
+          verificationRequest = sebAPI.verifyExamLink(examId, resolvedStudentId, token).catch((error) => {
+            verificationRequests.delete(verificationKey);
+            throw error;
+          });
+          verificationRequests.set(verificationKey, verificationRequest);
+        }
+
+        const response = await verificationRequest;
         
         if (response.success) {
           setExamInfo(response.data);

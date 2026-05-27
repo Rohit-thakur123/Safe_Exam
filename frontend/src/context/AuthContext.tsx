@@ -20,6 +20,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const normalizeUser = (userData: User): User => ({
+    ...userData,
+    id: userData.id || userData._id || '',
+  });
+
   useEffect(() => {
     initializeAuth();
   }, []);
@@ -31,8 +36,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const storedToken = localStorage.getItem('token');
       
       if (storedUser && storedToken) {
-        const user = JSON.parse(storedUser);
+        const user = normalizeUser(JSON.parse(storedUser));
         setUser(user);
+        localStorage.setItem('user', JSON.stringify(user));
         
         // Set authorization header for API requests
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
@@ -56,7 +62,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role
       });
 
-      const { user, token, refreshToken } = response.data;
+      const { user: responseUser, token, refreshToken } = response.data;
+      const user = normalizeUser(responseUser);
       
       // Store user data and tokens
       setUser(user);
@@ -85,14 +92,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (name: string, email: string, password: string, role: 'teacher' | 'student') => {
     setIsLoading(true);
     try {
-      const response = await api.post('/auth/register', {
+      await api.post('/auth/register', {
         name,
         email,
         password,
         role
       });
-
-      const { user } = response.data;
       
       // After successful registration, automatically log in
       await login(email, password, role);

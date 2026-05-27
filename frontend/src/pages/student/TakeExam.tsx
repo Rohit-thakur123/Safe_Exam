@@ -65,7 +65,7 @@ const TakeExam: React.FC = () => {
         } else if (err.response?.status === 404) {
           setError('Exam not found. It may have been deleted.');
         } else if (err.response?.status === 403) {
-          setError(err.response?.data?.error || 'You do not have permission to take this exam.');
+          setError('Please open this exam in Safe Exam Browser');
         } else {
           setError(err.response?.data?.error || 'Failed to start exam. Please try again.');
         }
@@ -89,9 +89,13 @@ const TakeExam: React.FC = () => {
       navigate(`/student/result/${attempt.id}`, { 
         state: { result: result.result } 
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting exam:', err);
-      setError('Failed to submit exam. Please try again.');
+      if (err.response?.status === 403) {
+        setError('Please open this exam in Safe Exam Browser');
+      } else {
+        setError('Failed to submit exam. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }

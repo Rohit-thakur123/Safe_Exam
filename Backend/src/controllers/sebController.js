@@ -3,6 +3,7 @@ import ExamAttempt from '../models/exam/examAttempt.js';
 import User from '../models/User/user.js';
 import mongoose from 'mongoose';
 import { verifyExamAccessToken, generateSEBSessionToken } from '../utils/examLinkUtils.js';
+import { generateSEBConfig as buildSEBConfig } from '../utils/sebConfigGenerator.js';
 
 /**
  * Verify exam link and student eligibility
@@ -430,6 +431,42 @@ export const getSEBSessionToken = async (req, res) => {
         return res.status(500).json({
             success: false,
             error: 'Server error generating SEB session token'
+        });
+    }
+};
+
+export const downloadSEBConfig = async (req, res) => {
+    try {
+        const examId = req.query.examId || req.body.examId;
+
+        if (!examId || !mongoose.Types.ObjectId.isValid(examId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid examId'
+            });
+        }
+
+        const exam = await Exam.findById(examId);
+        if (!exam) {
+            return res.status(404).json({
+                success: false,
+                error: 'Exam not found'
+            });
+        }
+
+        const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const startUrl = `${frontendBaseUrl}/exam/start?examId=${examId}`;
+        const quitPassword = process.env.SEB_QUIT_PASSWORD || 'quit123';
+        const config = buildSEBConfig({ startUrl, quitPassword });
+
+        res.setHeader('Content-Type', 'application/seb');
+        res.setHeader('Content-Disposition', `attachment; filename="secure-exam-${examId}.seb"`);
+        return res.status(200).send(config);
+    } catch (error) {
+        console.error('Download SEB config error:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Server error generating SEB configuration'
         });
     }
 };

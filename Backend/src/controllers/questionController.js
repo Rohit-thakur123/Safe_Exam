@@ -6,8 +6,9 @@ import mongoose from 'mongoose';
 export const createQuestion = async (req, res) => {
     try {
         const { question, options, answer, explanation, difficulty, category } = req.body;
+        const normalizedCategory = category?.trim() || 'General';
 
-        if (!question || !options || !answer || !difficulty || !category) {
+        if (!question || !options || !answer || !difficulty) {
             return res.status(400).json({
                 success: false,
                 error: "Missing required fields"
@@ -34,7 +35,7 @@ export const createQuestion = async (req, res) => {
             answer,
             explanation,
             difficulty,
-            category,
+            category: normalizedCategory,
             createdBy: req.user._id
         });
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import ExamVerification from './ExamVerification';
 
 /**
@@ -21,6 +21,10 @@ const ExamStart: React.FC = () => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore - Props are intentionally passed to support query param format
     return <ExamVerification examIdOverride={examId} tokenOverride={token} />;
+  }
+
+  if (examId) {
+    return <Navigate to={`/student/exam/${examId}`} replace />;
   }
   
   // If parameters are missing, show error

@@ -14,6 +14,7 @@ import TakeExam from './pages/student/TakeExam';
 import Result from './pages/student/Result';
 import ExamVerification from './pages/student/ExamVerification';
 import ExamStart from './pages/student/ExamStart';
+import ExamLaunch from './pages/student/ExamLaunch';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | 'student' }> = ({ 
@@ -139,6 +140,10 @@ function App() {
             />
             
             {/* Public Exam Verification Routes (no auth required) */}
+            <Route
+              path="/exam/launch"
+              element={<ExamLaunch />}
+            />
             {/* Handle query parameter format: /exam/start?examId=xxx&token=xxx */}
             <Route 
               path="/exam/start" 

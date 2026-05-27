@@ -9,12 +9,13 @@ import {
     getActiveAttemptForExam
 } from '../controllers/examAttemptController.js';
 import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware.js';
+import { requireSEB } from '../middlewares/seb.middleware.js';
 
 const router = express.Router();
 
 // Student routes
-router.post('/start', authenticateToken, authorizeRole(['student']), startExamAttempt);
-router.post('/submit', authenticateToken, authorizeRole(['student']), submitExamAttempt);
+router.post('/start', requireSEB, authenticateToken, authorizeRole(['student']), startExamAttempt);
+router.post('/submit', requireSEB, authenticateToken, authorizeRole(['student']), submitExamAttempt);
 router.get('/my-attempts', authenticateToken, authorizeRole(['student']), getMyAttempts);
 router.get('/student/:studentId', authenticateToken, authorizeRole(['student']), getStudentAttempts);
 router.get('/active/:examId', authenticateToken, authorizeRole(['student']), getActiveAttemptForExam);
@@ -23,7 +24,7 @@ router.get('/active/:examId', authenticateToken, authorizeRole(['student']), get
 router.get('/exam/:examId', authenticateToken, authorizeRole(['teacher']), getExamAttempts);
 
 // Both roles
-router.get('/:id', authenticateToken, getAttemptById);
-router.get('/:attemptId/result', authenticateToken, getAttemptById);
+router.get('/:id', requireSEB, authenticateToken, getAttemptById);
+router.get('/:attemptId/result', requireSEB, authenticateToken, getAttemptById);
 
 export default router;

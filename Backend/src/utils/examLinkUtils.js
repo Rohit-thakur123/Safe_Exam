@@ -78,8 +78,7 @@ export const verifySEBSessionToken = (token) => {
  * Generate exam link that will be sent to student via email
  */
 export const generateExamLink = (examId, studentId, examDuration, frontendBaseUrl) => {
-    const token = generateExamAccessToken(examId, studentId, examDuration);
-    return `${frontendBaseUrl}/exam/start?examId=${examId}&token=${token}`;
+    return `${frontendBaseUrl}/exam/launch?examId=${examId}`;
 };
 
 /**

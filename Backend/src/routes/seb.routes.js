@@ -2,7 +2,8 @@ import express from 'express';
 import {
     verifyExamLink,
     generateExamLinks,
-    getSEBSessionToken
+    getSEBSessionToken,
+    downloadSEBConfig
 } from '../controllers/sebController.js';
 import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware.js';
 
@@ -26,6 +27,8 @@ router.post('/generate-exam-links', authenticateToken, authorizeRole(['teacher']
  * Called by primary frontend after verification succeeds
  */
 router.post('/get-session-token', getSEBSessionToken);
+router.get('/config', downloadSEBConfig);
+router.post('/generate-config', downloadSEBConfig);
 
 export default router;
 
