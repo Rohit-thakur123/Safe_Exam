@@ -1,6 +1,7 @@
 import Exam from '../models/exam/exam.js';
 import Question from '../models/exam/question.js';
 import ExamAttempt from '../models/exam/examAttempt.js';
+import User from '../models/User/user.js';
 import mongoose from 'mongoose';
 import { sendBulkExamAssignmentEmails } from '../services/examEmailService.js';
 
@@ -180,6 +181,16 @@ export const getExamById = async (req, res) => {
             });
         }
 
+        if (req.user.role === 'student') {
+            const userAgent = req.headers['user-agent'] || '';
+            if (!userAgent.includes('SEB')) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Use Safe Exam Browser'
+                });
+            }
+        }
+
         // For students, remove correct answers from questions
         let examData = exam.toObject();
 
@@ -215,6 +226,13 @@ export const getExamById = async (req, res) => {
                 totalMarks: examData.totalMarks,
                 passingMarks: examData.passingMarks,
                 isActive: examData.isActive,
+                startDate: examData.startDate,
+                endDate: examData.endDate,
+                startTime: examData.startTime,
+                endTime: examData.endTime,
+                allowRetakes: examData.allowRetakes,
+                shuffleQuestions: examData.shuffleQuestions,
+                assignedCandidates: examData.assignedCandidates,
                 questions: examData.questions
             }
         });
@@ -286,19 +304,135 @@ export const updateExam = async (req, res) => {
             });
         }
 
-        // Check if exam has attempts
-        const attempts = await ExamAttempt.findOne({ examId: id });
-        if (attempts) {
-            return res.status(409).json({
+        const attemptExists = await ExamAttempt.exists({ examId: id });
+        const allowedFields = [
+            'title',
+            'description',
+            'questions',
+            'duration',
+            'totalMarks',
+            'passingMarks',
+            'startDate',
+            'endDate',
+            'startTime',
+            'endTime',
+            'allowRetakes',
+            'shuffleQuestions',
+            'isActive',
+            'assignedCandidates',
+            'assignedStudents'
+        ];
+        const safeFieldsWithAttempts = [
+            'title',
+            'description',
+            'duration',
+            'startDate',
+            'endDate',
+            'startTime',
+            'endTime',
+            'allowRetakes',
+            'shuffleQuestions',
+            'isActive',
+            'assignedCandidates',
+            'assignedStudents'
+        ];
+
+        const updateData = {};
+        const idsMatch = (currentValues = [], nextValues = []) => {
+            if (!Array.isArray(nextValues)) return false;
+            const currentIds = currentValues.map(value => value.toString()).sort();
+            const nextIds = nextValues.map(value => value.toString()).sort();
+            return currentIds.length === nextIds.length && currentIds.every((value, index) => value === nextIds[index]);
+        };
+
+        for (const field of allowedFields) {
+            if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+                if (attemptExists && !safeFieldsWithAttempts.includes(field)) {
+                    const isUnchangedProtectedField =
+                        (field === 'questions' && idsMatch(exam.questions, req.body.questions)) ||
+                        (field === 'totalMarks' && Number(req.body.totalMarks) === Number(exam.totalMarks)) ||
+                        (field === 'passingMarks' && Number(req.body.passingMarks) === Number(exam.passingMarks));
+
+                    if (isUnchangedProtectedField) {
+                        continue;
+                    }
+
+                    return res.status(409).json({
+                        success: false,
+                        error: 'This exam has attempts. You can edit title, description, duration, schedule, status, retake/shuffle settings, and assignments only.'
+                    });
+                }
+                updateData[field === 'assignedStudents' ? 'assignedCandidates' : field] = req.body[field];
+            }
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({
                 success: false,
-                error: 'Cannot edit exam with existing attempts'
+                error: 'No valid exam fields provided'
             });
+        }
+
+        if (typeof updateData.title === 'string' && updateData.title.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                error: 'Exam title is required'
+            });
+        }
+
+        if (updateData.duration !== undefined && Number(updateData.duration) < 1) {
+            return res.status(400).json({
+                success: false,
+                error: 'Duration must be at least 1 minute'
+            });
+        }
+
+        if (!attemptExists) {
+            if (updateData.totalMarks !== undefined && Number(updateData.totalMarks) < 1) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Total marks must be at least 1'
+                });
+            }
+
+            if (updateData.passingMarks !== undefined && Number(updateData.passingMarks) < 1) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Passing marks must be at least 1'
+                });
+            }
+
+            const nextTotalMarks = updateData.totalMarks ?? exam.totalMarks;
+            const nextPassingMarks = updateData.passingMarks ?? exam.passingMarks;
+            if (Number(nextPassingMarks) > Number(nextTotalMarks)) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Passing marks cannot be greater than total marks'
+                });
+            }
+
+            if (updateData.questions) {
+                if (!Array.isArray(updateData.questions) || updateData.questions.length === 0) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Please select at least one question'
+                    });
+                }
+
+                const validQuestions = await Question.find({ _id: { $in: updateData.questions }, isActive: true });
+                if (validQuestions.length !== updateData.questions.length) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'One or more questions are invalid or inactive'
+                    });
+                }
+            }
         }
 
         // Update exam
         const updatedExam = await Exam.findByIdAndUpdate(
             id,
-            { ...req.body, updatedAt: Date.now() },
+            { ...updateData, updatedAt: Date.now() },
             { new: true, runValidators: true }
         );
 
@@ -320,6 +454,7 @@ export const updateExam = async (req, res) => {
 export const deleteExam = async (req, res) => {
     try {
         const { id } = req.params;
+        const forceDelete = req.query.force === 'true' || req.body?.force === true;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
@@ -345,20 +480,32 @@ export const deleteExam = async (req, res) => {
             });
         }
 
-        // Check if exam has attempts
-        const attempts = await ExamAttempt.findOne({ examId: id });
-        if (attempts) {
+        const attemptsCount = await ExamAttempt.countDocuments({ examId: id });
+        if (attemptsCount > 0 && !forceDelete) {
             return res.status(409).json({
                 success: false,
-                error: 'Cannot delete exam with existing attempts'
+                code: 'EXAM_HAS_ATTEMPTS',
+                error: 'This exam has existing attempts. Confirm force delete to remove all attempts and delete the exam.',
+                attemptsCount,
+                canForceDelete: true
             });
+        }
+
+        if (attemptsCount > 0) {
+            await ExamAttempt.deleteMany({ examId: id });
+            await User.updateMany(
+                { 'examAttempts.examId': exam._id },
+                { $pull: { examAttempts: { examId: exam._id } } }
+            );
         }
 
         await Exam.findByIdAndDelete(id);
 
         res.status(200).json({
             success: true,
-            message: 'Exam deleted successfully'
+            message: attemptsCount > 0
+                ? 'Exam and related attempts deleted successfully'
+                : 'Exam deleted successfully'
         });
     } catch (error) {
         console.error('Delete exam error:', error);

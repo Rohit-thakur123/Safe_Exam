@@ -11,9 +11,10 @@ router.get('/status', authenticateToken, async (req, res) => {
         const session = await sessionManager.getActiveSession(userId);
 
         if (!session) {
-            return res.status(404).json({
-                success: false,
-                error: 'No active session found'
+            return res.status(200).json({
+                success: true,
+                active: false,
+                session: null
             });
         }
 

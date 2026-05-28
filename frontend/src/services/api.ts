@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Question, Exam } from '../types';
+import type { Category, Question, Exam } from '../types';
 
 // Get API base URL from environment variable, fallback to localhost:4000
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -160,6 +160,21 @@ export const questionAPI = {
   }
 };
 
+export const categoryAPI = {
+  getAll: async (): Promise<Category[]> => {
+    const response = await api.get('/categories');
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    return response.data.categories || response.data.data || [];
+  },
+
+  create: async (name: string): Promise<Category> => {
+    const response = await api.post('/categories', { name });
+    return response.data.category;
+  }
+};
+
 // Exam API calls
 export const examAPI = {
   // Create a new exam
@@ -198,8 +213,10 @@ export const examAPI = {
   },
 
   // Delete an exam
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/exams/${id}`);
+  delete: async (id: string, force = false): Promise<void> => {
+    await api.delete(`/exams/${id}`, {
+      params: force ? { force: true } : undefined
+    });
   },
 
   // Get exams by teacher

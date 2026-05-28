@@ -34,8 +34,15 @@ export interface Question {
   explanation?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   category?: string;
+  categoryId?: string | Category;
   createdBy?: string;
   createdAt?: Date;
+}
+
+export interface Category {
+  _id?: string;
+  id?: string;
+  name: string;
 }
 
 export interface Exam {

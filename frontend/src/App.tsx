@@ -9,6 +9,7 @@ import CreateQuestion from './pages/teacher/CreateQuestion';
 import CreateExam from './pages/teacher/CreateExam';
 import ManageQuestions from './pages/teacher/ManageQuestions';
 import ManageExams from './pages/teacher/ManageExams';
+import ManageMCQ from './pages/teacher/ManageMCQ';
 import DebugPage from './pages/teacher/DebugPage';
 import TakeExam from './pages/student/TakeExam';
 import Result from './pages/student/Result';
@@ -88,6 +89,14 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route
+              path="/teacher/edit-exam/:examId"
+              element={
+                <ProtectedRoute role="teacher">
+                  <CreateExam />
+                </ProtectedRoute>
+              }
+            />
             <Route 
               path="/teacher/questions" 
               element={
@@ -95,6 +104,14 @@ function App() {
                   <ManageQuestions />
                 </ProtectedRoute>
               } 
+            />
+            <Route
+              path="/teacher/mcq"
+              element={
+                <ProtectedRoute role="teacher">
+                  <ManageMCQ />
+                </ProtectedRoute>
+              }
             />
             <Route 
               path="/teacher/exams" 

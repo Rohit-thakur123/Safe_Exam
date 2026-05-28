@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { examAPI } from '../../services/api';
 import { FileText, Edit, Trash2, Plus, ArrowLeft, LogOut, Users, ToggleLeft, ToggleRight } from 'lucide-react';
 import type { Exam } from '../../types';
@@ -15,7 +15,6 @@ interface Student {
 
 const TeacherNavbar: React.FC = () => {
   const { user, logout } = useAuth();
-  const location = useLocation();
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -311,7 +310,25 @@ const ManageExams: React.FC = () => {
       setExams(exams.filter(e => (e._id || e.id) !== id));
     } catch (err: any) {
       console.error('Error deleting exam:', err);
-      alert(err.response?.data?.error || 'Failed to delete exam');
+      const errorData = err.response?.data;
+      if (errorData?.code === 'EXAM_HAS_ATTEMPTS' && errorData?.canForceDelete) {
+        const attemptsText = errorData.attemptsCount === 1 ? '1 attempt' : `${errorData.attemptsCount} attempts`;
+        const confirmed = window.confirm(
+          `This exam has ${attemptsText}. Do you want to delete all attempts and continue?`
+        );
+
+        if (confirmed) {
+          try {
+            await examAPI.delete(id, true);
+            setExams(exams.filter(e => (e._id || e.id) !== id));
+          } catch (forceErr: any) {
+            console.error('Error force deleting exam:', forceErr);
+            alert(forceErr.response?.data?.error || 'Failed to delete exam');
+          }
+        }
+      } else {
+        alert(errorData?.error || 'Failed to delete exam');
+      }
     } finally {
       setDeleting(null);
     }
@@ -438,14 +455,15 @@ const ManageExams: React.FC = () => {
                             <ToggleLeft className="w-4 h-4 text-gray-400" />
                           )}
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {/* TODO: Edit */}}
-                          disabled
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        <Link to={`/teacher/edit-exam/${exam._id || exam.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="Edit Exam"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </Link>
                         <Button
                           variant="outline"
                           size="sm"

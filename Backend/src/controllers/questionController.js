@@ -1,55 +1,125 @@
 import Question from '../models/exam/question.js';
 import Exam from '../models/exam/exam.js';
+import Category from '../models/exam/category.js';
 import mongoose from 'mongoose';
+
+const resolveCategory = async ({ categoryId, category }) => {
+    if (categoryId) {
+        if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+            throw new Error('Invalid category ID');
+        }
+
+        const existingCategory = await Category.findById(categoryId);
+        if (!existingCategory) {
+            throw new Error('Category not found');
+        }
+
+        return existingCategory;
+    }
+
+    const categoryName = category?.trim() || 'General';
+    const existingCategory = await Category.findOne({
+        name: { $regex: `^${categoryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+    });
+
+    if (existingCategory) {
+        return existingCategory;
+    }
+
+    return Category.create({ name: categoryName });
+};
 
 // Create new question
 export const createQuestion = async (req, res) => {
     try {
-        const { question, options, answer, explanation, difficulty, category } = req.body;
-        const normalizedCategory = category?.trim() || 'General';
+        console.log("=== DEBUG ===");
+        console.log("req.user:", JSON.stringify(req.user));
+        console.log("categoryId:", req.body.categoryId, "| type:", typeof req.body.categoryId);
+        console.log("category:", req.body.category);
+        console.log("=============");
+    
+        const { question, options, answer, explanation, difficulty, category, categoryId } = req.body;
 
-        if (!question || !options || !answer || !difficulty) {
+        if (!question?.trim() || !Array.isArray(options) || !answer?.trim() || !difficulty) {
             return res.status(400).json({
                 success: false,
                 error: "Missing required fields"
             });
         }
 
-        if (options.length !== 4) {
+        const normalizedOptions = options.map(option => option.trim()).filter(Boolean);
+
+        if (normalizedOptions.length !== 4) {
             return res.status(400).json({
                 success: false,
                 error: "Must provide exactly 4 options"
             });
         }
 
-        if (!options.includes(answer)) {
+        if (!normalizedOptions.includes(answer.trim())) {
             return res.status(400).json({
                 success: false,
                 error: "Answer must be one of the provided options"
             });
         }
+        // 🔥 FIX: validate ObjectId
+        let validCategoryId = null;
+
+
+
+        if (categoryId && categoryId !== "") {
+            if (mongoose.Types.ObjectId.isValid(categoryId)) {
+                validCategoryId = categoryId;
+            }
+        }
+
+        const resolvedCategory = await resolveCategory({ 
+            categoryId: validCategoryId, 
+            category 
+        });
 
         const newQuestion = new Question({
-            question,
-            options,
-            answer,
-            explanation,
+            question: question.trim(),
+            options: normalizedOptions,
+            answer: answer.trim(),
+            explanation: explanation?.trim(),
             difficulty,
-            category: normalizedCategory,
+            category: resolvedCategory.name,
+            categoryId: new mongoose.Types.ObjectId(resolvedCategory._id),
             createdBy: req.user._id
         });
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({
+                success: false,
+                error: "User not authenticated"
+            });
+        }
 
         const savedQuestion = await newQuestion.save();
 
-        res.status(201).json({
+       res.status(201).json({
             success: true,
             message: "Question created successfully",
-            id: savedQuestion._id,
-            question: savedQuestion,
+            id: savedQuestion._id.toString(),
+            question: {
+                _id: savedQuestion._id.toString(),
+                question: savedQuestion.question,
+                options: savedQuestion.options,
+                answer: savedQuestion.answer,
+                explanation: savedQuestion.explanation || null,
+                difficulty: savedQuestion.difficulty,
+                category: savedQuestion.category,
+                categoryId: savedQuestion.categoryId?.toString() || null,
+                createdBy: savedQuestion.createdBy?.toString() || null,
+                isActive: savedQuestion.isActive,
+                createdAt: savedQuestion.createdAt,
+                updatedAt: savedQuestion.updatedAt,
+            }
         });
     } catch (error) {
         console.error("Error creating question:", error);
-        res.status(500).json({
+        const status = ['Invalid category ID', 'Category not found'].includes(error.message) ? 400 : 500;
+        res.status(status).json({
             success: false,
             error: error.message
         });
@@ -61,6 +131,7 @@ export const getAllQuestions = async (req, res) => {
     try {
         const questions = await Question.find({ isActive: true })
             .populate('createdBy', 'name email')
+            .populate('categoryId', 'name')
             .sort({ createdAt: -1 });
 
         // Transform to JSON (will use model's toJSON transform automatically)
@@ -68,7 +139,8 @@ export const getAllQuestions = async (req, res) => {
             const qObj = q.toJSON();
             return {
                 ...qObj,
-                createdBy: q.createdBy ? q.createdBy._id.toString() : null
+                createdBy: q.createdBy ? q.createdBy._id.toString() : null,
+                category: q.categoryId?.name || qObj.category || 'General'
             };
         });
 
@@ -98,7 +170,9 @@ export const getQuestionById = async (req, res) => {
             });
         }
 
-        const question = await Question.findById(id).populate('createdBy', 'name email');
+        const question = await Question.findById(id)
+            .populate('createdBy', 'name email')
+            .populate('categoryId', 'name');
 
         if (!question) {
             return res.status(404).json({
@@ -137,6 +211,7 @@ export const getQuestionsByTeacher = async (req, res) => {
             isActive: true
         })
         .populate('createdBy', 'name email')
+        .populate('categoryId', 'name')
         .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -182,35 +257,92 @@ export const updateQuestion = async (req, res) => {
             });
         }
 
-        // Validate options and answer if provided
-        if (req.body.options && req.body.options.length !== 4) {
+        const allowedFields = ['question', 'options', 'answer', 'explanation', 'difficulty', 'category', 'categoryId'];
+        const updateData = {};
+        for (const field of allowedFields) {
+            if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+                updateData[field] = req.body[field];
+            }
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No valid question fields provided'
+            });
+        }
+
+        if (updateData.question !== undefined && !updateData.question?.trim()) {
+            return res.status(400).json({
+                success: false,
+                error: 'Question text is required'
+            });
+        }
+
+        if (updateData.options) {
+            updateData.options = updateData.options.map(option => option.trim()).filter(Boolean);
+        }
+
+        const nextOptions = updateData.options || question.options;
+        const nextAnswer = updateData.answer?.trim() || question.answer;
+
+        if (nextOptions.length !== 4) {
             return res.status(400).json({
                 success: false,
                 error: "Must provide exactly 4 options"
             });
         }
 
-        if (req.body.answer && req.body.options && !req.body.options.includes(req.body.answer)) {
+        if (!nextOptions.includes(nextAnswer)) {
             return res.status(400).json({
                 success: false,
                 error: "Answer must be one of the provided options"
             });
         }
 
+        if (updateData.question !== undefined) updateData.question = updateData.question.trim();
+        if (updateData.answer !== undefined) updateData.answer = updateData.answer.trim();
+        if (updateData.explanation !== undefined) updateData.explanation = updateData.explanation?.trim();
+
+        if (updateData.categoryId || updateData.category) {
+            const resolvedCategory = await resolveCategory({
+                categoryId: updateData.categoryId,
+                category: updateData.category
+            });
+            updateData.category = resolvedCategory.name;
+            updateData.categoryId = resolvedCategory._id;
+        }
+
         const updatedQuestion = await Question.findByIdAndUpdate(
             id,
-            { ...req.body, updatedAt: Date.now() },
+            { ...updateData, updatedAt: Date.now() },
             { new: true, runValidators: true }
-        );
+        ).populate('categoryId', 'name');
 
         res.status(200).json({
             success: true,
             message: 'Question updated successfully',
-            question: updatedQuestion
+            question: {
+                _id: updatedQuestion._id.toString(),
+                question: updatedQuestion.question,
+                options: updatedQuestion.options,
+                answer: updatedQuestion.answer,
+                explanation: updatedQuestion.explanation || null,
+                difficulty: updatedQuestion.difficulty,
+                category: updatedQuestion.category,
+                categoryId: updatedQuestion.categoryId?._id?.toString() 
+                            || updatedQuestion.categoryId?.toString() 
+                            || null,
+                createdBy: updatedQuestion.createdBy?.toString() || null,
+                isActive: updatedQuestion.isActive,
+                createdAt: updatedQuestion.createdAt,
+                updatedAt: updatedQuestion.updatedAt,
+            }
         });
     } catch (error) {
         console.error("Error updating question:", error);
-        res.status(500).json({
+        const status = ['Invalid category ID', 'Category not found'].includes(error.message) ? 400 : 500;
+        res.status(status).json({
             success: false,
             error: error.message
         });

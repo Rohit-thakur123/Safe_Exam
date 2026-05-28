@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { SessionStatus } from '../../components/SessionStatus';
 import { questionAPI, examAPI } from '../../services/api';
-import { BookOpen, FileText, LogOut, User, BarChart3 } from 'lucide-react';
+import { BookOpen, FileText, ListChecks, LogOut, User, BarChart3 } from 'lucide-react';
 import type { Question, Exam } from '../../types';
 
 const TeacherNavbar: React.FC = () => {
@@ -45,6 +45,17 @@ const TeacherNavbar: React.FC = () => {
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Create Question
+              </Link>
+              <Link
+                to="/teacher/mcq"
+                className={`${
+                  isActive('/teacher/mcq')
+                    ? 'border-blue-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+              >
+                <ListChecks className="w-4 h-4 mr-2" />
+                Manage MCQ
               </Link>
               <Link
                 to="/teacher/create-exam"
@@ -157,7 +168,7 @@ const Dashboard: React.FC = () => {
           )}
           
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white overflow-hidden shadow rounded-lg">
               <div className="p-5">
                 <div className="flex items-center">
@@ -183,6 +194,36 @@ const Dashboard: React.FC = () => {
                     className="font-medium text-blue-700 hover:text-blue-900"
                   >
                     Create new question →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white overflow-hidden shadow rounded-lg">
+              <div className="p-5">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <ListChecks className="h-6 w-6 text-cyan-600" />
+                  </div>
+                  <div className="ml-5 w-0 flex-1">
+                    <dl>
+                      <dt className="text-sm font-medium text-gray-500 truncate">
+                        Manage MCQ
+                      </dt>
+                      <dd className="text-3xl font-semibold text-gray-900">
+                        {loading ? '...' : questions.length}
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-5 py-3">
+                <div className="text-sm">
+                  <Link
+                    to="/teacher/mcq"
+                    className="font-medium text-cyan-700 hover:text-cyan-900"
+                  >
+                    Open library →
                   </Link>
                 </div>
               </div>

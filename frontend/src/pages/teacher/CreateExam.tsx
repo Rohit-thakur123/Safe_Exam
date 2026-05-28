@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { questionAPI, examAPI } from '../../services/api';
+import { categoryAPI, questionAPI, examAPI } from '../../services/api';
 import { ArrowLeft, Plus, LogOut } from 'lucide-react';
-import type { Question, Exam } from '../../types';
+import type { Category, Question } from '../../types';
 
 const CreateExam: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { examId } = useParams<{ examId: string }>();
+  const isEditMode = Boolean(examId);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
   const [availableStudents, setAvailableStudents] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [questionSelectionMode, setQuestionSelectionMode] = useState<'category' | 'manual'>('manual');
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -33,7 +38,16 @@ const CreateExam: React.FC = () => {
   useEffect(() => {
     fetchQuestions();
     fetchStudents();
-  }, []);
+    fetchCategories();
+    if (examId) {
+      fetchExam(examId);
+    }
+  }, [examId]);
+
+  const formatDateInput = (value?: string | Date) => {
+    if (!value) return '';
+    return new Date(value).toISOString().slice(0, 10);
+  };
 
   const fetchQuestions = async () => {
     try {
@@ -51,6 +65,55 @@ const CreateExam: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch students:', err);
       // Don't show error as students are optional
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await categoryAPI.getAll();
+      setCategories(data);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  };
+
+  const getQuestionCategoryId = (question: Question) => {
+    const categoryId = question.categoryId as Category | string | undefined;
+    return typeof categoryId === 'object' ? categoryId._id || categoryId.id || '' : categoryId || '';
+  };
+
+  const handleCategoryQuestionSelect = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setSelectedQuestions(
+      availableQuestions
+        .filter(question => getQuestionCategoryId(question) === categoryId)
+        .map(question => question._id || question.id!)
+    );
+  };
+
+  const fetchExam = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const exam = await examAPI.getById(id);
+      setTitle(exam.title || '');
+      setDescription(exam.description || '');
+      setSelectedQuestions(
+        ((exam.questions || []) as any[]).map(question => question._id || question.id || question)
+      );
+      setQuestionSelectionMode('manual');
+      setSelectedStudents(((exam as any).assignedCandidates || []).map((student: any) => student._id || student.id || student));
+      setDuration(exam.duration || 60);
+      setTotalMarks(exam.totalMarks || 100);
+      setPassingMarks(exam.passingMarks || 40);
+      setStartDate(formatDateInput((exam as any).startDate));
+      setEndDate(formatDateInput((exam as any).endDate));
+      setStartTime((exam as any).startTime || '');
+      setEndTime((exam as any).endTime || '');
+    } catch (err: any) {
+      console.error('Failed to fetch exam:', err);
+      setError(err.response?.data?.error || 'Failed to load exam');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -102,29 +165,40 @@ const CreateExam: React.FC = () => {
         sendEmailNotification: selectedStudents.length > 0 ? sendEmailNotification : false,
       };
 
-      await examAPI.create(examData as any);
+      if (isEditMode && examId) {
+        await examAPI.update(examId, examData as any);
+      } else {
+        await examAPI.create(examData as any);
+      }
       
-      setSuccess(`Exam created successfully! ${selectedStudents.length > 0 && sendEmailNotification ? `Email notifications sent to ${selectedStudents.length} student(s).` : ''}`);
+      setSuccess(
+        isEditMode
+          ? 'Exam updated successfully!'
+          : `Exam created successfully! ${selectedStudents.length > 0 && sendEmailNotification ? `Email notifications sent to ${selectedStudents.length} student(s).` : ''}`
+      );
       
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setSelectedQuestions([]);
-      setSelectedStudents([]);
-      setDuration(60);
-      setTotalMarks(100);
-      setPassingMarks(40);
-      setStartDate('');
-      setEndDate('');
-      setStartTime('');
-      setEndTime('');
-      setSendEmailNotification(true);
+      if (isEditMode) {
+        setTimeout(() => navigate('/teacher/exams'), 800);
+      } else {
+        setTitle('');
+        setDescription('');
+        setSelectedQuestions([]);
+        setSelectedStudents([]);
+        setDuration(60);
+        setTotalMarks(100);
+        setPassingMarks(40);
+        setStartDate('');
+        setEndDate('');
+        setStartTime('');
+        setEndTime('');
+        setSendEmailNotification(true);
+      }
       
       // Scroll to top to show success message
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-    } catch {
-      setError('Failed to create exam. Please try again.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || `Failed to ${isEditMode ? 'update' : 'create'} exam. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +218,7 @@ const CreateExam: React.FC = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Link>
-              <h1 className="text-xl font-bold text-gray-900">Create Exam</h1>
+              <h1 className="text-xl font-bold text-gray-900">{isEditMode ? 'Edit Exam' : 'Create Exam'}</h1>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
@@ -337,7 +411,7 @@ const CreateExam: React.FC = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate('/teacher')}
+                    onClick={() => navigate(isEditMode ? '/teacher/exams' : '/teacher')}
                   >
                     Cancel
                   </Button>
@@ -345,7 +419,7 @@ const CreateExam: React.FC = () => {
                     type="submit"
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Creating...' : 'Create Exam'}
+                    {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Exam' : 'Create Exam')}
                   </Button>
                 </div>
               </form>
@@ -359,6 +433,54 @@ const CreateExam: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                <div className="grid grid-cols-2 rounded-lg bg-gray-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setQuestionSelectionMode('category')}
+                    className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+                      questionSelectionMode === 'category'
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Select by Category
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuestionSelectionMode('manual')}
+                    className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+                      questionSelectionMode === 'manual'
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Select Questions
+                  </button>
+                </div>
+
+                {questionSelectionMode === 'category' && (
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Category
+                    </label>
+                    <select
+                      value={selectedCategoryId}
+                      onChange={(event) => handleCategoryQuestionSelect(event.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    >
+                      <option value="">Select category</option>
+                      {categories.map(category => (
+                        <option key={category._id || category.id} value={category._id || category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-sm text-blue-700">
+                      {selectedQuestions.length} MCQs selected from this category
+                    </p>
+                  </div>
+                )}
+
                 {availableQuestions.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500 mb-4">No questions available</p>
@@ -374,12 +496,12 @@ const CreateExam: React.FC = () => {
                     {availableQuestions.map((question) => (
                       <div
                         key={question._id}
-                        className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                        className={`p-4 rounded-lg border transition-colors ${
                           selectedQuestions.includes(question._id!)
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                        onClick={() => toggleQuestionSelection(question._id!)}
+                        } ${questionSelectionMode === 'manual' ? 'cursor-pointer' : 'cursor-default opacity-95'}`}
+                        onClick={() => questionSelectionMode === 'manual' && toggleQuestionSelection(question._id!)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -409,7 +531,8 @@ const CreateExam: React.FC = () => {
                             <input
                               type="checkbox"
                               checked={selectedQuestions.includes(question._id!)}
-                              onChange={() => toggleQuestionSelection(question._id!)}
+                              onChange={() => questionSelectionMode === 'manual' && toggleQuestionSelection(question._id!)}
+                              disabled={questionSelectionMode !== 'manual'}
                               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                             />
                           </div>

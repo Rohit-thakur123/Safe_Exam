@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { questionAPI } from '../../services/api';
+import { categoryAPI, questionAPI } from '../../services/api';
 import { ArrowLeft, Plus, Trash2, LogOut } from 'lucide-react';
-import type { Question } from '../../types';
+import type { Category, Question } from '../../types';
 
 const CreateQuestion: React.FC = () => {
   const { user, logout } = useAuth();
@@ -14,13 +14,28 @@ const CreateQuestion: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [answer, setAnswer] = useState('');
   const [explanation, setExplanation] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [category, setCategory] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const data = await categoryAPI.getAll();
+      setCategories(data);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  };
 
   const addOption = () => {
     setOptions([...options, '']);
@@ -51,8 +66,8 @@ const CreateQuestion: React.FC = () => {
     try {
       const filteredOptions = options.filter(opt => opt.trim() !== '');
       
-      if (filteredOptions.length < 2) {
-        setError('Please provide at least 2 options');
+      if (filteredOptions.length !== 4) {
+        setError('Please provide exactly 4 options');
         return;
       }
 
@@ -61,13 +76,28 @@ const CreateQuestion: React.FC = () => {
         return;
       }
 
+      let selectedCategoryId = categoryId;
+      let categoryName = categories.find(c => (c._id || c.id) === categoryId)?.name;
+
+      if (categoryId === '__new__') {
+        if (!newCategory.trim()) {
+          setError('Please enter a category name');
+          return;
+        }
+        const createdCategory = await categoryAPI.create(newCategory.trim());
+        selectedCategoryId = createdCategory._id || createdCategory.id || '';
+        categoryName = createdCategory.name;
+        await fetchCategories();
+      }
+
       const questionData: Omit<Question, '_id'> = {
         question: question.trim(),
         options: filteredOptions,
         answer: answer.trim(),
         explanation: explanation.trim() || undefined,
         difficulty,
-        category: category.trim() || undefined,
+        category: categoryName,
+        categoryId: selectedCategoryId || undefined,
       };
 
       await questionAPI.create(questionData);
@@ -79,10 +109,11 @@ const CreateQuestion: React.FC = () => {
       setAnswer('');
       setExplanation('');
       setDifficulty('medium');
-      setCategory('');
+      setCategoryId('');
+      setNewCategory('');
       
-    } catch {
-      setError('Failed to create question. Please try again.');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to create question. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -224,16 +255,31 @@ const CreateQuestion: React.FC = () => {
                   </select>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                    Category (Optional)
+                    Category
                   </label>
-                  <Input
+                  <select
                     id="category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="e.g., Mathematics, Science, History"
-                  />
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  >
+                    <option value="">General</option>
+                    {categories.map(category => (
+                      <option key={category._id || category.id} value={category._id || category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                    <option value="__new__">Create New Category</option>
+                  </select>
+                  {categoryId === '__new__' && (
+                    <Input
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Enter category name"
+                    />
+                  )}
                 </div>
               </div>
 

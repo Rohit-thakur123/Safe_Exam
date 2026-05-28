@@ -12,7 +12,6 @@ import {
     getAllStudents
 } from '../controllers/examController.js';
 import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware.js';
-import { requireSEB } from '../middlewares/seb.middleware.js';
 
 const router = express.Router();
 
@@ -30,6 +29,6 @@ router.get('/:examId/assigned-students', authenticateToken, authorizeRole(['teac
 
 // Both roles (authenticated)
 router.get('/all', authenticateToken, getAllExams);
-router.get('/:id', requireSEB, authenticateToken, getExamById);
+router.get('/:id', authenticateToken, getExamById);
 
 export default router;

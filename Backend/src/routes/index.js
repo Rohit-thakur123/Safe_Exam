@@ -5,6 +5,7 @@ import AuthRouter from "./auth.routes.js";
 import ExamAttemptRouter from "./examAttempt.routes.js";
 import SessionRouter from "./session.routes.js";
 import SEBRouter from "./seb.routes.js";
+import CategoryRouter from "./category.routes.js";
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get('/', (req, res) => {
 
 router.use('/auth', AuthRouter);
 router.use('/questions', QuestionRouter);
+router.use('/categories', CategoryRouter);
 router.use('/exams', ExamRouter);
 router.use('/exam-attempts', ExamAttemptRouter);
 router.use('/sessions', SessionRouter);
