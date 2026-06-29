@@ -32,7 +32,7 @@ export const runCode = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Code execution failed",
+      message: "code execution failed",
     });
   }
 };
