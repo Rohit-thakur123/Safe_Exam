@@ -1,0 +1,34 @@
+services:
+  compiler-backend:
+    build:
+      context: ./compiler-backend
+      dockerfile: Dockerfile
+    ports:
+      - '4000:4000'
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - API_BASE_PATH=/api/compiler
+      - HOST_WORKSPACE_ROOT=D:/SafeExam/Safe_Exam/compiler-backend/workspaces
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./compiler-backend/workspaces:/workspaces
+    networks:
+      - compiler-network
+
+  compiler-frontend:
+    build:
+      context: ./compiler-frontend
+      dockerfile: Dockerfile
+    ports:
+      - '5173:80'
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://compiler-backend:4000/api/compiler
+    networks:
+      - compiler-network
+
+networks:
+  compiler-network:
+    driver: bridge
