@@ -1,5 +1,6 @@
 import express from 'express';
 import QuestionRouter from "./question.routes.js";
+import CodingQuestionRouter from "./codingQuestion.routes.js";
 import ExamRouter from "./exam.routes.js";
 import AuthRouter from "./auth.routes.js";
 import ExamAttemptRouter from "./examAttempt.routes.js";
@@ -16,6 +17,7 @@ router.get('/', (req, res) => {
 
 router.use('/auth', AuthRouter);
 router.use('/questions', QuestionRouter);
+router.use('/coding-questions', CodingQuestionRouter);
 router.use('/categories', CategoryRouter);
 router.use('/exams', ExamRouter);
 router.use('/exam-attempts', ExamAttemptRouter);
