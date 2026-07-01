@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
 import { examAPI } from '../../services/api';
-import { FileText, Edit, Trash2, Plus, ArrowLeft, LogOut, Users, ToggleLeft, ToggleRight } from 'lucide-react';
+import { FileText, Edit, Trash2, Plus, ArrowLeft, LogOut, Users, ToggleLeft, ToggleRight, Code2 } from 'lucide-react';
 import type { Exam } from '../../types';
 
 interface Student {
@@ -434,6 +434,11 @@ const ManageExams: React.FC = () => {
                       </div>
 
                       <div className="flex items-center space-x-2 ml-4">
+                        <Link to={`/teacher/exams/${exam._id || exam.id}/coding-submissions`}>
+                          <Button variant="outline" size="sm" title="Coding Submissions">
+                            <Code2 className="w-4 h-4" />
+                          </Button>
+                        </Link>
                         <Button
                           variant="outline"
                           size="sm"

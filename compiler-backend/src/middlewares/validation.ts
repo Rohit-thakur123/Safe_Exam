@@ -8,6 +8,8 @@ const runSchema = Joi.object({
     .required(),
   code: Joi.string().min(1).required(),
   stdin: Joi.string().allow('').optional(),
+  timeoutSeconds: Joi.number().integer().min(1).max(30).optional(),
+  memoryLimitBytes: Joi.number().integer().min(16777216).max(536870912).optional(),
 });
 
 export function validateRunRequest(req: Request, res: Response, next: NextFunction) {

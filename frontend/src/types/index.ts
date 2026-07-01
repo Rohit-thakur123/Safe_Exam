@@ -3,7 +3,7 @@ export interface User {
   _id?: string;
   name: string;
   email: string;
-  role: 'teacher' | 'student';
+  role: 'teacher' | 'student' | 'admin';
 }
 
 export interface ExamAttemptSummary {
@@ -39,6 +39,31 @@ export interface Question {
   createdAt?: Date;
 }
 
+export interface VisibleTestCase {
+  input: string;
+  expectedOutput: string;
+  order: number;
+}
+
+export interface CodingQuestion {
+  _id?: string;
+  id?: string;
+  type?: 'coding';
+  title: string;
+  description: string;
+  constraints: string;
+  inputFormat: string;
+  outputFormat: string;
+  explanation: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  marks: number;
+  timeLimit: number;
+  memoryLimit: number;
+  starterCode: string;
+  supportedLanguages: string[];
+  visibleTestCases?: VisibleTestCase[];
+}
+
 export interface Category {
   _id?: string;
   id?: string;
@@ -51,14 +76,26 @@ export interface Exam {
   title: string;
   description?: string;
   questions: string[]; // Array of Question IDs
+  codingQuestions?: string[] | CodingQuestion[];
   duration: number; // in minutes
   totalMarks: number;
   passingMarks: number;
+  startDate?: string | Date;
+  endDate?: string | Date;
+  startTime?: string;
+  endTime?: string;
+  assignedCandidates?: Array<string | { _id?: string; id?: string }>;
+  assignedStudents?: string[];
+  sendEmailNotification?: boolean;
   isActive?: boolean;
   createdBy?: string;
   createdAt?: Date;
   questionsCount?: number;
 }
+
+export type ExamQuestion =
+  | (Question & { type?: 'mcq' | 'text' })
+  | (CodingQuestion & { id: string; type: 'coding' });
 
 export interface ExamAttempt {
   id: string;
@@ -74,11 +111,12 @@ export interface ExamAttempt {
   timeSpent?: number; // in seconds
   status: 'in_progress' | 'completed' | 'abandoned';
   createdAt?: Date;
-  exam?: Exam; // Populated exam data
+  exam?: Omit<Exam, 'questions'> & { questions: ExamQuestion[] };
 }
 
 export interface ExamResult {
   attemptId: string;
+  examTitle?: string;
   score: number;
   totalMarks: number;
   percentage: number;

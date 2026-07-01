@@ -62,6 +62,8 @@ const createWorkspace = async (language: string, source: string) => {
   }
   const sourcePath = path.join(tmpDir, configEntry.fileName);
   await fs.writeFile(sourcePath, source, { encoding: 'utf8' });
+  await fs.chmod(tmpDir, 0o777);
+  await fs.chmod(sourcePath, 0o666);
   return tmpDir;
 };
 
@@ -110,44 +112,70 @@ const ensureImageExists = async (image: string) => {
   }
 };
 
-const parseDockerLogs = (logs: Buffer): string => {
-  if (logs.length < 8) return logs.toString('utf8');
-  let output = '';
+const parseDockerLogs = (logs: Buffer): { stdout: string; stderr: string } => {
+  if (logs.length < 8) return { stdout: logs.toString('utf8'), stderr: '' };
+  let stdout = '';
+  let stderr = '';
   let index = 0;
   while (index + 8 <= logs.length) {
+    const stream = logs[index];
     const size = logs.readUInt32BE(index + 4);
     index += 8;
     if (index + size > logs.length) break;
-    output += logs.slice(index, index + size).toString('utf8');
+    const chunk = logs.slice(index, index + size).toString('utf8');
+    if (stream === 2) stderr += chunk;
+    else stdout += chunk;
     index += size;
   }
-  return output || logs.toString('utf8');
+  return stdout || stderr ? { stdout, stderr } : { stdout: logs.toString('utf8'), stderr: '' };
 };
 
 const runContainerCommand = async (options: Docker.ContainerCreateOptions, timeoutMs: number) => {
   const container = await docker.createContainer(options);
   const startTime = Date.now();
+  let maxMemoryUsageBytes = 0;
+  let statsStream: NodeJS.ReadableStream | undefined;
 
   try {
     await container.start();
+    statsStream = await container.stats({ stream: true }).catch(() => undefined);
+    statsStream?.on('data', (chunk: Buffer) => {
+      try {
+        const stats = JSON.parse(chunk.toString('utf8'));
+        const usage = Number(stats?.memory_stats?.usage ?? 0);
+        const cache = Number(stats?.memory_stats?.stats?.cache ?? 0);
+        maxMemoryUsageBytes = Math.max(maxMemoryUsageBytes, Math.max(0, usage - cache));
+      } catch {
+        // Docker may split a stats frame; the next complete frame will be sampled.
+      }
+    });
     const waitResult = await waitForContainer(container, timeoutMs);
     const inspectResult = await container.inspect();
     const logs = (await container.logs({ stdout: true, stderr: true, follow: false })) as Buffer;
-    const output = Buffer.isBuffer(logs) ? parseDockerLogs(logs) : String(logs);
+    const parsedLogs = Buffer.isBuffer(logs)
+      ? parseDockerLogs(logs)
+      : { stdout: String(logs), stderr: '' };
 
     return {
       exitCode: waitResult.StatusCode,
-      output,
+      ...parsedLogs,
       finishedAt: inspectResult.State.FinishedAt,
       elapsedMs: Date.now() - startTime,
+      memoryUsageBytes: maxMemoryUsageBytes,
+      timedOut: waitResult.StatusCode === 137 && Date.now() - startTime >= timeoutMs,
     };
   } finally {
+    if (statsStream && 'destroy' in statsStream) {
+      (statsStream as NodeJS.ReadableStream & { destroy: () => void }).destroy();
+    }
     await container.remove({ force: true, v: true }).catch(() => undefined);
   }
 };
 
 export async function executeSubmission(request: ExecutionRequest): Promise<ExecutionResult> {
   const { language, code, stdin } = request;
+  const timeoutMs = Math.min(request.timeoutSeconds ?? config.timeoutSeconds, 30) * 1000;
+  const memoryLimitBytes = Math.min(request.memoryLimitBytes ?? config.memoryLimitBytes, 536870912);
 
   if (!languageConfig[language]) {
     throw Object.assign(new Error('Unsupported language'), { status: 400 });
@@ -168,24 +196,30 @@ export async function executeSubmission(request: ExecutionRequest): Promise<Exec
         HostConfig: {
           AutoRemove: false,
           Binds: [`${getHostWorkspacePath(workspacePath)}:/workspace:rw`],
-          Memory: config.memoryLimitBytes,
+          Memory: memoryLimitBytes,
           CpuShares: config.cpuShares,
+          NanoCpus: 500000000,
           NetworkMode: 'none',
           PidsLimit: 64,
-          ReadonlyRootfs: false,
+          ReadonlyRootfs: true,
+          CapDrop: ['ALL'],
+          SecurityOpt: ['no-new-privileges'],
+          Tmpfs: { '/tmp': 'rw,noexec,nosuid,size=67108864' },
         },
+        User: '65534:65534',
         WorkingDir: '/workspace',
       };
 
-      const compileResult = await runContainerCommand(compileOptions, config.timeoutSeconds * 1000);
+      const compileResult = await runContainerCommand(compileOptions, timeoutMs);
       if (compileResult.exitCode !== 0) {
         return {
           stdout: '',
-          stderr: compileResult.output,
-          compileError: compileResult.output,
+          stderr: compileResult.stderr || compileResult.stdout,
+          compileError: compileResult.stderr || compileResult.stdout,
           exitCode: compileResult.exitCode,
           executionTimeMs: 0,
-          memoryUsageBytes: config.memoryLimitBytes,
+          memoryUsageBytes: compileResult.memoryUsageBytes,
+          timedOut: compileResult.timedOut,
         };
       }
     }
@@ -196,25 +230,31 @@ export async function executeSubmission(request: ExecutionRequest): Promise<Exec
       HostConfig: {
         AutoRemove: false,
         Binds: [`${getHostWorkspacePath(workspacePath)}:/workspace:ro`],
-        Memory: config.memoryLimitBytes,
+        Memory: memoryLimitBytes,
         CpuShares: config.cpuShares,
+        NanoCpus: 500000000,
         NetworkMode: 'none',
         PidsLimit: 64,
-        ReadonlyRootfs: false,
+        ReadonlyRootfs: true,
+        CapDrop: ['ALL'],
+        SecurityOpt: ['no-new-privileges'],
+        Tmpfs: { '/tmp': 'rw,noexec,nosuid,size=67108864' },
       },
+      User: '65534:65534',
       WorkingDir: '/workspace',
     };
 
     await fs.writeFile(path.join(workspacePath, 'stdin.txt'), stdin ?? '', 'utf8');
 
-    const runResult = await runContainerCommand(runOptions, config.timeoutSeconds * 1000);
+    const runResult = await runContainerCommand(runOptions, timeoutMs);
     return {
-      stdout: runResult.output,
-      stderr: runResult.output,
+      stdout: runResult.stdout,
+      stderr: runResult.stderr,
       compileError: undefined,
       exitCode: runResult.exitCode,
       executionTimeMs: runResult.elapsedMs,
-      memoryUsageBytes: config.memoryLimitBytes,
+      memoryUsageBytes: runResult.memoryUsageBytes,
+      timedOut: runResult.timedOut,
     };
   } finally {
     await cleanWorkspace(workspacePath);

@@ -4,6 +4,8 @@ export interface ExecutionRequest {
   language: Language;
   code: string;
   stdin?: string;
+  timeoutSeconds?: number;
+  memoryLimitBytes?: number;
 }
 
 export interface LanguageConfig {
@@ -21,4 +23,5 @@ export interface ExecutionResult {
   exitCode: number;
   executionTimeMs: number;
   memoryUsageBytes: number;
+  timedOut: boolean;
 }

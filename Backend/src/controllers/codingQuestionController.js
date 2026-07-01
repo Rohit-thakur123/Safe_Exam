@@ -1,52 +1,24 @@
 import mongoose from 'mongoose';
 import CodingQuestion from '../models/exam/codingQuestion.js';
 import TestCase from '../models/exam/testCase.js';
-
-const normalizeSupportedLanguages = (value) => {
-    if (!Array.isArray(value)) return [];
-    return value
-        .map(item => (typeof item === 'string' ? item.trim() : ''))
-        .filter(Boolean);
-};
-
-const validateCodingQuestionPayload = (body) => {
-    const errors = [];
-
-    if (!body.title || !String(body.title).trim()) errors.push('Title is required');
-    if (!body.description || !String(body.description).trim()) errors.push('Description is required');
-    if (!body.constraints || !String(body.constraints).trim()) errors.push('Constraints are required');
-    if (!body.inputFormat || !String(body.inputFormat).trim()) errors.push('Input format is required');
-    if (!body.outputFormat || !String(body.outputFormat).trim()) errors.push('Output format is required');
-    if (!body.explanation || !String(body.explanation).trim()) errors.push('Explanation is required');
-    if (!body.difficulty) errors.push('Difficulty is required');
-    if (!body.marks || Number(body.marks) < 1) errors.push('Marks must be at least 1');
-    if (!body.timeLimit || Number(body.timeLimit) < 1) errors.push('Time limit must be at least 1');
-    if (!body.memoryLimit || Number(body.memoryLimit) < 1) errors.push('Memory limit must be at least 1');
-    if (!body.starterCode || !String(body.starterCode).trim()) errors.push('Starter code is required');
-
-    const supportedLanguages = normalizeSupportedLanguages(body.supportedLanguages);
-    if (supportedLanguages.length === 0) errors.push('At least one supported language is required');
-
-    const validDifficulties = ['Easy', 'Medium', 'Hard'];
-    if (body.difficulty && !validDifficulties.includes(body.difficulty)) {
-        errors.push('Difficulty must be Easy, Medium, or Hard');
-    }
-
-    return { errors, supportedLanguages };
-};
+import Exam from '../models/exam/exam.js';
+import ExamAttempt from '../models/exam/examAttempt.js';
 
 const getAllowedFilters = (req) => {
     const filters = { isActive: true };
     const { difficulty, createdBy, search, language } = req.query;
 
-    if (difficulty) filters.difficulty = difficulty;
-    if (createdBy) filters.createdBy = createdBy;
-    if (language) filters.supportedLanguages = { $in: [language] };
+    if (difficulty && ['Easy', 'Medium', 'Hard'].includes(difficulty)) filters.difficulty = difficulty;
+    if (createdBy && mongoose.Types.ObjectId.isValid(createdBy)) filters.createdBy = createdBy;
+    if (language && ['Python', 'Java', 'JavaScript', 'C', 'C++'].includes(language)) {
+        filters.supportedLanguages = language;
+    }
     if (search) {
+        const safeSearch = String(search).slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         filters.$or = [
-            { title: { $regex: search, $options: 'i' } },
-            { description: { $regex: search, $options: 'i' } },
-            { explanation: { $regex: search, $options: 'i' } }
+            { title: { $regex: safeSearch, $options: 'i' } },
+            { description: { $regex: safeSearch, $options: 'i' } },
+            { explanation: { $regex: safeSearch, $options: 'i' } }
         ];
     }
 
@@ -55,14 +27,8 @@ const getAllowedFilters = (req) => {
 
 export const createCodingQuestion = async (req, res) => {
     try {
-        const { errors, supportedLanguages } = validateCodingQuestionPayload(req.body);
-        if (errors.length > 0) {
-            return res.status(400).json({ success: false, error: errors[0] });
-        }
-
         const question = new CodingQuestion({
             ...req.body,
-            supportedLanguages,
             createdBy: req.user._id
         });
 
@@ -144,14 +110,8 @@ export const updateCodingQuestion = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Can only edit your own coding questions' });
         }
 
-        const { errors, supportedLanguages } = validateCodingQuestionPayload({ ...question.toObject(), ...req.body });
-        if (errors.length > 0) {
-            return res.status(400).json({ success: false, error: errors[0] });
-        }
-
         const updateData = {
             ...req.body,
-            supportedLanguages,
             updatedAt: Date.now()
         };
 
@@ -180,6 +140,25 @@ export const deleteCodingQuestion = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Can only delete your own coding questions' });
         }
 
+        const referencedExams = await Exam.find({ codingQuestions: id }).select('_id');
+        const referencedExamIds = referencedExams.map(exam => exam._id);
+        const hasAttempts = referencedExamIds.length > 0 &&
+            await ExamAttempt.exists({ examId: { $in: referencedExamIds } });
+
+        if (hasAttempts) {
+            question.isActive = false;
+            await question.save();
+            return res.status(200).json({
+                success: true,
+                message: 'Coding question archived because it is referenced by an exam attempt'
+            });
+        }
+
+        await Exam.updateMany({ codingQuestions: id }, { $pull: { codingQuestions: id } });
+        await Exam.updateMany(
+            { _id: { $in: referencedExamIds }, questions: { $size: 0 }, codingQuestions: { $size: 0 } },
+            { $set: { isActive: false } }
+        );
         await TestCase.deleteMany({ codingQuestionId: id });
         await CodingQuestion.findByIdAndDelete(id);
 
@@ -202,7 +181,15 @@ export const getCodingQuestionTestCases = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
 
-        const testCases = await TestCase.find({ codingQuestionId: id }).sort({ order: 1, createdAt: 1 });
+        const isStudent = req.user.role === 'student';
+        const filters = { codingQuestionId: id };
+        if (isStudent) filters.isHidden = false;
+
+        const query = TestCase.find(filters).sort({ order: 1, createdAt: 1 });
+        if (isStudent) {
+            query.select('input expectedOutput order -_id');
+        }
+        const testCases = await query.lean();
         res.status(200).json({ success: true, data: testCases });
     } catch (error) {
         console.error('Get coding question test cases error:', error);

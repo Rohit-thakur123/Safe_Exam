@@ -1,7 +1,10 @@
 import ExamAttempt from '../models/exam/examAttempt.js';
 import Exam from '../models/exam/exam.js';
 import Question from '../models/exam/question.js';
+import CodingQuestion from '../models/exam/codingQuestion.js';
 import mongoose from 'mongoose';
+import { buildStudentExamQuestions } from '../utils/examQuestionUtils.js';
+import Submission from '../models/exam/submissions.js';
 
 // Start exam attempt (CRITICAL - TAKE EXAM)
 export const startExamAttempt = async (req, res) => {
@@ -24,7 +27,9 @@ export const startExamAttempt = async (req, res) => {
         }
 
         // Get exam with questions
-        const exam = await Exam.findById(examId).populate('questions');
+        const exam = await Exam.findById(examId)
+            .populate('questions')
+            .populate('codingQuestions');
 
         if (!exam) {
             return res.status(404).json({
@@ -102,13 +107,7 @@ export const startExamAttempt = async (req, res) => {
         await attempt.save();
 
         // Prepare questions without answers
-        const questionsForStudent = exam.questions.map(q => ({
-            id: q._id.toString(),
-            question: q.question,
-            options: q.options,
-            difficulty: q.difficulty,
-            category: q.category
-        }));
+        const questionsForStudent = await buildStudentExamQuestions(exam);
 
         res.status(201).json({
             attempt: {
@@ -180,7 +179,9 @@ export const submitExamAttempt = async (req, res) => {
         }
 
         // Check if time expired
-        const exam = await Exam.findById(attempt.examId).populate('questions');
+        const exam = await Exam.findById(attempt.examId)
+            .populate('questions')
+            .populate('codingQuestions');
         const timeLimitMs = exam.duration * 60 * 1000;
         const elapsedTime = Date.now() - attempt.startTime.getTime();
 
@@ -196,7 +197,9 @@ export const submitExamAttempt = async (req, res) => {
         // Calculate score
         let score = 0;
         let correctAnswers = 0;
-        const marksPerQuestion = exam.totalMarks / exam.questions.length;
+        const codingMarks = exam.codingQuestions.reduce((total, question) => total + question.marks, 0);
+        const mcqMarksPool = Math.max(0, exam.totalMarks - codingMarks);
+        const marksPerQuestion = exam.questions.length > 0 ? mcqMarksPool / exam.questions.length : 0;
         const detailedResults = [];
 
         // Convert answers object to Map
@@ -220,6 +223,27 @@ export const submitExamAttempt = async (req, res) => {
                 isCorrect,
                 explanation: question.explanation || '',
                 marks: isCorrect ? marksPerQuestion : 0
+            });
+        }
+
+        for (const codingQuestion of exam.codingQuestions) {
+            const submission = await Submission.findOne({
+                examAttemptId: attempt._id,
+                codingQuestionId: codingQuestion._id
+            }).sort({ submittedAt: -1 });
+            const codingScore = submission ? Math.min(submission.score, codingQuestion.marks) : 0;
+            score += codingScore;
+            if (submission?.passed) correctAnswers++;
+            detailedResults.push({
+                questionId: codingQuestion._id.toString(),
+                question: codingQuestion.title,
+                selectedAnswer: submission ? 'Code submitted' : 'Not submitted',
+                correctAnswer: 'Evaluated against hidden testcases',
+                isCorrect: Boolean(submission?.passed),
+                explanation: submission
+                    ? `Passed ${submission.passedTestCases} hidden testcases; failed ${submission.failedTestCases}.`
+                    : '',
+                marks: codingScore
             });
         }
 
@@ -266,7 +290,7 @@ export const submitExamAttempt = async (req, res) => {
                 percentage: attempt.percentage,
                 passed: attempt.passed,
                 correctAnswers,
-                totalQuestions: exam.questions.length,
+                totalQuestions: exam.questions.length + exam.codingQuestions.length,
                 timeSpent: attempt.timeSpent,
                 detailedResults
             }
@@ -320,12 +344,15 @@ export const getAttemptById = async (req, res) => {
         if (attempt.status === 'completed') {
             const questions = await Question.find({ _id: { $in: exam.questions } });
             const answersObj = Object.fromEntries(attempt.answers);
+            const codingQuestions = await CodingQuestion.find({ _id: { $in: exam.codingQuestions } });
+            const codingMarks = codingQuestions.reduce((total, question) => total + question.marks, 0);
+            const mcqMarksPool = Math.max(0, attempt.totalMarks - codingMarks);
 
             detailedResults = questions.map(q => {
                 const questionId = q._id.toString();
                 const selectedAnswer = answersObj[questionId];
                 const isCorrect = selectedAnswer === q.answer;
-                const marksPerQuestion = attempt.totalMarks / questions.length;
+                const marksPerQuestion = questions.length > 0 ? mcqMarksPool / questions.length : 0;
 
                 return {
                     questionId,
@@ -337,6 +364,24 @@ export const getAttemptById = async (req, res) => {
                     marks: isCorrect ? marksPerQuestion : 0
                 };
             });
+
+            for (const codingQuestion of codingQuestions) {
+                const submission = await Submission.findOne({
+                    examAttemptId: attempt._id,
+                    codingQuestionId: codingQuestion._id
+                }).sort({ submittedAt: -1 });
+                detailedResults.push({
+                    questionId: codingQuestion._id.toString(),
+                    question: codingQuestion.title,
+                    selectedAnswer: submission ? 'Code submitted' : 'Not submitted',
+                    correctAnswer: 'Evaluated against hidden testcases',
+                    isCorrect: Boolean(submission?.passed),
+                    explanation: submission
+                        ? `Passed ${submission.passedTestCases}; failed ${submission.failedTestCases}.`
+                        : '',
+                    marks: submission ? submission.score : 0
+                });
+            }
         }
 
         res.status(200).json({

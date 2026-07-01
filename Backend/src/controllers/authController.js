@@ -1,4 +1,5 @@
 import User from '../models/User/user.js';
+import Admin from '../models/User/admin.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/tokenUtils.js';
 import { sessionManager } from '../config/sessionStore.js';
 
@@ -85,7 +86,9 @@ export const login = async (req, res) => {
 
         // Find user by email
         console.log('Finding user:', email.toLowerCase());
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = role === 'admin'
+            ? await Admin.findOne({ email: email.toLowerCase() })
+            : await User.findOne({ email: email.toLowerCase() });
 
         if (!user) {
             console.log('User not found:', email);
@@ -203,7 +206,9 @@ export const refreshToken = async (req, res) => {
         const decoded = verifyRefreshToken(refreshToken);
 
         // Get user
-        const user = await User.findById(decoded.userId);
+        const user = decoded.role === 'admin'
+            ? await Admin.findById(decoded.userId)
+            : await User.findById(decoded.userId);
 
         if (!user || !user.isActive) {
             return res.status(401).json({

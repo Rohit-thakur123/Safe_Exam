@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import api from '../../services/api';
-import { ArrowLeft, Plus, Trash2, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 
 const supportedLanguagesOptions = ['Python', 'Java', 'JavaScript', 'C', 'C++'];
 
@@ -54,8 +54,9 @@ const CreateCodingQuestion: React.FC = () => {
       setMemoryLimit(question.memoryLimit || 256);
       setStarterCode(question.starterCode || '');
       setSupportedLanguages(question.supportedLanguages || ['Python']);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load coding question');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setError(message || 'Failed to load coding question');
     }
   };
 
@@ -89,23 +90,12 @@ const CreateCodingQuestion: React.FC = () => {
         await api.put(`/coding-questions/${questionId}`, payload);
         setSuccess('Coding question updated successfully!');
       } else {
-        await api.post('/coding-questions', payload);
-        setSuccess('Coding question created successfully!');
-        setTitle('');
-        setDescription('');
-        setConstraints('');
-        setInputFormat('');
-        setOutputFormat('');
-        setExplanation('');
-        setDifficulty('Medium');
-        setMarks(10);
-        setTimeLimit(2);
-        setMemoryLimit(256);
-        setStarterCode('');
-        setSupportedLanguages(['Python']);
+        const response = await api.post('/coding-questions', payload);
+        navigate(`/teacher/coding-questions/${response.data.question._id || response.data.question.id}`);
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save coding question');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setError(message || 'Failed to save coding question');
     } finally {
       setIsLoading(false);
     }

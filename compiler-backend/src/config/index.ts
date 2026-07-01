@@ -18,4 +18,5 @@ export const config = {
   nodeImage: process.env.NODE_IMAGE ?? 'node:20-slim',
   openJdkImage: process.env.OPENJDK_IMAGE ?? 'eclipse-temurin:21-jdk',
   gccImage: process.env.GCC_IMAGE ?? 'gcc:13',
+  serviceKey: process.env.COMPILER_SERVICE_KEY ?? 'safeexam-internal-compiler-key',
 };

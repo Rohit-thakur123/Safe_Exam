@@ -4,6 +4,7 @@ const ExamSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String },
     questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
+    codingQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CodingQuestion' }],
     duration: { type: Number, required: true }, // in minutes
     totalMarks: { type: Number, required: true },
     passingMarks: { type: Number, required: true },

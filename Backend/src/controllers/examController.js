@@ -1,21 +1,35 @@
 import Exam from '../models/exam/exam.js';
 import Question from '../models/exam/question.js';
+import CodingQuestion from '../models/exam/codingQuestion.js';
 import ExamAttempt from '../models/exam/examAttempt.js';
 import User from '../models/User/user.js';
 import mongoose from 'mongoose';
 import { sendBulkExamAssignmentEmails } from '../services/examEmailService.js';
+import {
+    buildStudentExamQuestions,
+    getVisibleSamplesByQuestion,
+    serializeCodingQuestionForStudent
+} from '../utils/examQuestionUtils.js';
 
 // Create new exam
 export const createExam = async (req, res) => {
     try {
-        const { title, description, questions, duration, totalMarks, passingMarks, startDate, endDate, startTime, endTime, allowRetakes, shuffleQuestions, assignedStudents, sendEmailNotification } = req.body;
+        const { title, description, questions = [], codingQuestions = [], duration, totalMarks, passingMarks, startDate, endDate, startTime, endTime, allowRetakes, shuffleQuestions, assignedStudents, sendEmailNotification } = req.body;
+
+        if (!Array.isArray(questions) || !Array.isArray(codingQuestions)) {
+            return res.status(400).json({ success: false, error: 'Questions and coding questions must be arrays' });
+        }
 
         // Validate required fields
-        if (!title || !questions || !duration || !totalMarks || !passingMarks) {
+        if (!title || (!questions.length && !codingQuestions.length) || !duration || !totalMarks || !passingMarks) {
             return res.status(400).json({
                 success: false,
                 error: 'Missing required fields'
             });
+        }
+
+        if (new Set(questions.map(String)).size !== questions.length) {
+            return res.status(400).json({ success: false, error: 'Duplicate questions are not allowed' });
         }
 
         // Validate questions exist
@@ -25,6 +39,17 @@ export const createExam = async (req, res) => {
                 success: false,
                 error: 'One or more questions are invalid or inactive'
             });
+        }
+
+        if (new Set(codingQuestions.map(String)).size !== codingQuestions.length) {
+            return res.status(400).json({ success: false, error: 'Duplicate coding questions are not allowed' });
+        }
+        const validCodingQuestions = await CodingQuestion.find({
+            _id: { $in: codingQuestions },
+            isActive: true
+        });
+        if (validCodingQuestions.length !== codingQuestions.length) {
+            return res.status(400).json({ success: false, error: 'One or more coding questions are invalid or inactive' });
         }
 
         // Validate assigned students if provided
@@ -52,6 +77,7 @@ export const createExam = async (req, res) => {
             title,
             description,
             questions,
+            codingQuestions,
             duration,
             totalMarks,
             passingMarks,
@@ -81,7 +107,7 @@ export const createExam = async (req, res) => {
                 duration: exam.duration,
                 totalMarks: exam.totalMarks,
                 passingMarks: exam.passingMarks,
-                questionsCount: exam.questions.length
+                questionsCount: exam.questions.length + exam.codingQuestions.length
             };
 
             emailResults = await sendBulkExamAssignmentEmails(studentObjects, examDetails, req.user);
@@ -139,7 +165,7 @@ export const getAllExams = async (req, res) => {
             const examObj = exam.toJSON();
             return {
                 ...examObj,
-                questionsCount: exam.questions.length,
+                questionsCount: exam.questions.length + exam.codingQuestions.length,
                 createdBy: exam.createdBy ? exam.createdBy._id.toString() : null
             };
         });
@@ -172,7 +198,8 @@ export const getExamById = async (req, res) => {
 
         const exam = await Exam.findById(id)
             .populate('createdBy', 'name email')
-            .populate('questions');
+            .populate('questions')
+            .populate('codingQuestions');
 
         if (!exam) {
             return res.status(404).json({
@@ -193,16 +220,13 @@ export const getExamById = async (req, res) => {
 
         // For students, remove correct answers from questions
         let examData = exam.toObject();
+        const samplesByQuestion = await getVisibleSamplesByQuestion(exam.codingQuestions);
 
         if (req.user.role === 'student') {
-            examData.questions = examData.questions.map(q => ({
-                id: q._id.toString(),
-                question: q.question,
-                options: q.options,
-                difficulty: q.difficulty,
-                category: q.category
-                // NO answer field for students
-            }));
+            examData.questions = await buildStudentExamQuestions(exam);
+            examData.codingQuestions = exam.codingQuestions.map(q =>
+                serializeCodingQuestionForStudent(q, samplesByQuestion)
+            );
         } else {
             // For teachers, include full question details
             examData.questions = examData.questions.map(q => ({
@@ -213,6 +237,12 @@ export const getExamById = async (req, res) => {
                 explanation: q.explanation,
                 difficulty: q.difficulty,
                 category: q.category
+            }));
+            examData.codingQuestions = examData.codingQuestions.map(q => ({
+                ...q,
+                id: q._id.toString(),
+                type: 'coding',
+                visibleTestCases: samplesByQuestion[q._id.toString()] || []
             }));
         }
 
@@ -233,7 +263,15 @@ export const getExamById = async (req, res) => {
                 allowRetakes: examData.allowRetakes,
                 shuffleQuestions: examData.shuffleQuestions,
                 assignedCandidates: examData.assignedCandidates,
-                questions: examData.questions
+                questions: [
+                    ...(req.user.role === 'student'
+                        ? examData.questions
+                        : [
+                            ...examData.questions.map(question => ({ ...question, type: question.type || 'mcq' })),
+                            ...examData.codingQuestions
+                        ])
+                ],
+                codingQuestions: examData.codingQuestions
             }
         });
     } catch (error) {
@@ -309,6 +347,7 @@ export const updateExam = async (req, res) => {
             'title',
             'description',
             'questions',
+            'codingQuestions',
             'duration',
             'totalMarks',
             'passingMarks',
@@ -350,6 +389,7 @@ export const updateExam = async (req, res) => {
                 if (attemptExists && !safeFieldsWithAttempts.includes(field)) {
                     const isUnchangedProtectedField =
                         (field === 'questions' && idsMatch(exam.questions, req.body.questions)) ||
+                        (field === 'codingQuestions' && idsMatch(exam.codingQuestions, req.body.codingQuestions)) ||
                         (field === 'totalMarks' && Number(req.body.totalMarks) === Number(exam.totalMarks)) ||
                         (field === 'passingMarks' && Number(req.body.passingMarks) === Number(exam.passingMarks));
 
@@ -412,10 +452,10 @@ export const updateExam = async (req, res) => {
             }
 
             if (updateData.questions) {
-                if (!Array.isArray(updateData.questions) || updateData.questions.length === 0) {
+                if (!Array.isArray(updateData.questions)) {
                     return res.status(400).json({
                         success: false,
-                        error: 'Please select at least one question'
+                        error: 'Questions must be an array'
                     });
                 }
 
@@ -426,6 +466,28 @@ export const updateExam = async (req, res) => {
                         error: 'One or more questions are invalid or inactive'
                     });
                 }
+            }
+
+            if (updateData.codingQuestions) {
+                if (!Array.isArray(updateData.codingQuestions)) {
+                    return res.status(400).json({ success: false, error: 'Coding questions must be an array' });
+                }
+                if (new Set(updateData.codingQuestions.map(String)).size !== updateData.codingQuestions.length) {
+                    return res.status(400).json({ success: false, error: 'Duplicate coding questions are not allowed' });
+                }
+                const validCodingQuestions = await CodingQuestion.find({
+                    _id: { $in: updateData.codingQuestions },
+                    isActive: true
+                });
+                if (validCodingQuestions.length !== updateData.codingQuestions.length) {
+                    return res.status(400).json({ success: false, error: 'One or more coding questions are invalid or inactive' });
+                }
+            }
+
+            const nextQuestions = updateData.questions ?? exam.questions;
+            const nextCodingQuestions = updateData.codingQuestions ?? exam.codingQuestions;
+            if (nextQuestions.length === 0 && nextCodingQuestions.length === 0) {
+                return res.status(400).json({ success: false, error: 'Please select at least one question' });
             }
         }
 
@@ -643,7 +705,7 @@ export const assignStudentsToExam = async (req, res) => {
                 duration: exam.duration,
                 totalMarks: exam.totalMarks,
                 passingMarks: exam.passingMarks,
-                questionsCount: exam.questions.length
+                questionsCount: exam.questions.length + exam.codingQuestions.length
             };
 
             emailResults = await sendBulkExamAssignmentEmails(students, examDetails, req.user);

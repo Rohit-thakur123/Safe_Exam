@@ -9,7 +9,7 @@ const testCaseSchema = new mongoose.Schema({
     input: { type: String, required: [true, 'Input is required'], trim: true },
     expectedOutput: { type: String, required: [true, 'Expected output is required'], trim: true },
     isHidden: { type: Boolean, default: false },
-    order: { type: Number, default: 0 },
+    order: { type: Number, required: true, min: [0, 'Order cannot be negative'], default: 0 },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -21,20 +21,13 @@ const testCaseSchema = new mongoose.Schema({
     timestamps: true
 });
 
-testCaseSchema.index({ codingQuestionId: 1 });
-testCaseSchema.index({ isHidden: 1 });
-testCaseSchema.index({ order: 1 });
-
-testCaseSchema.pre('save', function(next) {
-    this.updatedAt = Date.now();
-    next();
-});
+testCaseSchema.index({ codingQuestionId: 1, order: 1 });
 
 testCaseSchema.set('toJSON', {
     transform: function(doc, ret) {
         ret.id = ret._id.toString();
         if (ret.codingQuestionId) ret.codingQuestionId = ret.codingQuestionId.toString();
-        if (ret.createdBy) ret.createdBy = ret.createdBy.toString();
+        if (ret.createdBy && !ret.createdBy.name) ret.createdBy = ret.createdBy.toString();
         if (ret.createdAt) ret.createdAt = ret.createdAt.toISOString();
         if (ret.updatedAt) ret.updatedAt = ret.updatedAt.toISOString();
         delete ret.__v;

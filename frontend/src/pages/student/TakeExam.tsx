@@ -5,7 +5,8 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { examAttemptAPI } from '../../services/api';
 import { ArrowLeft, Clock, CheckCircle } from 'lucide-react';
-import type { ExamAttempt, Question } from '../../types';
+import type { ExamAttempt, ExamQuestion } from '../../types';
+import CodingAssessment from '../../components/exam/CodingAssessment';
 
 const TakeExam: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
@@ -13,7 +14,7 @@ const TakeExam: React.FC = () => {
   const navigate = useNavigate();
   
   const [attempt, setAttempt] = useState<ExamAttempt | null>(null);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -45,13 +46,14 @@ const TakeExam: React.FC = () => {
         setAttempt(response.attempt);
         setQuestions(response.attempt.exam?.questions || []);
         setTimeLeft((response.attempt.exam?.duration || 0) * 60); // Convert minutes to seconds
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error starting exam:', err);
+        const requestError = err as { response?: { status?: number; data?: { error?: string; attemptId?: string } } };
         
         // Handle specific error cases
-        if (err.response?.status === 409) {
-          const errorMsg = err.response?.data?.error || 'You have already started this exam.';
-          const attemptId = err.response?.data?.attemptId;
+        if (requestError.response?.status === 409) {
+          const errorMsg = requestError.response?.data?.error || 'You have already started this exam.';
+          const attemptId = requestError.response?.data?.attemptId;
           
           if (attemptId) {
             setError(`${errorMsg} Redirecting to your existing attempt...`);
@@ -62,12 +64,12 @@ const TakeExam: React.FC = () => {
           } else {
             setError(`${errorMsg} Please check your exam history or contact your teacher.`);
           }
-        } else if (err.response?.status === 404) {
+        } else if (requestError.response?.status === 404) {
           setError('Exam not found. It may have been deleted.');
-        } else if (err.response?.status === 403) {
+        } else if (requestError.response?.status === 403) {
           setError('Please open this exam in Safe Exam Browser');
         } else {
-          setError(err.response?.data?.error || 'Failed to start exam. Please try again.');
+          setError(requestError.response?.data?.error || 'Failed to start exam. Please try again.');
         }
       } finally {
         setLoading(false);
@@ -89,9 +91,10 @@ const TakeExam: React.FC = () => {
       navigate(`/student/result/${attempt.id}`, { 
         state: { result: result.result } 
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error submitting exam:', err);
-      if (err.response?.status === 403) {
+      const requestError = err as { response?: { status?: number } };
+      if (requestError.response?.status === 403) {
         setError('Please open this exam in Safe Exam Browser');
       } else {
         setError('Failed to submit exam. Please try again.');
@@ -125,6 +128,7 @@ const TakeExam: React.FC = () => {
   };
 
   const currentQ = questions[currentQuestion];
+  const currentQuestionId = currentQ?.id || currentQ?._id || '';
   const progress = questions.length > 0 ? ((currentQuestion + 1) / questions.length) * 100 : 0;
 
   if (loading) {
@@ -188,7 +192,7 @@ const TakeExam: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold text-gray-900">{attempt.exam.title}</h1>
@@ -215,39 +219,84 @@ const TakeExam: React.FC = () => {
               />
             </div>
           </div>
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Question palette">
+            {questions.map((question, index) => {
+              const questionId = question.id || question._id || '';
+              const isAnswered = Boolean(answers[questionId]);
+              return (
+                <button
+                  key={questionId}
+                  type="button"
+                  onClick={() => setCurrentQuestion(index)}
+                  className={`h-9 min-w-9 rounded-md border px-2 text-sm font-medium ${
+                    index === currentQuestion
+                      ? 'border-blue-600 bg-blue-600 text-white'
+                      : isAnswered
+                        ? 'border-green-300 bg-green-50 text-green-700'
+                        : 'border-gray-300 bg-white text-gray-600'
+                  }`}
+                  title={question.type === 'coding' ? `Coding question ${index + 1}` : `Question ${index + 1}`}
+                >
+                  {index + 1}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Question Content */}
-      <div className="max-w-4xl mx-auto py-6 px-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">
-              {currentQ.question}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 mb-6">
-              {currentQ.options.map((option, index) => (
+      <div className="max-w-7xl mx-auto w-full py-6 px-4">
+        {currentQ.type === 'coding' ? (
+          <CodingAssessment
+            key={currentQuestionId}
+            question={{ ...currentQ, id: currentQuestionId }}
+            answer={answers[currentQuestionId] || ''}
+            onAnswerChange={(answer) => handleAnswerChange(currentQuestionId, answer)}
+            attemptId={attempt.id}
+          />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">
+                {currentQ.question}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {currentQ.type === 'text' ? (
+                <textarea
+                  value={answers[currentQuestionId] || ''}
+                  onChange={(event) => handleAnswerChange(currentQuestionId, event.target.value)}
+                  rows={10}
+                  className="mb-6 w-full rounded-md border border-gray-300 px-3 py-2"
+                  placeholder="Type your answer here..."
+                />
+              ) : (
+                <div className="space-y-3 mb-6">
+                  {(currentQ.options || []).map((option, index) => (
                 <label 
                   key={index} 
                   className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                 >
                   <input
                     type="radio"
-                    name={`question-${currentQ.id || currentQ._id}`}
+                    name={`question-${currentQuestionId}`}
                     value={option}
-                    checked={answers[currentQ.id || currentQ._id!] === option}
-                    onChange={(e) => handleAnswerChange(currentQ.id || currentQ._id!, e.target.value)}
+                    checked={answers[currentQuestionId] === option}
+                    onChange={(e) => handleAnswerChange(currentQuestionId, e.target.value)}
                     className="mt-1 w-4 h-4 text-blue-600"
                   />
                   <span className="flex-1">{option}</span>
                 </label>
-              ))}
-            </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between items-center">
+            <div className="mt-6 flex justify-between items-center rounded-lg border bg-white p-4">
               <Button
                 onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
                 disabled={currentQuestion === 0}
@@ -283,8 +332,6 @@ const TakeExam: React.FC = () => {
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

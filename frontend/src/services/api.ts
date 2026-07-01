@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Category, Question, Exam } from '../types';
+import type { Category, Question, Exam, CodingQuestion } from '../types';
 
 // Get API base URL from environment variable, fallback to localhost:4000
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -172,6 +172,40 @@ export const categoryAPI = {
   create: async (name: string): Promise<Category> => {
     const response = await api.post('/categories', { name });
     return response.data.category;
+  }
+};
+
+export const codingQuestionAPI = {
+  getAll: async (params?: { search?: string; difficulty?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/coding-questions', { params });
+    return {
+      questions: (response.data.data || []) as CodingQuestion[],
+      total: Number(response.data.total || 0),
+      page: Number(response.data.page || 1),
+      totalPages: Number(response.data.totalPages || 1)
+    };
+  },
+
+  getById: async (id: string): Promise<CodingQuestion> => {
+    const response = await api.get(`/coding-questions/${id}`);
+    return response.data.question;
+  }
+};
+
+export const codingExecutionAPI = {
+  run: async (codingQuestionId: string, payload: { attemptId: string; language: string; sourceCode: string }) => {
+    const response = await api.post(`/coding-assessments/${codingQuestionId}/run`, payload);
+    return response.data;
+  },
+
+  submit: async (codingQuestionId: string, payload: { attemptId: string; language: string; sourceCode: string }) => {
+    const response = await api.post(`/coding-assessments/${codingQuestionId}/submit`, payload);
+    return response.data;
+  },
+
+  getExamSubmissions: async (examId: string) => {
+    const response = await api.get(`/coding-assessments/submissions/exam/${examId}`);
+    return response.data.submissions || [];
   }
 };
 

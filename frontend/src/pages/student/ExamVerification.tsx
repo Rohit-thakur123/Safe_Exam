@@ -51,7 +51,6 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
   const [examInfo, setExamInfo] = useState<ExamInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [downloading, setDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
@@ -151,7 +150,6 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
     if (!examId || !studentId || !token) return;
 
     try {
-      setDownloading(true);
       setError('');
 
       // Call backend to generate SEB config
@@ -177,7 +175,6 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
       const error = err as { response?: { data?: { error?: string } } };
       setError(error.response?.data?.error || 'Failed to generate exam configuration. Please try again.');
     } finally {
-      setDownloading(false);
     }
   };
 

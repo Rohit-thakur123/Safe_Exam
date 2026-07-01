@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { ArrowLeft, Plus, Pencil, Trash2, Search, Filter, LogOut } from 'lucide-react';
+import { Card, CardContent } from '../../components/ui/Card';
+import { ArrowLeft, Eye, Plus, Pencil, Trash2, Search, LogOut } from 'lucide-react';
 import api from '../../services/api';
 
 interface CodingQuestion {
@@ -46,8 +46,9 @@ const CodingQuestions: React.FC = () => {
       setTotal(payload.total || 0);
       setTotalPages(payload.totalPages || 1);
       setPage(payload.page || 1);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load coding questions');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setError(message || 'Failed to load coding questions');
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,9 @@ const CodingQuestions: React.FC = () => {
     try {
       await api.delete(`/coding-questions/${id}`);
       fetchQuestions(page);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete coding question');
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setError(message || 'Failed to delete coding question');
     }
   };
 
@@ -170,6 +172,9 @@ const CodingQuestions: React.FC = () => {
                     </div>
                     {canManage && (
                       <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/teacher/coding-questions/${question._id || question.id}`)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => navigate(`/teacher/coding-questions/edit/${question._id || question.id}`)}>
                           <Pencil className="w-4 h-4" />
                         </Button>

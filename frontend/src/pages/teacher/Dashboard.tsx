@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { SessionStatus } from '../../components/SessionStatus';
 import { questionAPI, examAPI } from '../../services/api';
-import { BookOpen, FileText, ListChecks, LogOut, User, BarChart3 } from 'lucide-react';
+import { BookOpen, Code2, FileText, ListChecks, LogOut, User, BarChart3 } from 'lucide-react';
 import type { Question, Exam } from '../../types';
 
 const TeacherNavbar: React.FC = () => {
@@ -67,6 +67,17 @@ const TeacherNavbar: React.FC = () => {
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Create Exam
+              </Link>
+              <Link
+                to="/teacher/coding-questions"
+                className={`${
+                  location.pathname.startsWith('/teacher/coding-questions')
+                    ? 'border-blue-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+              >
+                <Code2 className="w-4 h-4 mr-2" />
+                Coding
               </Link>
             </div>
           </div>

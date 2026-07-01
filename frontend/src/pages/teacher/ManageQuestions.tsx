@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { questionAPI } from '../../services/api';
-import { BookOpen, Edit, Trash2, Plus, ArrowLeft, LogOut } from 'lucide-react';
+import { BookOpen, Edit, Trash2, Plus, ArrowLeft } from 'lucide-react';
 import type { Question } from '../../types';
 
 const TeacherNavbar: React.FC = () => {
   const { user, logout } = useAuth();
-  const location = useLocation();
-
-  const isActive = (path: string) => location.pathname === path;
-
   return (
     <nav className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

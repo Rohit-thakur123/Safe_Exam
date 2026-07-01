@@ -4,9 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { categoryAPI, questionAPI, examAPI } from '../../services/api';
-import { ArrowLeft, Plus, LogOut } from 'lucide-react';
-import type { Category, Question } from '../../types';
+import { categoryAPI, codingQuestionAPI, questionAPI, examAPI } from '../../services/api';
+import { ArrowDown, ArrowLeft, ArrowUp, Code2, Plus, LogOut, Search, X } from 'lucide-react';
+import type { Category, CodingQuestion, Question } from '../../types';
 
 const CreateExam: React.FC = () => {
   const { user, logout } = useAuth();
@@ -17,7 +17,8 @@ const CreateExam: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
-  const [availableStudents, setAvailableStudents] = useState<any[]>([]);
+  const [availableCodingQuestions, setAvailableCodingQuestions] = useState<CodingQuestion[]>([]);
+  const [availableStudents, setAvailableStudents] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [questionSelectionMode, setQuestionSelectionMode] = useState<'category' | 'manual'>('manual');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
@@ -25,6 +26,9 @@ const CreateExam: React.FC = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
+  const [selectedCodingQuestions, setSelectedCodingQuestions] = useState<string[]>([]);
+  const [codingSearch, setCodingSearch] = useState('');
+  const [codingDifficulty, setCodingDifficulty] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [duration, setDuration] = useState<number>(60);
   const [totalMarks, setTotalMarks] = useState<number>(100);
@@ -37,6 +41,7 @@ const CreateExam: React.FC = () => {
 
   useEffect(() => {
     fetchQuestions();
+    fetchCodingQuestions();
     fetchStudents();
     fetchCategories();
     if (examId) {
@@ -55,6 +60,19 @@ const CreateExam: React.FC = () => {
       setAvailableQuestions(questions);
     } catch {
       setError('Failed to fetch questions');
+    }
+  };
+
+  const fetchCodingQuestions = async () => {
+    try {
+      const result = await codingQuestionAPI.getAll({
+        search: codingSearch || undefined,
+        difficulty: codingDifficulty || undefined,
+        limit: 50
+      });
+      setAvailableCodingQuestions(result.questions);
+    } catch {
+      setError('Failed to fetch coding questions');
     }
   };
 
@@ -98,20 +116,29 @@ const CreateExam: React.FC = () => {
       setTitle(exam.title || '');
       setDescription(exam.description || '');
       setSelectedQuestions(
-        ((exam.questions || []) as any[]).map(question => question._id || question.id || question)
+        ((exam.questions || []) as unknown as Array<Question & { type?: string }>)
+          .filter(question => question.type !== 'coding')
+          .map(question => question._id || question.id || String(question))
+      );
+      setSelectedCodingQuestions(
+        ((exam.codingQuestions || []) as CodingQuestion[])
+          .map(question => question._id || question.id || String(question))
       );
       setQuestionSelectionMode('manual');
-      setSelectedStudents(((exam as any).assignedCandidates || []).map((student: any) => student._id || student.id || student));
+      setSelectedStudents((exam.assignedCandidates || []).map(student =>
+        typeof student === 'string' ? student : student._id || student.id || ''
+      ).filter(Boolean));
       setDuration(exam.duration || 60);
       setTotalMarks(exam.totalMarks || 100);
       setPassingMarks(exam.passingMarks || 40);
-      setStartDate(formatDateInput((exam as any).startDate));
-      setEndDate(formatDateInput((exam as any).endDate));
-      setStartTime((exam as any).startTime || '');
-      setEndTime((exam as any).endTime || '');
-    } catch (err: any) {
+      setStartDate(formatDateInput(exam.startDate));
+      setEndDate(formatDateInput(exam.endDate));
+      setStartTime(exam.startTime || '');
+      setEndTime(exam.endTime || '');
+    } catch (err: unknown) {
       console.error('Failed to fetch exam:', err);
-      setError(err.response?.data?.error || 'Failed to load exam');
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setError(message || 'Failed to load exam');
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +150,25 @@ const CreateExam: React.FC = () => {
         ? prev.filter(id => id !== questionId)
         : [...prev, questionId]
     );
+  };
+
+  const toggleCodingQuestion = (questionId: string) => {
+    setSelectedCodingQuestions(current =>
+      current.includes(questionId)
+        ? current.filter(id => id !== questionId)
+        : [...current, questionId]
+    );
+  };
+
+  const moveCodingQuestion = (questionId: string, direction: -1 | 1) => {
+    setSelectedCodingQuestions(current => {
+      const index = current.indexOf(questionId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const reordered = [...current];
+      [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+      return reordered;
+    });
   };
 
   const toggleStudentSelection = (studentId: string) => {
@@ -140,7 +186,7 @@ const CreateExam: React.FC = () => {
     setSuccess('');
 
     try {
-      if (selectedQuestions.length === 0) {
+      if (selectedQuestions.length === 0 && selectedCodingQuestions.length === 0) {
         setError('Please select at least one question');
         return;
       }
@@ -154,6 +200,7 @@ const CreateExam: React.FC = () => {
         title: title.trim(),
         description: description.trim() || undefined,
         questions: selectedQuestions,
+        codingQuestions: selectedCodingQuestions,
         duration,
         totalMarks,
         passingMarks,
@@ -166,9 +213,9 @@ const CreateExam: React.FC = () => {
       };
 
       if (isEditMode && examId) {
-        await examAPI.update(examId, examData as any);
+        await examAPI.update(examId, examData);
       } else {
-        await examAPI.create(examData as any);
+        await examAPI.create(examData);
       }
       
       setSuccess(
@@ -183,6 +230,7 @@ const CreateExam: React.FC = () => {
         setTitle('');
         setDescription('');
         setSelectedQuestions([]);
+        setSelectedCodingQuestions([]);
         setSelectedStudents([]);
         setDuration(60);
         setTotalMarks(100);
@@ -197,8 +245,9 @@ const CreateExam: React.FC = () => {
       // Scroll to top to show success message
       window.scrollTo({ top: 0, behavior: 'smooth' });
       
-    } catch (err: any) {
-      setError(err.response?.data?.error || `Failed to ${isEditMode ? 'update' : 'create'} exam. Please try again.`);
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      setError(message || `Failed to ${isEditMode ? 'update' : 'create'} exam. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -386,7 +435,7 @@ const CreateExam: React.FC = () => {
 
                 <div className="pt-4 border-t">
                   <p className="text-sm text-gray-600">
-                    Selected Questions: <span className="font-medium">{selectedQuestions.length}</span>
+                    Selected Questions: <span className="font-medium">{selectedQuestions.length + selectedCodingQuestions.length}</span>
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
                     Assigned Students: <span className="font-medium">
@@ -539,6 +588,121 @@ const CreateExam: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Coding Question Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Code2 className="mr-2 h-5 w-5 text-blue-600" />
+                Coding Questions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <div className="flex flex-1 rounded-md border border-gray-300 bg-white">
+                    <input
+                      value={codingSearch}
+                      onChange={(event) => setCodingSearch(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          void fetchCodingQuestions();
+                        }
+                      }}
+                      placeholder="Search coding questions"
+                      className="min-w-0 flex-1 rounded-l-md px-3 py-2 text-sm outline-none"
+                    />
+                    <Button type="button" variant="ghost" size="sm" onClick={() => void fetchCodingQuestions()}>
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <select
+                    value={codingDifficulty}
+                    onChange={(event) => setCodingDifficulty(event.target.value)}
+                    className="rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
+                  >
+                    <option value="">All</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                  <Button type="button" variant="outline" size="sm" onClick={() => void fetchCodingQuestions()}>
+                    Filter
+                  </Button>
+                </div>
+
+                {selectedCodingQuestions.length > 0 && (
+                  <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-800">
+                      Attached order
+                    </p>
+                    <div className="space-y-2">
+                      {selectedCodingQuestions.map((questionId, index) => {
+                        const question = availableCodingQuestions.find(item => (item._id || item.id) === questionId);
+                        return (
+                          <div key={questionId} className="flex items-center gap-2 rounded-md bg-white p-2 text-sm">
+                            <span className="w-5 text-gray-500">{index + 1}.</span>
+                            <span className="min-w-0 flex-1 truncate">{question?.title || 'Attached coding question'}</span>
+                            <Button type="button" variant="ghost" size="sm" disabled={index === 0} onClick={() => moveCodingQuestion(questionId, -1)}>
+                              <ArrowUp className="h-4 w-4" />
+                            </Button>
+                            <Button type="button" variant="ghost" size="sm" disabled={index === selectedCodingQuestions.length - 1} onClick={() => moveCodingQuestion(questionId, 1)}>
+                              <ArrowDown className="h-4 w-4" />
+                            </Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => toggleCodingQuestion(questionId)} className="text-red-600">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {availableCodingQuestions.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="mb-4 text-gray-500">No coding questions found</p>
+                    <Link to="/teacher/coding-questions/create">
+                      <Button type="button" variant="outline" size="sm">
+                        <Plus className="mr-2 h-4 w-4" /> Create Coding Question
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="max-h-96 space-y-3 overflow-y-auto">
+                    {availableCodingQuestions.map(question => {
+                      const questionId = question._id || question.id || '';
+                      const selected = selectedCodingQuestions.includes(questionId);
+                      return (
+                        <button
+                          key={questionId}
+                          type="button"
+                          onClick={() => toggleCodingQuestion(questionId)}
+                          className={`block w-full rounded-lg border p-4 text-left transition-colors ${
+                            selected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{question.title}</p>
+                              <p className="mt-1 line-clamp-2 text-xs text-gray-500">{question.description}</p>
+                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
+                                <span>{question.difficulty}</span>
+                                <span>{question.marks} marks</span>
+                                <span>{question.supportedLanguages.join(', ')}</span>
+                              </div>
+                            </div>
+                            <input type="checkbox" readOnly checked={selected} className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600" />
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>

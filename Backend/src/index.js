@@ -6,7 +6,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { apiLimiter } from './middlewares/rateLimit.middleware.js';
-import codeRoutes from "./routes/code.routes.js";
 
 dotenv.config();
 

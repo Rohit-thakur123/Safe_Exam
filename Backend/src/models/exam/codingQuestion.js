@@ -20,6 +20,10 @@ const codingQuestionSchema = new mongoose.Schema({
     supportedLanguages: {
         type: [String],
         required: [true, 'Supported languages are required'],
+        enum: {
+            values: ['Python', 'Java', 'JavaScript', 'C', 'C++'],
+            message: '{VALUE} is not a supported language'
+        },
         validate: {
             validator: (value) => Array.isArray(value) && value.length > 0,
             message: 'At least one supported language is required'
@@ -42,15 +46,10 @@ codingQuestionSchema.index({ difficulty: 1 });
 codingQuestionSchema.index({ isActive: 1 });
 codingQuestionSchema.index({ title: 'text', description: 'text', explanation: 'text' });
 
-codingQuestionSchema.pre('save', function(next) {
-    this.updatedAt = Date.now();
-    next();
-});
-
 codingQuestionSchema.set('toJSON', {
     transform: function(doc, ret) {
         ret.id = ret._id.toString();
-        if (ret.createdBy) ret.createdBy = ret.createdBy.toString();
+        if (ret.createdBy && !ret.createdBy.name) ret.createdBy = ret.createdBy.toString();
         if (ret.createdAt) ret.createdAt = ret.createdAt.toISOString();
         if (ret.updatedAt) ret.updatedAt = ret.updatedAt.toISOString();
         delete ret.__v;
