@@ -20,6 +20,7 @@ import CodingQuestions from './pages/teacher/CodingQuestions';
 import CreateCodingQuestion from './pages/teacher/CreateCodingQuestion';
 import CodingQuestionDetails from './pages/teacher/CodingQuestionDetails';
 import CodingSubmissions from './pages/teacher/CodingSubmissions';
+import CodingQuestionPreview from './pages/teacher/CodingQuestionPreview';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | 'student' }> = ({ 
@@ -136,6 +137,8 @@ function App() {
             <Route path="/teacher/coding-questions" element={<ProtectedRoute role="teacher"><CodingQuestions /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/create" element={<ProtectedRoute role="teacher"><CreateCodingQuestion /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/edit/:questionId" element={<ProtectedRoute role="teacher"><CreateCodingQuestion /></ProtectedRoute>} />
+            <Route path="/teacher/coding-questions/:questionId/testcases" element={<ProtectedRoute role="teacher"><CodingQuestionDetails /></ProtectedRoute>} />
+            <Route path="/teacher/coding-questions/:questionId/preview" element={<ProtectedRoute role="teacher"><CodingQuestionPreview /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/:questionId" element={<ProtectedRoute role="teacher"><CodingQuestionDetails /></ProtectedRoute>} />
             <Route path="/teacher/exams/:examId/coding-submissions" element={<ProtectedRoute role="teacher"><CodingSubmissions /></ProtectedRoute>} />
             

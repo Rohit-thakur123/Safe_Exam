@@ -40,9 +40,7 @@ const TakeExam: React.FC = () => {
       
       try {
         setLoading(true);
-        console.log('exam id:', examId);
         const response = await examAttemptAPI.start(examId);
-        console.log('Exam attempt started:', response);
         setAttempt(response.attempt);
         setQuestions(response.attempt.exam?.questions || []);
         setTimeLeft((response.attempt.exam?.duration || 0) * 60); // Convert minutes to seconds

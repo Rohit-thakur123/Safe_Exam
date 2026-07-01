@@ -5,6 +5,7 @@ import {
     getCodingQuestionById,
     updateCodingQuestion,
     deleteCodingQuestion,
+    duplicateCodingQuestion,
     getCodingQuestionTestCases
 } from '../controllers/codingQuestionController.js';
 import {
@@ -19,13 +20,16 @@ import { validateCodingQuestion, validateTestCase } from '../middlewares/codingQ
 
 const router = express.Router();
 
+// Coding question CRUD
 router.post('/', authenticateToken, authorizeRole(['teacher', 'admin']), validateCodingQuestion, createCodingQuestion);
 router.get('/', authenticateToken, getCodingQuestions);
 router.get('/all', authenticateToken, getCodingQuestions);
 router.get('/:id', authenticateToken, getCodingQuestionById);
 router.put('/:id', authenticateToken, authorizeRole(['teacher', 'admin']), validateCodingQuestion, updateCodingQuestion);
 router.delete('/:id', authenticateToken, authorizeRole(['teacher', 'admin']), deleteCodingQuestion);
+router.post('/:id/duplicate', authenticateToken, authorizeRole(['teacher', 'admin']), duplicateCodingQuestion);
 
+// Test cases
 router.get('/:id/testcases', authenticateToken, getCodingQuestionTestCases);
 router.post('/:codingQuestionId/testcases', authenticateToken, authorizeRole(['teacher', 'admin']), validateTestCase, createTestCase);
 router.put('/:codingQuestionId/testcases/reorder', authenticateToken, authorizeRole(['teacher', 'admin']), reorderTestCases);

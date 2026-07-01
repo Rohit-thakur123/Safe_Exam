@@ -9,6 +9,7 @@ const testCaseSchema = new mongoose.Schema({
     input: { type: String, required: [true, 'Input is required'], trim: true },
     expectedOutput: { type: String, required: [true, 'Expected output is required'], trim: true },
     isHidden: { type: Boolean, default: false },
+    weight: { type: Number, required: true, default: 1, min: [0, 'Weight cannot be negative'] },
     order: { type: Number, required: true, min: [0, 'Order cannot be negative'], default: 0 },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

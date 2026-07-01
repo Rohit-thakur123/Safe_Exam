@@ -112,10 +112,6 @@ const Dashboard: React.FC = () => {
           examAPI.getAll()
         ]);
         
-        console.log('User ID:', user.id);
-        console.log('All Questions:', questionsData);
-        console.log('All Exams:', examsData);
-        
         // Ensure we have arrays, not undefined
         const safeQuestions = Array.isArray(questionsData) ? questionsData : [];
         const safeExams = Array.isArray(examsData) ? examsData : [];
@@ -132,22 +128,16 @@ const Dashboard: React.FC = () => {
         const myExams = safeExams.filter((e: Exam) => {
           // If createdBy is not set, include the exam (for debugging)
           if (!e.createdBy) {
-            console.log('Exam without createdBy:', e.title, e);
             return true; // Show exams without createdBy field
           }
           const creatorId = String(e.createdBy);
           const userId = String(user.id);
-          console.log('Comparing exam:', e.title, 'creator:', creatorId, 'with user:', userId, 'match:', creatorId === userId);
           return creatorId === userId;
         });
-        
-        console.log('My Questions:', myQuestions.length);
-        console.log('My Exams:', myExams.length);
         
         setQuestions(myQuestions);
         setExams(myExams);
       } catch (err) {
-        console.error('Error fetching data:', err);
         setError('Failed to load data');
         // Set empty arrays on error
         setQuestions([]);

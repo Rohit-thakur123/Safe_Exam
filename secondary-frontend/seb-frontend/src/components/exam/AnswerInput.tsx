@@ -1,6 +1,7 @@
 // Answer input component for different question types
 import React from 'react';
-import { Question } from '../../types/exam.types';
+import type { Question } from '../../types/exam.types';
+import CodingAssessment from './CodingAssessment';
 
 interface AnswerInputProps {
   question: Question;
@@ -21,16 +22,15 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
           {question.options.map((option, index) => {
             const optionLabel = String.fromCharCode(65 + index); // A, B, C, D...
             const isSelected = currentAnswer === option;
-            
+
             return (
               <label
                 key={index}
                 className={`
                   flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
-                  ${
-                    isSelected
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  ${isSelected
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }
                 `}
               >
@@ -55,7 +55,7 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
       </div>
     );
   }
-  
+
   if (question.type === 'text') {
     return (
       <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -73,7 +73,17 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
       </div>
     );
   }
-  
+  if (question.type === 'coding') {
+    return (
+      <div className="mt-6">
+        <CodingAssessment
+          question={question}
+          answer={currentAnswer}
+          onAnswerChange={onAnswerChange}
+        />
+      </div>
+    );
+  }
   if (question.type === 'file') {
     return (
       <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -108,6 +118,6 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
       </div>
     );
   }
-  
+
   return null;
 };

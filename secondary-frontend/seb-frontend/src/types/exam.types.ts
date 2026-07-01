@@ -1,15 +1,52 @@
 // TypeScript interfaces for exam-related data structures
+export interface SampleTestCase {
+  input: string;
+  output: string;
+}
 
 export interface Question {
   id: string;
-  question: string;
-  type: 'mcq' | 'text' | 'file';
-  options?: string[];
-  marks: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  category: string;
-}
 
+  title?: string;
+
+  question: string;
+
+  description?: string;
+
+  type: 'mcq' | 'text' | 'file' | 'coding';
+
+  options?: string[];
+
+  marks: number;
+
+  difficulty: 'easy' | 'medium' | 'hard';
+
+  category: string;
+
+  constraints?: string;
+
+  inputFormat?: string;
+
+  outputFormat?: string;
+
+  explanation?: string;
+
+  starterCode?: string | Record<string, string>;
+
+  supportedLanguages?: string[];
+
+  timeLimit?: number;
+
+  memoryLimit?: number;
+
+  visibleTestCases?: {
+    order: number;
+    input: string;
+    expectedOutput: string;
+  }[];
+
+  hiddenTestCases?: number;
+}
 export interface Exam {
   id: string;
   title: string;
@@ -85,10 +122,32 @@ export interface ExamContextType {
   currentQuestionIndex: number;
   autoSaveStatus: AutoSaveStatus;
   timerState: TimerState;
-  
+
   // Actions
   initializeExam: (examId: string, sessionToken: string) => Promise<void>;
   updateAnswer: (questionId: string, answer: string) => void;
   navigateToQuestion: (index: number) => void;
   submitExam: () => Promise<ExamResult>;
+}
+export interface CodingQuestion extends Question {
+  title: string;
+  description: string;
+
+  constraints: string;
+  inputFormat: string;
+  outputFormat: string;
+  explanation: string;
+
+  supportedLanguages: string[];
+
+  starterCode: Record<string, string>;
+
+  timeLimit: number;
+  memoryLimit: number;
+
+  visibleTestCases: {
+    order: number;
+    input: string;
+    expectedOutput: string;
+  }[];
 }

@@ -45,6 +45,12 @@ export interface VisibleTestCase {
   order: number;
 }
 
+export interface CodingExample {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
 export interface CodingQuestion {
   _id?: string;
   id?: string;
@@ -55,13 +61,20 @@ export interface CodingQuestion {
   inputFormat: string;
   outputFormat: string;
   explanation: string;
+  examples?: CodingExample[];
+  tags?: string[];
   difficulty: 'Easy' | 'Medium' | 'Hard';
   marks: number;
   timeLimit: number;
   memoryLimit: number;
-  starterCode: string;
+  /** Per-language starter code map: { Python: '...', Java: '...' } */
+  starterCode: Record<string, string>;
   supportedLanguages: string[];
+  isActive?: boolean;
   visibleTestCases?: VisibleTestCase[];
+  visibleTestCaseCount?: number;
+  hiddenTestCaseCount?: number;
+  createdAt?: string;
 }
 
 export interface Category {

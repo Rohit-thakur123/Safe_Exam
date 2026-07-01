@@ -10,7 +10,10 @@ import { apiLimiter } from './middlewares/rateLimit.middleware.js';
 dotenv.config();
 
 const app = express();
-
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+];
 
 console.log("MONGO_URI:", process.env.MONGO_URI);
 console.log("SMTP_USER:", process.env.SMTP_USER);
@@ -20,7 +23,13 @@ connectDb();
 
 // CORS configuration - MUST come before other middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error("Not allowed by CORS"));
+    },
     methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

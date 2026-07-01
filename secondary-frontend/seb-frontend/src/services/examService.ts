@@ -1,10 +1,10 @@
 // API service functions for exam operations
 import { apiClient } from './api';
-import { 
-  ExamSession, 
-  ExamResult 
+import type {
+  ExamSession,
+  ExamResult
 } from '../types/exam.types';
-import {
+import type {
   StartExamRequest,
   StartExamResponse,
   SaveAnswersRequest,
@@ -25,16 +25,16 @@ export const startExamSession = async (
   try {
     // Store token in localStorage for subsequent requests
     localStorage.setItem('seb_session_token', sessionToken);
-    
+
     const request: StartExamRequest = { examId };
     const response = await apiClient.post<StartExamResponse>('/api/exam-attempt/start-seb', request);
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to start exam');
     }
-    
+
     const attemptData = response.data.attempt;
-    
+
     return {
       attempt: {
         id: attemptData.id,
@@ -46,21 +46,41 @@ export const startExamSession = async (
         currentAnswers: attemptData.currentAnswers
       },
       exam: {
-        id: attemptData.exam.title, // Note: assuming exam ID from title for now
+        id: attemptData.exam.title,
         title: attemptData.exam.title,
         description: attemptData.exam.description,
         duration: attemptData.exam.duration,
         totalMarks: attemptData.exam.totalMarks,
         passingMarks: attemptData.exam.passingMarks,
         totalQuestions: attemptData.exam.totalQuestions,
-        questions: attemptData.exam.questions.map(q => ({
+        questions: attemptData.exam.questions.map((q: any) => ({
           id: q.id,
-          question: q.question,
-          type: q.type as 'mcq' | 'text' | 'file',
-          options: q.options,
+          title: q.title,
+          question: q.question || q.description || "",
+          description: q.description,
+          type: q.type,
+          options: q.options || [],
           marks: q.marks,
-          difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
-          category: q.category
+          difficulty: q.difficulty,
+          category: q.category,
+
+          constraints: q.constraints,
+
+          inputFormat: q.inputFormat,
+
+          outputFormat: q.outputFormat,
+
+          explanation: q.explanation,
+
+          starterCode: q.starterCode,
+
+          supportedLanguages: q.supportedLanguages || [],
+
+          timeLimit: q.timeLimit,
+
+          memoryLimit: q.memoryLimit,
+
+          visibleTestCases: q.visibleTestCases || []
         }))
       },
       student: {
@@ -73,8 +93,8 @@ export const startExamSession = async (
   } catch (error: any) {
     console.error('Error starting exam:', error);
     throw new Error(
-      error.response?.data?.error || 
-      error.message || 
+      error.response?.data?.error ||
+      error.message ||
       'Failed to start exam session'
     );
   }
@@ -93,7 +113,7 @@ export const saveAnswers = async (
       answers,
       lastSavedAt: new Date().toISOString()
     };
-    
+
     await apiClient.patch<SaveAnswersResponse>('/api/exam-attempt/save-answers', request);
   } catch (error) {
     console.error('Auto-save failed:', error);
@@ -116,23 +136,23 @@ export const submitExam = async (
       timeSpent,
       submittedAt: new Date().toISOString()
     };
-    
+
     const response = await apiClient.post<SubmitExamResponse>('/api/exam-attempt/submit-seb', request);
-    
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to submit exam');
     }
-    
+
     // Clear session data after successful submission
     localStorage.removeItem('seb_session_token');
     localStorage.removeItem(`exam_${attemptId}_answers`);
-    
+
     return response.data.result;
   } catch (error: any) {
     console.error('Error submitting exam:', error);
     throw new Error(
-      error.response?.data?.error || 
-      error.message || 
+      error.response?.data?.error ||
+      error.message ||
       'Failed to submit exam'
     );
   }
@@ -147,7 +167,7 @@ export const sendHeartbeat = async (attemptId: string): Promise<void> => {
       attemptId,
       timestamp: new Date().toISOString()
     };
-    
+
     await apiClient.post<HeartbeatResponse>('/api/exam-attempt/heartbeat', request);
   } catch (error) {
     console.error('Heartbeat failed:', error);

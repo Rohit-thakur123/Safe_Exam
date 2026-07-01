@@ -37,3 +37,37 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+export const codingExecutionAPI = {
+  run: async (
+    codingQuestionId: string,
+    data: {
+      attemptId: string;
+      language: string;
+      sourceCode: string;
+    }
+  ) => {
+    const response = await apiClient.post(
+      `/coding-assessments/${codingQuestionId}/run`,
+      data
+    );
+
+    return response.data;
+  },
+
+  submit: async (
+    codingQuestionId: string,
+    data: {
+      attemptId: string;
+      language: string;
+      sourceCode: string;
+    }
+  ) => {
+    const response = await apiClient.post(
+      `/coding-assessments/${codingQuestionId}/submit`,
+      data
+    );
+
+    return response.data;
+  },
+};
