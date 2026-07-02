@@ -1,56 +1,91 @@
-# dependencies
+# ==========================
+# Dependencies
+# ==========================
 node_modules/
+**/node_modules/
 
-# environment variables
+# ==========================
+# Environment Variables
+# ==========================
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# logs
-logs
+!.env.example
+
+# ==========================
+# Logs
+# ==========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# runtime files
-pids
+# ==========================
+# Runtime
+# ==========================
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# build folders
+# ==========================
+# Build
+# ==========================
 dist/
 build/
+coverage/
+.vite/
 
-# cache
+# ==========================
+# Cache
+# ==========================
 .cache/
 .parcel-cache/
+.eslintcache
 
-# OS files
+# ==========================
+# OS Files
+# ==========================
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# editor folders
+# ==========================
+# IDE
+# ==========================
 .vscode/
 .idea/
 
-# coverage
-coverage/
-
-# temporary files
+# ==========================
+# Temporary
+# ==========================
 tmp/
 temp/
 
-# frontend generated
+# ==========================
+# Frontend
+# ==========================
 .next/
 out/
 
-# uploads (optional)
+# ==========================
+# Uploads
+# ==========================
 uploads/
 
-# secure/private files
+# ==========================
+# Security
+# ==========================
 *.pem
 *.key
+
+# ==========================
+# Docker
+# ==========================
+docker-data/
+mongodb-data/
+redis-data/
