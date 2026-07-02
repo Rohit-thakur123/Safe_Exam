@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { startExamSession, submitExam as apiSubmitExam } from '../services/examService';
 import { StorageService } from '../services/storageService';
-import { ExamSession, ExamResult } from '../types/exam.types';
+import type { ExamSession, ExamResult } from '../types/exam.types';
 
 interface UseExamSessionReturn {
   examSession: ExamSession | null;
