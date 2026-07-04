@@ -1,142 +1,235 @@
-import { useState } from "react";
+// =====================================================================================
+// CodingAssessment.tsx
+// Top-level orchestrator: responsive 2-column layout, state management, API integration.
+// -------------------------------------------------------------------------------------
+// NOTE: adjust the `codingExecutionAPI` import path below to match your project.
+// =====================================================================================
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, X, Sparkles } from "lucide-react";
+import QuestionPanel from "./exam/QuestionPanel";
+import EditorPanel from "./exam/EditorPanel";
+import ConsolePanel from "./exam/ConsolePanel";
+import type {
+  CodingAssessmentProps,
+  RunResult,
+  SubmitResult,
+} from "../types/types";
 import { compilerAPI } from "../services/api";
-import Editor from "@monaco-editor/react";
 
-const boilerplates = {
-  java: `public class Main {
-    public static void main(String[] args) {
-        System.out.println("Hello World");
+type SaveStatus = "idle" | "saving" | "saved";
+
+const AUTO_SAVE_DEBOUNCE_MS = 600;
+
+const codeEditor: React.FC<CodingAssessmentProps> = ({
+  question,
+  answer,
+  onAnswerChange, 
+  attemptId,
+}) => {
+  const defaultLanguage = question.supportedLanguages[0] ?? "javascript";
+
+  // Per-language code cache kept in-memory for the session so switching languages
+  // back and forth does not discard work, even though only one `answer` string
+  // is persisted upstream at any given time.
+  const codeCacheRef = useRef<Record<string, string>>({
+    ...question.starterCode,
+    [defaultLanguage]: answer?.trim() ? answer : question.starterCode[defaultLanguage] ?? "",
+  });
+
+  const [language, setLanguage] = useState<string>(defaultLanguage);
+  const [sourceCode, setSourceCode] = useState<string>(
+    codeCacheRef.current[defaultLanguage] ?? ""
+  );
+  const [customInput, setCustomInput] = useState<string>("");
+
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [runResult, setRunResult] = useState<RunResult | null>(null);
+  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  // ---- Auto-save draft (debounced) --------------------------------------------------
+  useEffect(() => {
+    setSaveStatus("saving");
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
     }
-}`,
+    saveTimeoutRef.current = window.setTimeout(() => {
+      onAnswerChange(sourceCode);
+      setSaveStatus("saved");
+    }, AUTO_SAVE_DEBOUNCE_MS);
 
-  javascript: `console.log("Hello World");`,
-
-  python: `print("Hello World")`,
-
-  c: `#include <stdio.h>
-
-int main() {
-    printf("Hello World");
-    return 0;
-}`,
-
-  cpp: `#include <iostream>
-using namespace std;
-
-int main() {
-    cout << "Hello World";
-    return 0;
-}`
-};
-
-export default function CodeEditor() {
-  const [language, setLanguage] = useState("java");
-  const [code, setCode] = useState(boilerplates.java);
-  const [output, setOutput] = useState("");
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleLanguageChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const lang = e.target.value;
-
-    setLanguage(lang);
-
-    setCode(
-      boilerplates[lang as keyof typeof boilerplates]
-    );
-  };
-  const runCode = async () => {
-    try {
-      setLoading(true);
-      setOutput("Running...");
-
-      const res = await compilerAPI.execute({
-        language,
-        code,
-        input,
-      });
-
-      if (res.success) {
-        setOutput(res.output);
-      } else {
-        setOutput(res.message);
+    return () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
       }
-    } catch (err: any) {
-      setOutput(
-        err.response?.data?.message ||
-        err.message ||
-        "Execution failed"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceCode]);
+
+  // ---- Handlers ----------------------------------------------------------------------
+  const handleCodeChange = useCallback(
+    (code: string) => {
+      setSourceCode(code);
+      codeCacheRef.current[language] = code;
+    },
+    [language]
+  );
+
+  const handleLanguageChange = useCallback(
+    (newLanguage: string) => {
+      if (newLanguage === language) return;
+      // Persist current buffer for this language before switching away.
+      codeCacheRef.current[language] = sourceCode;
+
+      const cached = codeCacheRef.current[newLanguage];
+      const nextCode = cached ?? question.starterCode[newLanguage] ?? "";
+      codeCacheRef.current[newLanguage] = nextCode;
+
+      setLanguage(newLanguage);
+      setSourceCode(nextCode);
+      setRunResult(null);
+      setSubmitResult(null);
+      setApiError(null);
+    },
+    [language, sourceCode, question.starterCode]
+  );
+
+  const handleReset = useCallback(() => {
+    const starter = question.starterCode[language] ?? "";
+    codeCacheRef.current[language] = starter;
+    setSourceCode(starter);
+    setRunResult(null);
+    setSubmitResult(null);
+    setApiError(null);
+  }, [language, question.starterCode]);
+
+  const handleRun = useCallback(async () => {
+  if (isRunning || isSubmitting) return;
+
+  setIsRunning(true);
+  setApiError(null);
+  setRunResult(null);
+
+  try {
+    const result = await compilerAPI.execute({
+      language,
+      code: sourceCode,
+      input: customInput,
+    });
+
+    setRunResult({
+      success: result.success,
+      output: result.output,
+      compileError: result.type === "Compilation Error" ? result.message : undefined,
+      runtimeError: result.type === "Runtime Error" ? result.message : undefined,
+    });
+
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to connect to compiler.";
+
+    setApiError(message);
+
+  } finally {
+    setIsRunning(false);
+  }
+}, [
+  isRunning,
+  isSubmitting,
+  language,
+  sourceCode,
+  customInput,
+]);
+
+  const handleSubmit = useCallback(async () => {
+  alert("Submit not implemented yet.");
+}, []);
+
+  // Keep the "Submission" tab useful by switching focus there implicitly via ConsolePanel
+  // state; no extra wiring required since ConsolePanel manages its own active tab.
+
+  const marksLabel = useMemo(
+    () => `${question.marks} ${question.marks === 1 ? "mark" : "marks"}`,
+    [question.marks]
+  );
 
   return (
-    <div className="p-4">
-
-      <div className="mb-4">
-        <select
-          value={language}
-          onChange={handleLanguageChange}
-          className="border p-2 rounded"
-        >
-          <option value="java">Java</option>
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="c">C</option>
-          <option value="cpp">C++</option>
-        </select>
+    <div className="h-full w-full bg-[#08080c] text-slate-100 flex flex-col">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-[#0a0a0f]">
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} className="text-violet-400" />
+          <span className="text-sm font-semibold text-slate-200">
+            {question.title}
+          </span>
+          <span className="hidden sm:inline text-xs text-slate-500">
+            · {marksLabel}
+          </span>
+        </div>
       </div>
 
-      <Editor
-        height="500px"
-        language={language}
-        value={code}
-        theme="vs-dark"
-        onChange={(value) => setCode(value || "")}
-        options={{
-          minimap: {
-            enabled: false
-          },
+      {/* Error banner */}
+      {apiError && (
+        <div className="flex items-center justify-between gap-3 px-5 py-2.5 bg-rose-500/10 border-b border-rose-400/20 text-rose-300 text-sm">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} />
+            <span>{apiError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setApiError(null)}
+            className="text-rose-300 hover:text-rose-100 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
-          quickSuggestions: false,
+      {/* Main responsive layout */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(320px,420px)_1fr] gap-4 p-4">
+        {/* Left: Question panel */}
+        <div className="min-h-[280px] lg:min-h-0 rounded-2xl border border-white/10 bg-[#0a0a0f] shadow-xl overflow-hidden">
+          <QuestionPanel question={question} />
+        </div>
 
-          suggestOnTriggerCharacters: false,
-
-          wordBasedSuggestions: "off",
-
-          parameterHints: {
-            enabled: false
-          },
-
-          tabCompletion: "off",
-
-          formatOnPaste: false,
-
-          formatOnType: false
-        }}
-      />
-      <textarea
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="Custom Input..."
-        className="mt-4 w-full border rounded p-3 h-28 font-mono"
-      />
-      <button
-        onClick={runCode}
-        disabled={loading}
-        className="mt-4 px-6 py-2 rounded bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-600"
-      >
-        {loading ? "Running..." : "▶ Run Code"}
-      </button>
-
-      <pre className="mt-4 bg-black text-green-400 rounded p-4 min-h-[160px] overflow-auto whitespace-pre-wrap">
-      {output || "Output will appear here"}
-      </pre>
-
+        {/* Right: Editor + Console */}
+        <div className="min-h-0 flex flex-col gap-4">
+          <div className="flex-[3] min-h-[280px]">
+            <EditorPanel
+              supportedLanguages={question.supportedLanguages}
+              language={language}
+              sourceCode={sourceCode}
+              onLanguageChange={handleLanguageChange}
+              onCodeChange={handleCodeChange}
+              onRun={handleRun}
+              onSubmit={handleSubmit}
+              onReset={handleReset}
+              isRunning={isRunning}
+              isSubmitting={isSubmitting}
+              saveStatus={saveStatus}
+            />
+          </div>
+          <div className="flex-[2] min-h-[220px]">
+            <ConsolePanel
+              customInput={customInput}
+              onCustomInputChange={setCustomInput}
+              runResult={runResult}
+              submitResult={submitResult}
+              isRunning={isRunning}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default codeEditor;
