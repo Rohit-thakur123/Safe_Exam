@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { compilerAPI } from "../services/api";
 import Editor from "@monaco-editor/react";
 
 const boilerplates = {
@@ -31,7 +32,9 @@ int main() {
 export default function CodeEditor() {
   const [language, setLanguage] = useState("java");
   const [code, setCode] = useState(boilerplates.java);
-  const [output] = useState("");
+  const [output, setOutput] = useState("");
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLanguageChange = (
     e: React.ChangeEvent<HTMLSelectElement>
@@ -43,6 +46,32 @@ export default function CodeEditor() {
     setCode(
       boilerplates[lang as keyof typeof boilerplates]
     );
+  };
+  const runCode = async () => {
+    try {
+      setLoading(true);
+      setOutput("Running...");
+
+      const res = await compilerAPI.execute({
+        language,
+        code,
+        input,
+      });
+
+      if (res.success) {
+        setOutput(res.output);
+      } else {
+        setOutput(res.message);
+      }
+    } catch (err: any) {
+      setOutput(
+        err.response?.data?.message ||
+        err.message ||
+        "Execution failed"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,16 +119,23 @@ export default function CodeEditor() {
           formatOnType: false
         }}
       />
-
+      <textarea
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Custom Input..."
+        className="mt-4 w-full border rounded p-3 h-28 font-mono"
+      />
       <button
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+        onClick={runCode}
+        disabled={loading}
+        className="mt-4 px-6 py-2 rounded bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-600"
       >
-        Run Code
+        {loading ? "Running..." : "▶ Run Code"}
       </button>
 
-      <div className="mt-4 border rounded p-3 bg-black text-green-400 min-h-[120px]">
-        {output || "Output will appear here"}
-      </div>
+      <pre className="mt-4 bg-black text-green-400 rounded p-4 min-h-[160px] overflow-auto whitespace-pre-wrap">
+      {output || "Output will appear here"}
+      </pre>
 
     </div>
   );

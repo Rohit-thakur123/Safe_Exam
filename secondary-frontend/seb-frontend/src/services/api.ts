@@ -72,3 +72,18 @@ export const codingExecutionAPI = {
     return response.data;
   },
 };
+export const compilerAPI = {
+  execute: async (data: {
+    language: string;
+    code: string;
+    input: string;
+  }) => {
+
+    const response = await axios.post(
+      "http://localhost:5001/api/execute",
+      data
+    );
+
+    return response.data;
+  },
+};
