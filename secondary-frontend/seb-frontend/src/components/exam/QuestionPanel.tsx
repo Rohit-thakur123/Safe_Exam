@@ -17,17 +17,20 @@ import {
   FlaskConical,
   CheckCircle2,
 } from "lucide-react";
-import type { CodingQuestion, Difficulty } from "../../types/types";
+import type { CodingQuestion, Difficulty } from "../../types/exam.types";
 
 interface QuestionPanelProps {
   question: CodingQuestion;
 }
 
 const difficultyStyles: Record<Difficulty, string> = {
-  Easy: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
-  Medium: "text-amber-400 bg-amber-400/10 border-amber-400/30",
-  Hard: "text-rose-400 bg-rose-400/10 border-rose-400/30",
+  easy: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30",
+  medium: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+  hard: "text-rose-400 bg-rose-400/10 border-rose-400/30",
 };
+
+const capitalize = (value: string): string =>
+  value.charAt(0).toUpperCase() + value.slice(1);
 
 interface CollapsibleSectionProps {
   title: string;
@@ -108,6 +111,17 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
       ? `${(question.timeLimit / 60).toFixed(1)} min`
       : `${question.timeLimit}s`;
 
+  // Backend sends this as either a single (possibly multi-line) string or an
+  // array of strings — normalize both shapes into one flat list of lines.
+  const constraintLines: string[] = Array.isArray(question.constraints)
+    ? question.constraints
+        .map((line) => line.trim().replace(/^[-*•]\s*/, ""))
+        .filter((line) => line.length > 0)
+    : (question.constraints ?? "")
+        .split("\n")
+        .map((line) => line.trim().replace(/^[-*•]\s*/, ""))
+        .filter((line) => line.length > 0);
+
   return (
     <div className="h-full w-full overflow-y-auto custom-scrollbar bg-[#0a0a0f] px-5 py-6 lg:px-6">
       <style>{`
@@ -128,7 +142,7 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
           <span
             className={`text-xs font-bold uppercase tracking-wider rounded-full border px-2.5 py-1 ${difficultyStyles[question.difficulty]}`}
           >
-            {question.difficulty}
+            {capitalize(question.difficulty)}
           </span>
           <span className="flex items-center gap-1 text-xs font-medium text-slate-400 bg-white/5 border border-white/10 rounded-full px-2.5 py-1">
             <Award size={12} className="text-violet-400" />
@@ -184,10 +198,10 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
           title="Constraints"
           icon={<ListChecks size={16} />}
           defaultOpen={false}
-          count={question.constraints.length}
+          count={constraintLines.length}
         >
           <ul className="list-disc list-inside space-y-1.5 marker:text-violet-400">
-            {question.constraints.map((constraint, idx) => (
+            {constraintLines.map((constraint, idx) => (
               <li key={idx} className="font-mono text-[13px] text-slate-300">
                 {constraint}
               </li>
@@ -227,19 +241,9 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
                       Output
                     </p>
                     <pre className="font-mono text-[13px] text-sky-300 bg-sky-400/[0.06] border border-sky-400/10 rounded-lg px-3 py-2 overflow-x-auto whitespace-pre-wrap">
-                      {testCase.output}
+                      {testCase.expectedOutput}
                     </pre>
                   </div>
-                  {testCase.explanation && (
-                    <div>
-                      <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">
-                        Explanation
-                      </p>
-                      <p className="text-[13px] text-slate-400">
-                        {testCase.explanation}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

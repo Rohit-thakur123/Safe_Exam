@@ -1,8 +1,12 @@
 // =====================================================================================
-// CodingAssessment.tsx
+// codeEditor.tsx
 // Top-level orchestrator: responsive 2-column layout, state management, API integration.
 // -------------------------------------------------------------------------------------
-// NOTE: adjust the `codingExecutionAPI` import path below to match your project.
+// NOTE: `CodingAssessmentProps["question"]` is typed as the loose `Question` upstream
+// (title/starterCode/supportedLanguages/etc. all optional), but QuestionPanel and
+// EditorPanel require the strict `CodingQuestion`. `normalizeCodingQuestion` below
+// fills every optional field with a safe default exactly once, so nothing downstream
+// has to deal with `undefined` or the `string | Record<string,string>` union again.
 // =====================================================================================
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -12,22 +16,62 @@ import EditorPanel from "./exam/EditorPanel";
 import ConsolePanel from "./exam/ConsolePanel";
 import type {
   CodingAssessmentProps,
+  CodingQuestion,
   RunResult,
   SubmitResult,
-} from "../types/types";
+} from "../types/exam.types";
 import { compilerAPI } from "../services/api";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
 const AUTO_SAVE_DEBOUNCE_MS = 600;
+const DEFAULT_LANGUAGE_FALLBACK = "javascript";
+
+/**
+ * Fills in every field that's optional on `Question` but required on `CodingQuestion`,
+ * so the rest of the component (and QuestionPanel/EditorPanel) can rely on a fully
+ * populated shape instead of guarding against `undefined` at every use site.
+ */
+const normalizeCodingQuestion = (
+  question: CodingAssessmentProps["question"]
+): CodingQuestion => {
+  const starterCode: Record<string, string> =
+    typeof question.starterCode === "object" && question.starterCode !== null
+      ? question.starterCode
+      : {};
+
+  const supportedLanguages =
+    question.supportedLanguages && question.supportedLanguages.length > 0
+      ? question.supportedLanguages
+      : [DEFAULT_LANGUAGE_FALLBACK];
+
+  return {
+    ...question,
+    title: question.title ?? "Untitled Problem",
+    description: question.description ?? "",
+    constraints: question.constraints ?? "",
+    inputFormat: question.inputFormat ?? "",
+    outputFormat: question.outputFormat ?? "",
+    explanation: question.explanation ?? "",
+    supportedLanguages,
+    starterCode,
+    timeLimit: question.timeLimit ?? 5,
+    memoryLimit: question.memoryLimit ?? 256,
+    visibleTestCases: question.visibleTestCases ?? [],
+  };
+};
 
 const codeEditor: React.FC<CodingAssessmentProps> = ({
-  question,
+  question: rawQuestion,
   answer,
-  onAnswerChange, 
+  onAnswerChange,
   attemptId,
 }) => {
-  const defaultLanguage = question.supportedLanguages[0] ?? "javascript";
+  // Normalize once per incoming question; every reference below uses this,
+  // never `rawQuestion` directly.
+  const question = useMemo(() => normalizeCodingQuestion(rawQuestion), [rawQuestion]);
+
+  const defaultLanguage = question.supportedLanguages[0] ?? DEFAULT_LANGUAGE_FALLBACK;
 
   // Per-language code cache kept in-memory for the session so switching languages
   // back and forth does not discard work, even though only one `answer` string
@@ -109,48 +153,57 @@ const codeEditor: React.FC<CodingAssessmentProps> = ({
   }, [language, question.starterCode]);
 
   const handleRun = useCallback(async () => {
-  if (isRunning || isSubmitting) return;
+    if (isRunning || isSubmitting) return;
 
-  setIsRunning(true);
-  setApiError(null);
-  setRunResult(null);
+    setIsRunning(true);
+    setApiError(null);
+    setRunResult(null);
 
-  try {
-    const result = await compilerAPI.execute({
-      language,
-      code: sourceCode,
-      input: customInput,
-    });
+    try {
+      const result = await compilerAPI.execute({
+        language,
+        code: sourceCode,
+        input: customInput,
+      });
 
-    setRunResult({
-      success: result.success,
-      output: result.output,
-      compileError: result.type === "Compilation Error" ? result.message : undefined,
-      runtimeError: result.type === "Runtime Error" ? result.message : undefined,
-    });
-
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unable to connect to compiler.";
-
-    setApiError(message);
-
-  } finally {
-    setIsRunning(false);
-  }
-}, [
-  isRunning,
-  isSubmitting,
-  language,
-  sourceCode,
-  customInput,
-]);
+      setRunResult({
+        success: result.success,
+        output: result.output,
+        compileError:
+          result.type === "Compilation Error" ? result.message : undefined,
+        runtimeError: result.type === "Runtime Error" ? result.message : undefined,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to connect to compiler.";
+      setApiError(message);
+    } finally {
+      setIsRunning(false);
+    }
+  }, [isRunning, isSubmitting, language, sourceCode, customInput]);
 
   const handleSubmit = useCallback(async () => {
-  alert("Submit not implemented yet.");
-}, []);
+    if (isRunning || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setApiError(null);
+
+    try {
+      // TODO: replace with the real submit call once the endpoint exists, e.g.
+      //   await examSubmissionAPI.submitCoding(question.id, { attemptId, language, sourceCode });
+      // Logging the payload here so attemptId/language/sourceCode are already wired
+      // up and ready the moment the endpoint lands.
+      console.warn("Submit not implemented yet.", {
+        attemptId,
+        questionId: question.id,
+        language,
+        sourceCodeLength: sourceCode.length,
+      });
+      alert("Submit not implemented yet.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isRunning, isSubmitting, attemptId, question.id, language, sourceCode]);
 
   // Keep the "Submission" tab useful by switching focus there implicitly via ConsolePanel
   // state; no extra wiring required since ConsolePanel manages its own active tab.

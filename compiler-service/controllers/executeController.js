@@ -5,7 +5,17 @@ const executeCode = async (req, res) => {
 
     try {
 
-        const { language, code, input } = req.body;
+        const {
+            language,
+            code,
+            sourceCode,
+            input,
+            customInput
+        } = req.body;
+
+        const finalCode = code || sourceCode;
+        const finalInput = input || customInput || "";
+        
 
         if (!language || !code) {
             return res.status(400).json({
@@ -14,7 +24,11 @@ const executeCode = async (req, res) => {
             });
         }
 
-        const output = await runCode(language, code, input);
+        const output = await runCode(
+            language,
+            finalCode,
+            finalInput
+        );
 
         res.json({
             success: true,

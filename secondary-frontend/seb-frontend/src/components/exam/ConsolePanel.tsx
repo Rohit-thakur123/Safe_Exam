@@ -16,7 +16,7 @@ import {
   ListTree,
   Trophy,
 } from "lucide-react";
-import type { RunResult, SubmitResult, TestCaseResult, Verdict } from "../../types/types";
+import type { RunResult, SubmitResult, TestCaseResult, Verdict } from "../../types/exam.types";
 
 interface ConsolePanelProps {
   customInput: string;

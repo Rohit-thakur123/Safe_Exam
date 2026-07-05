@@ -6,6 +6,7 @@
 // import { SubmitSuccessPage } from './pages/SubmitSuccessPage';
 // import { ErrorPage } from './pages/ErrorPage';
 // import { NotFoundPage } from './pages/NotFoundPage';
+// import DashboardPage from "./pages/DashboardPage";
 
 // function App() {
 //   // Security: Disable copy, cut, paste, and right-click
@@ -70,6 +71,7 @@
 //     <ErrorBoundary>
 //       <BrowserRouter>
 //         <Routes>
+//           <Route path="/dashboard" element={<DashboardPage />} />
 //           {/* Main exam route */}
 //           <Route path="/exam/:examId/:sessionToken" element={<ExamPage />} />
 

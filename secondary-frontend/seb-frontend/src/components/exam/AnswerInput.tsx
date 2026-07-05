@@ -1,7 +1,8 @@
 // Answer input component for different question types
 import React from 'react';
 import type { Question } from '../../types/exam.types';
-import CodingAssessment from './CodingAssessment';
+import type { CodingQuestion } from "../../types/exam.types";
+import CodeEditor from '../codeEditor';
 
 interface AnswerInputProps {
   question: Question;
@@ -76,10 +77,11 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
   if (question.type === 'coding') {
     return (
       <div className="mt-6">
-        <CodingAssessment
-          question={question}
+        <CodeEditor
+          question={question as CodingQuestion}
           answer={currentAnswer}
           onAnswerChange={onAnswerChange}
+          attemptId="demo-attempt"
         />
       </div>
     );

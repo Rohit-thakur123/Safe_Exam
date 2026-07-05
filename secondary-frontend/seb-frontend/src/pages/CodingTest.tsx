@@ -4,9 +4,13 @@ import CodeEditor from "../components/codeEditor";
 const dummyQuestion = {
   id: "1",
   title: "Print Hello World",
+  question: "Write a program to print Hello World.",
   description: "Write a program to print Hello World.",
 
-  difficulty: "Easy" as const,
+  type: "coding" as const,
+  category: "Basics",
+
+  difficulty: "easy" as const,
 
   marks: 10,
 
@@ -49,6 +53,8 @@ int main() {
 
   outputFormat: "Print Hello World",
 
+  explanation: "Simply print the string \"Hello World\" to standard output.",
+
   supportedLanguages: [
     "java",
     "javascript",
@@ -59,8 +65,9 @@ int main() {
 
   visibleTestCases: [
     {
+      order: 1,
       input: "",
-      output: "Hello World"
+      expectedOutput: "Hello World"
     }
   ]
 };
