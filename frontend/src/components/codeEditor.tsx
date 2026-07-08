@@ -17,7 +17,7 @@ import ConsolePanel from "./exam/ConsolePanel";
 // Local (minimal) type definitions to avoid missing-module build error.
 // These mirror the fields used by this component and keep the file
 // self-contained for compilation.
-import type {
+import type { 
   CodingAssessmentProps,
   CodingQuestion,
   RunResult,
