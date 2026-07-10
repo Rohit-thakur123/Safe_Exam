@@ -1,7 +1,7 @@
 // Question navigation sidebar
 import React from 'react';
 import type { Question } from '../../types/exam.types';
-import { CheckCircle, Circle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface QuestionNavigationProps {
   questions: Question[];

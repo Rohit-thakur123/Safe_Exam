@@ -8,11 +8,12 @@
     "concurrently": "^9.2.1"
   },
   "scripts": {
-    "dev": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run sebfrontend\" \"npm run sebapi\"",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run sebfrontend\" \"npm run sebapi\" \"npm run compilerservice \"",
     "backend": "cd Backend && node --watch src/index.js",
     "frontend": "cd frontend && npm run dev",
     "sebfrontend": "cd secondary-frontend/seb-frontend && npm run dev -- --port 5174",
-    "sebapi": "cd api-server && node --watch src/index.js"
+    "sebapi": "cd api-server && node --watch src/index.js",
+    "compilerservice": "cd compiler-service && npm run dev"
   },
   "keywords": [],
   "author": "",

@@ -72,16 +72,15 @@ export const codingExecutionAPI = {
     return response.data;
   },
 };
+const COMPILER_URL = import.meta.env.VITE_COMPILER_URL || "http://localhost:5001/api/execute";
+
 export const compilerAPI = {
   execute: async (data: {
     language: string;
     code: string;
     input: string;
   }) => {
-    const response = await axios.post(
-      "http://localhost:5001/api/execute",
-      data
-    );
+    const response = await axios.post(COMPILER_URL, data);
 
     return response.data;
   },

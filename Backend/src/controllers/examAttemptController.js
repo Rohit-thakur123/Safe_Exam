@@ -109,19 +109,34 @@ export const startExamAttempt = async (req, res) => {
         // Prepare questions without answers
         const questionsForStudent = await buildStudentExamQuestions(exam);
 
+        // Computed for convenience only — not persisted. The real `endTime` is
+        // set (and authoritative) when the attempt is submitted.
+        const computedEndTime = new Date(attempt.startTime.getTime() + exam.duration * 60 * 1000);
+
         res.status(201).json({
+            success: true,
             attempt: {
                 _id: attempt._id.toString(),
                 id: attempt._id.toString(),
                 examId: exam._id.toString(),
                 studentId: studentId.toString(),
                 startTime: attempt.startTime,
+                endTime: computedEndTime,
                 status: attempt.status,
+                currentAnswers: {},
                 exam: {
                     title: exam.title,
+                    description: exam.description || '',
                     duration: exam.duration,
                     totalMarks: exam.totalMarks,
+                    passingMarks: exam.passingMarks,
+                    totalQuestions: questionsForStudent.length,
                     questions: questionsForStudent
+                },
+                student: {
+                    id: studentId.toString(),
+                    name: req.user.name,
+                    email: req.user.email
                 }
             }
         });
@@ -411,6 +426,125 @@ export const getAttemptById = async (req, res) => {
         res.status(500).json({
             success: false,
             error: error.message || 'Server error fetching attempt'
+        });
+    }
+};
+
+// Auto-save in-progress answers (does NOT score or complete the attempt)
+export const saveAnswers = async (req, res) => {
+    try {
+        const { attemptId, answers } = req.body;
+
+        if (!attemptId || !answers) {
+            return res.status(400).json({
+                success: false,
+                error: 'Attempt ID and answers are required'
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(attemptId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid attempt ID'
+            });
+        }
+
+        const attempt = await ExamAttempt.findById(attemptId);
+
+        if (!attempt) {
+            return res.status(404).json({
+                success: false,
+                error: 'Attempt not found'
+            });
+        }
+
+        if (attempt.studentId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                error: 'Unauthorized access'
+            });
+        }
+
+        if (attempt.status !== 'in_progress') {
+            return res.status(409).json({
+                success: false,
+                error: 'Attempt is not in progress'
+            });
+        }
+
+        // Merge rather than overwrite, so a stale client can't wipe newer answers.
+        for (const [questionId, answer] of Object.entries(answers)) {
+            attempt.answers.set(questionId, answer);
+        }
+        attempt.lastActivity = new Date();
+        await attempt.save();
+
+        res.status(200).json({
+            success: true,
+            data: {
+                savedAt: attempt.lastActivity.toISOString(),
+                answersCount: attempt.answers.size,
+                attemptId: attempt._id.toString()
+            }
+        });
+    } catch (error) {
+        console.error('Save answers error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Server error saving answers'
+        });
+    }
+};
+
+// Heartbeat — keeps the attempt marked active and reports remaining time
+export const heartbeat = async (req, res) => {
+    try {
+        const { attemptId } = req.body;
+
+        if (!attemptId || !mongoose.Types.ObjectId.isValid(attemptId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Valid attempt ID is required'
+            });
+        }
+
+        const attempt = await ExamAttempt.findById(attemptId);
+
+        if (!attempt) {
+            return res.status(404).json({
+                success: false,
+                error: 'Attempt not found'
+            });
+        }
+
+        if (attempt.studentId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                error: 'Unauthorized access'
+            });
+        }
+
+        attempt.lastActivity = new Date();
+        await attempt.save();
+
+        const exam = await Exam.findById(attempt.examId).select('duration');
+        const timeLimitMs = (exam?.duration || 0) * 60 * 1000;
+        const elapsedMs = Date.now() - attempt.startTime.getTime();
+        const timeRemaining = Math.max(0, Math.floor((timeLimitMs - elapsedMs) / 1000));
+
+        res.status(200).json({
+            success: true,
+            data: {
+                sessionActive: attempt.status === 'in_progress',
+                timeRemaining,
+                serverTime: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Heartbeat error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Server error processing heartbeat'
         });
     }
 };

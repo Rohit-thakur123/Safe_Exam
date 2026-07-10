@@ -1,7 +1,7 @@
 // Question display component
 import React from 'react';
 import type { Question } from '../../types/exam.types';
-import { Award, TrendingUp } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 interface QuestionDisplayProps {
   question: Question;

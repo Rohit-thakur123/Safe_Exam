@@ -17,7 +17,7 @@ export const useHeartbeat = (
     enabled = true 
   } = options;
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   useEffect(() => {
     if (!enabled || !attemptId) return;

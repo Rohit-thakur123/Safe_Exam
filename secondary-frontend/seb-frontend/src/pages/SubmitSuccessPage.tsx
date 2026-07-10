@@ -1,12 +1,12 @@
 // Success page after exam submission
 import { useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { CheckCircle, Award, Clock, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
 export const SubmitSuccessPage = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  
   
   const autoSubmit = searchParams.get('autoSubmit') === 'true';
   const score = searchParams.get('score');

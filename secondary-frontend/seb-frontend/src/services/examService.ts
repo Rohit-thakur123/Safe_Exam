@@ -27,7 +27,7 @@ export const startExamSession = async (
     localStorage.setItem('seb_session_token', sessionToken);
 
     const request: StartExamRequest = { examId };
-    const response = await apiClient.post<StartExamResponse>('/api/exam-attempt/start-seb', request);
+    const response = await apiClient.post<StartExamResponse>('/api/exam-attempts/start-seb', request);
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to start exam');
@@ -35,24 +35,31 @@ export const startExamSession = async (
 
     const attemptData = response.data.attempt;
 
+    // Fallback: compute endTime client-side if the server ever omits it.
+    const fallbackEndTime = new Date(
+      new Date(attemptData.startTime).getTime() + (attemptData.exam.duration || 0) * 60 * 1000
+    ).toISOString();
+
     return {
       attempt: {
         id: attemptData.id,
         examId: attemptData.examId,
         studentId: attemptData.studentId,
         startTime: attemptData.startTime,
-        endTime: attemptData.endTime,
+        endTime: attemptData.endTime || fallbackEndTime,
         status: attemptData.status as 'in_progress' | 'completed' | 'expired',
-        currentAnswers: attemptData.currentAnswers
+        currentAnswers: attemptData.currentAnswers || {}
       },
       exam: {
-        id: attemptData.exam.title,
+        // Backend's nested `exam` object has no id of its own — the real
+        // exam ID lives on the attempt itself.
+        id: attemptData.examId,
         title: attemptData.exam.title,
-        description: attemptData.exam.description,
+        description: attemptData.exam.description || '',
         duration: attemptData.exam.duration,
         totalMarks: attemptData.exam.totalMarks,
-        passingMarks: attemptData.exam.passingMarks,
-        totalQuestions: attemptData.exam.totalQuestions,
+        passingMarks: attemptData.exam.passingMarks ?? 0,
+        totalQuestions: attemptData.exam.totalQuestions ?? attemptData.exam.questions.length,
         questions: attemptData.exam.questions.map((q: any) => ({
           id: q.id,
           title: q.title,
@@ -114,7 +121,7 @@ export const saveAnswers = async (
       lastSavedAt: new Date().toISOString()
     };
 
-    await apiClient.patch<SaveAnswersResponse>('/api/exam-attempt/save-answers', request);
+    await apiClient.patch<SaveAnswersResponse>('/api/exam-attempts/save-answers', request);
   } catch (error) {
     console.error('Auto-save failed:', error);
     // Don't throw - auto-save should fail silently and retry
@@ -137,7 +144,7 @@ export const submitExam = async (
       submittedAt: new Date().toISOString()
     };
 
-    const response = await apiClient.post<SubmitExamResponse>('/api/exam-attempt/submit-seb', request);
+    const response = await apiClient.post<SubmitExamResponse>('/api/exam-attempts/submit-seb', request);
 
     if (!response.data.success) {
       throw new Error(response.data.error || 'Failed to submit exam');
@@ -168,7 +175,7 @@ export const sendHeartbeat = async (attemptId: string): Promise<void> => {
       timestamp: new Date().toISOString()
     };
 
-    await apiClient.post<HeartbeatResponse>('/api/exam-attempt/heartbeat', request);
+    await apiClient.post<HeartbeatResponse>('/api/exam-attempts/heartbeat', request);
   } catch (error) {
     console.error('Heartbeat failed:', error);
     // Don't throw - heartbeat failures should be logged but not break the app

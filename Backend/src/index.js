@@ -55,8 +55,12 @@ app.use((req, res, next) => {
 // Apply rate limiting to all routes
 app.use(apiLimiter);
 
-// Import and use routes - NO /api prefix to match frontend requirements
+// Import and use routes.
+// The primary teacher/admin frontend calls without a prefix, the SEB student
+// frontend calls with an `/api` prefix — mount both to the same router so
+// neither side has to change its request paths.
 app.use('/', routes);
+app.use('/api', routes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

@@ -25,7 +25,7 @@ export const useAutoSave = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previousAnswers = useRef<Record<string, string>>({});
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   useEffect(() => {
     if (!enabled || !attemptId) return;
@@ -73,10 +73,10 @@ export const useAutoSave = ({
           });
           
           const blob = new Blob([data], { type: 'application/json' });
-          const token = localStorage.getItem('seb_session_token');
+          
           
           if (navigator.sendBeacon) {
-            const url = `${import.meta.env.VITE_API_BASE_URL}/api/exam-attempt/save-answers`;
+            const url = `${import.meta.env.VITE_API_BASE_URL}/api/exam-attempts/save-answers`;
             navigator.sendBeacon(url, blob);
           }
         }

@@ -62,6 +62,10 @@ const ExamAttemptSchema = new mongoose.Schema({
     warnings: [{
         type: String
     }],
+    lastActivity: {
+        type: Date,
+        default: Date.now
+    },
     createdAt: {
         type: Date,
         default: Date.now

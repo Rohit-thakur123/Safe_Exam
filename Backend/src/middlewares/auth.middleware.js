@@ -19,6 +19,32 @@ export const authenticateToken = async (req, res, next) => {
         // Verify token
         const decoded = verifyAccessToken(token);
 
+        // SEB exam-session tokens (issued after exam-link verification) carry
+        // `studentId`/`type: 'seb-session'` instead of `userId`/`role`. They're
+        // short-lived and scoped to a single exam, so they skip the concurrent
+        // session-manager check below (which is for regular login sessions).
+        if (decoded.type === 'seb-session') {
+            const student = await User.findById(decoded.studentId).select('-password');
+
+            if (!student) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Student not found'
+                });
+            }
+
+            if (!student.isActive) {
+                return res.status(401).json({
+                    success: false,
+                    error: 'Account is deactivated'
+                });
+            }
+
+            req.user = student;
+            req.sebSession = { examId: decoded.examId, studentId: decoded.studentId };
+            return next();
+        }
+
         // Get user from database
         const user = decoded.role === 'admin'
             ? await Admin.findById(decoded.userId).select('-password')

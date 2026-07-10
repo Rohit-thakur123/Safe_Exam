@@ -20,7 +20,7 @@ import type {
   RunResult,
   SubmitResult,
 } from "../types/exam.types";
-import { compilerAPI } from "../services/api";
+import { compilerAPI, codingExecutionAPI } from "../services/api";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -66,6 +66,7 @@ const codeEditor: React.FC<CodingAssessmentProps> = ({
   answer,
   onAnswerChange,
   attemptId,
+  onSubmitSuccess,
 }) => {
   // Normalize once per incoming question; every reference below uses this,
   // never `rawQuestion` directly.
@@ -187,23 +188,39 @@ const codeEditor: React.FC<CodingAssessmentProps> = ({
 
     setIsSubmitting(true);
     setApiError(null);
+    setSubmitResult(null);
 
     try {
-      // TODO: replace with the real submit call once the endpoint exists, e.g.
-      //   await examSubmissionAPI.submitCoding(question.id, { attemptId, language, sourceCode });
-      // Logging the payload here so attemptId/language/sourceCode are already wired
-      // up and ready the moment the endpoint lands.
-      console.warn("Submit not implemented yet.", {
+      const data = await codingExecutionAPI.submit(question.id, {
         attemptId,
-        questionId: question.id,
         language,
-        sourceCodeLength: sourceCode.length,
+        sourceCode,
       });
-      alert("Submit not implemented yet.");
+
+      const submission = data.submission;
+      const allPassed = submission.failedTestCases === 0;
+
+      const result: SubmitResult = {
+        verdict: allPassed ? "Accepted" : "Wrong Answer",
+        totalTestCases: submission.totalTestCases,
+        passedTestCases: submission.passedTestCases,
+        score: submission.score,
+        maxScore: submission.totalMarks,
+        executionTime: submission.executionTime,
+        memoryUsed: submission.memoryUsage,
+      };
+
+      setSubmitResult(result);
+      onSubmitSuccess?.(result);
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.error ||
+        (error instanceof Error ? error.message : "Failed to submit solution.");
+      setApiError(message);
     } finally {
       setIsSubmitting(false);
     }
-  }, [isRunning, isSubmitting, attemptId, question.id, language, sourceCode]);
+  }, [isRunning, isSubmitting, attemptId, question.id, language, sourceCode, onSubmitSuccess]);
 
   // Keep the "Submission" tab useful by switching focus there implicitly via ConsolePanel
   // state; no extra wiring required since ConsolePanel manages its own active tab.
