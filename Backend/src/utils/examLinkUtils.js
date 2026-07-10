@@ -75,10 +75,14 @@ export const verifySEBSessionToken = (token) => {
 };
 
 /**
- * Generate exam link that will be sent to student via email
+ * Generate exam link that will be sent to student via email.
+ * The launch page (ExamLaunch) needs examId + studentId + an exam-access
+ * token to call /seb/verify-exam-link and /seb/get-session-token — all three
+ * must be in the link, not just examId.
  */
 export const generateExamLink = (examId, studentId, examDuration, frontendBaseUrl) => {
-    return `${frontendBaseUrl}/exam/launch?examId=${examId}`;
+    const token = generateExamAccessToken(examId, studentId, examDuration);
+    return `${frontendBaseUrl}/exam/launch?examId=${examId}&studentId=${studentId}&token=${encodeURIComponent(token)}`;
 };
 
 /**

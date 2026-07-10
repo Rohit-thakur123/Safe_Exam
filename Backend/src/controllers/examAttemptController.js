@@ -113,6 +113,11 @@ export const startExamAttempt = async (req, res) => {
         // set (and authoritative) when the attempt is submitted.
         const computedEndTime = new Date(attempt.startTime.getTime() + exam.duration * 60 * 1000);
 
+        console.log('🕐 [DEBUG start-seb] exam.duration:', exam.duration, typeof exam.duration);
+        console.log('🕐 [DEBUG start-seb] attempt.startTime:', attempt.startTime);
+        console.log('🕐 [DEBUG start-seb] computedEndTime:', computedEndTime);
+        console.log('🕐 [DEBUG start-seb] ms remaining right now:', computedEndTime.getTime() - Date.now());
+
         res.status(201).json({
             success: true,
             attempt: {

@@ -16,239 +16,100 @@ import { generateSEBConfig as buildSEBConfig } from '../utils/sebConfigGenerator
  *   token: string (exam access token from email)
  * }
  */
-export const verifyExamLink = async (req, res) => {
-    console.log('\n🔍 ===== VERIFY EXAM LINK REQUEST RECEIVED =====');
-    console.log('Request body:', JSON.stringify(req.body, null, 2));
-    console.log('Request headers:', JSON.stringify(req.headers, null, 2));
+/**
+ * Core eligibility checks shared by verifyExamLink and getSEBSessionToken.
+ * Returns a plain result object — never touches `res` — so both callers can
+ * decide how to respond. (Previously getSEBSessionToken called verifyExamLink
+ * directly and checked `.success` on the Express response object, which is
+ * always undefined — so it never actually returned a session token.)
+ */
+const runExamLinkVerification = async (examId, studentId, token) => {
+    if (!examId || !studentId || !token) {
+        return { success: false, status: 400, error: 'Missing required fields: examId, studentId, and token are required' };
+    }
 
+    if (!mongoose.Types.ObjectId.isValid(examId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+        return { success: false, status: 400, error: 'Invalid examId or studentId format' };
+    }
+
+    let tokenData;
     try {
-        const { examId, studentId, token } = req.body;
+        tokenData = verifyExamAccessToken(token);
+    } catch (error) {
+        return { success: false, status: 401, error: 'Invalid or expired exam access token', code: 'TOKEN_INVALID' };
+    }
 
-        console.log('\n📋 Extracted values:');
-        console.log('examId:', examId);
-        console.log('studentId:', studentId);
-        console.log('token:', token ? token.substring(0, 50) + '...' : 'undefined');
+    if (tokenData.examId !== examId || tokenData.studentId !== studentId) {
+        return { success: false, status: 403, error: 'Token does not match exam or student', code: 'TOKEN_MISMATCH' };
+    }
 
-        // Validate required fields
-        if (!examId || !studentId || !token) {
-            console.log('❌ Missing required fields');
-            return res.status(400).json({
-                success: false,
-                error: 'Missing required fields: examId, studentId, and token are required'
-            });
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+        return { success: false, status: 404, error: 'Exam not found', code: 'EXAM_NOT_FOUND' };
+    }
+
+    if (!exam.isActive) {
+        return { success: false, status: 403, error: 'This exam is not active', code: 'EXAM_INACTIVE', data: { exam: { title: exam.title, isActive: false } } };
+    }
+
+    const now = new Date();
+
+    if (exam.startDate && new Date(exam.startDate) > now) {
+        return { success: false, status: 403, error: 'Exam has not started yet', code: 'EXAM_NOT_STARTED', data: { exam: { title: exam.title, startDate: exam.startDate } } };
+    }
+
+    if (exam.endDate) {
+        const endDate = new Date(exam.endDate);
+        if (exam.endTime) {
+            const [hours, minutes] = exam.endTime.split(':');
+            endDate.setHours(parseInt(hours));
+            endDate.setMinutes(parseInt(minutes));
+            endDate.setSeconds(59);
         }
-
-        // Validate ObjectId formats
-        if (!mongoose.Types.ObjectId.isValid(examId) || !mongoose.Types.ObjectId.isValid(studentId)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Invalid examId or studentId format'
-            });
+        if (now > endDate) {
+            return { success: false, status: 403, error: 'Exam has ended', code: 'EXAM_ENDED', data: { exam: { title: exam.title, endDate: exam.endDate, endTime: exam.endTime } } };
         }
+    }
 
-        // 1. Verify the exam access token
-        let tokenData;
-        try {
-            tokenData = verifyExamAccessToken(token);
-        } catch (error) {
-            return res.status(401).json({
-                success: false,
-                error: 'Invalid or expired exam access token',
-                code: 'TOKEN_INVALID'
-            });
+    const student = await User.findById(studentId);
+    if (!student || student.role !== 'student' || !student.isActive) {
+        return { success: false, status: 403, error: 'Student not found or not active', code: 'STUDENT_INVALID' };
+    }
+
+    if (exam.assignedCandidates && exam.assignedCandidates.length > 0) {
+        const isAssigned = exam.assignedCandidates.some(
+            (candidateId) => candidateId.toString() === studentId.toString()
+        );
+        if (!isAssigned) {
+            return { success: false, status: 403, error: 'Student not assigned to this exam', code: 'NOT_ASSIGNED' };
         }
+    }
 
-        // 2. Verify token matches the request
-        if (tokenData.examId !== examId || tokenData.studentId !== studentId) {
-            return res.status(403).json({
-                success: false,
-                error: 'Token does not match exam or student',
-                code: 'TOKEN_MISMATCH'
-            });
+    const activeAttempt = await ExamAttempt.findOne({ examId, studentId, status: 'in_progress' });
+    if (activeAttempt) {
+        return {
+            success: false, status: 409, error: 'You already have an active attempt for this exam', code: 'ACTIVE_ATTEMPT_EXISTS',
+            data: { attemptId: activeAttempt._id.toString(), startTime: activeAttempt.startTime }
+        };
+    }
+
+    if (!exam.allowRetakes) {
+        const previousAttempt = await ExamAttempt.findOne({ examId, studentId, status: 'completed' });
+        if (previousAttempt) {
+            return {
+                success: false, status: 409, error: 'You have already attempted this exam. Retakes are not allowed.', code: 'RETAKE_NOT_ALLOWED',
+                data: { previousAttempt: { score: previousAttempt.score, submittedAt: previousAttempt.endTime } }
+            };
         }
+    }
 
-        // 3. Get exam details
-        const exam = await Exam.findById(examId);
-        if (!exam) {
-            return res.status(404).json({
-                success: false,
-                error: 'Exam not found',
-                code: 'EXAM_NOT_FOUND'
-            });
-        }
-
-        // 4. Check if exam is active
-        if (!exam.isActive) {
-            return res.status(403).json({
-                success: false,
-                error: 'This exam is not active',
-                code: 'EXAM_INACTIVE',
-                data: { exam: { title: exam.title, isActive: false } }
-            });
-        }
-
-        // 5. Check exam date/time window
-        const now = new Date();
-
-        if (exam.startDate && new Date(exam.startDate) > now) {
-            return res.status(403).json({
-                success: false,
-                error: 'Exam has not started yet',
-                code: 'EXAM_NOT_STARTED',
-                data: {
-                    exam: {
-                        title: exam.title,
-                        startDate: exam.startDate
-                    }
-                }
-            });
-        }
-
-        // if (exam.endDate && new Date(exam.endDate) < now) {
-        //     return res.status(403).json({
-        //         success: false,
-        //         error: 'Exam has ended',
-        //         code: 'EXAM_ENDED',
-        //         data: {
-        //             exam: {
-        //                 title: exam.title,
-        //                 endDate: exam.endDate
-        //             }
-        //         }
-        //     });
-        // }
-
-        // Proper end date + end time validation
-         
-        if (exam.endDate) {
-
-            // Get end date
-            const endDate = new Date(exam.endDate);
-
-            // Add end time if available
-            if (exam.endTime) {
-
-                const [hours, minutes] = exam.endTime.split(':');
-
-                endDate.setHours(parseInt(hours));
-                endDate.setMinutes(parseInt(minutes));
-                endDate.setSeconds(59);
-
-            }
-
-            console.log('Current Time:', now);
-            console.log('Exam End Time:', endDate);
-
-            if (now > endDate) {
-
-                return res.status(403).json({
-                    success: false,
-                    error: 'Exam has ended',
-                    code: 'EXAM_ENDED',
-                    data: {
-                        exam: {
-                            title: exam.title,
-                            endDate: exam.endDate,
-                            endTime: exam.endTime
-                        }
-                    }
-                });
-
-            }
-        }
-
-        // 6. Verify student exists and is active
-        const student = await User.findById(studentId);
-        if (!student || student.role !== 'student' || !student.isActive) {
-            return res.status(403).json({
-                success: false,
-                error: 'Student not found or not active',
-                code: 'STUDENT_INVALID'
-            });
-        }
-
-        // 7. Check if student is assigned to this exam
-        if (exam.assignedCandidates && exam.assignedCandidates.length > 0) {
-            console.log('=== ASSIGNMENT CHECK DEBUG ===');
-            console.log('Exam ID:', examId);
-            console.log('Student ID from request:', studentId);
-            console.log('Student ID type:', typeof studentId);
-            console.log('Assigned candidates count:', exam.assignedCandidates.length);
-            console.log('Assigned candidates:', exam.assignedCandidates.map(c => c.toString()));
-
-            const isAssigned = exam.assignedCandidates.some(
-                candidateId => {
-                    const candidateStr = candidateId.toString();
-                    const studentStr = studentId.toString();
-                    console.log(`Comparing: ${candidateStr} === ${studentStr} ? ${candidateStr === studentStr}`);
-                    return candidateStr === studentStr;
-                }
-            );
-
-            console.log('Is student assigned?', isAssigned);
-            console.log('=== END DEBUG ===');
-
-            if (!isAssigned) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'Student not assigned to this exam',
-                    code: 'NOT_ASSIGNED'
-                });
-            }
-        }
-
-        // 8. Check for existing active attempt
-        const activeAttempt = await ExamAttempt.findOne({
-            examId,
-            studentId,
-            status: 'in_progress'
-        });
-
-        if (activeAttempt) {
-            return res.status(409).json({
-                success: false,
-                error: 'You already have an active attempt for this exam',
-                code: 'ACTIVE_ATTEMPT_EXISTS',
-                data: {
-                    attemptId: activeAttempt._id.toString(),
-                    startTime: activeAttempt.startTime
-                }
-            });
-        }
-
-        // 9. Check retake policy
-        if (!exam.allowRetakes) {
-            const previousAttempt = await ExamAttempt.findOne({
-                examId,
-                studentId,
-                status: 'completed'
-            });
-
-            if (previousAttempt) {
-                return res.status(409).json({
-                    success: false,
-                    error: 'You have already attempted this exam. Retakes are not allowed.',
-                    code: 'RETAKE_NOT_ALLOWED',
-                    data: {
-                        previousAttempt: {
-                            score: previousAttempt.score,
-                            submittedAt: previousAttempt.endTime
-                        }
-                    }
-                });
-            }
-        }
-
-        // 10. All checks passed - student can attempt exam
-        return res.status(200).json({
+    return {
         success: true,
-        message: 'Exam eligibility verified successfully',
+        status: 200,
+        exam,
         data: {
-
             examId: exam._id.toString(),
-
             canAttempt: true,
-
             exam: {
                 id: exam._id.toString(),
                 title: exam.title,
@@ -260,21 +121,26 @@ export const verifyExamLink = async (req, res) => {
                 endDate: exam.endDate,
                 allowRetakes: exam.allowRetakes
             },
-
-            student: {
-                id: student._id.toString(),
-                name: student.name,
-                email: student.email
-            },
-
-            attemptStatus: {
-                hasAttempted: false,
-                previousAttempts: 0,
-                allowRetakes: exam.allowRetakes
-            }
+            student: { id: student._id.toString(), name: student.name, email: student.email },
+            attemptStatus: { hasAttempted: false, previousAttempts: 0, allowRetakes: exam.allowRetakes }
         }
-    });
+    };
+};
 
+export const verifyExamLink = async (req, res) => {
+    try {
+        const { examId, studentId, token } = req.body;
+        const result = await runExamLinkVerification(examId, studentId, token);
+
+        if (!result.success) {
+            return res.status(result.status).json({ success: false, error: result.error, code: result.code, data: result.data });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Exam eligibility verified successfully',
+            data: result.data
+        });
     } catch (error) {
         console.error('Verify exam link error:', error);
         return res.status(500).json({
@@ -395,7 +261,6 @@ export const getSEBSessionToken = async (req, res) => {
     try {
         const { examId, studentId, token } = req.body;
 
-        // Validate required fields
         if (!examId || !studentId || !token) {
             return res.status(400).json({
                 success: false,
@@ -403,16 +268,13 @@ export const getSEBSessionToken = async (req, res) => {
             });
         }
 
-        // First verify the exam link (reuse the verification logic)
-        const verificationResult = await verifyExamLink(req, res);
+        const result = await runExamLinkVerification(examId, studentId, token);
 
-        // If verification failed, response already sent
-        if (!verificationResult || !verificationResult.success) {
-            return;
+        if (!result.success) {
+            return res.status(result.status).json({ success: false, error: result.error, code: result.code, data: result.data });
         }
 
-        // Get exam to know duration
-        const exam = await Exam.findById(examId);
+        const exam = result.exam;
 
         // Generate SEB session token
         const sebSessionToken = generateSEBSessionToken(examId, studentId, exam.duration);
@@ -438,11 +300,19 @@ export const getSEBSessionToken = async (req, res) => {
 export const downloadSEBConfig = async (req, res) => {
     try {
         const examId = req.query.examId || req.body.examId;
+        const sessionToken = req.query.sessionToken || req.body.sessionToken;
 
         if (!examId || !mongoose.Types.ObjectId.isValid(examId)) {
             return res.status(400).json({
                 success: false,
                 error: 'Invalid examId'
+            });
+        }
+
+        if (!sessionToken) {
+            return res.status(400).json({
+                success: false,
+                error: 'sessionToken is required'
             });
         }
 
@@ -454,8 +324,11 @@ export const downloadSEBConfig = async (req, res) => {
             });
         }
 
-        const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const startUrl = `${frontendBaseUrl}/exam/start?examId=${examId}`;
+        // Must point at the SEB student frontend (its own dev server/port),
+        // not the primary teacher frontend — and must carry the real session
+        // token, since /exam/:examId/:sessionToken is the actual route.
+        const sebFrontendUrl = process.env.SEB_FRONTEND_URL || 'http://localhost:5174';
+        const startUrl = `${sebFrontendUrl}/exam/${examId}/${sessionToken}`;
         const quitPassword = process.env.SEB_QUIT_PASSWORD || 'quit123';
         const config = buildSEBConfig({ startUrl, quitPassword });
 
