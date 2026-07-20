@@ -104,18 +104,35 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     (editorInstance, monaco) => {
       editorRef.current = editorInstance;
 
+      // Security: Disable Monaco's built-in paste command so it cannot
+      // bypass the global clipboard block in App.tsx.
       editorInstance.addCommand(
-        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-        () => {
-          onRun();
-        }
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV,
+        () => { /* paste blocked */ }
       );
 
+      // Security: Disable Ctrl+C (copy) inside Monaco
+      editorInstance.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC,
+        () => { /* copy blocked */ }
+      );
+
+      // Security: Disable Ctrl+X (cut) inside Monaco
+      editorInstance.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyX,
+        () => { /* cut blocked */ }
+      );
+
+      // Run: Ctrl+Enter
+      editorInstance.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+        () => { onRun(); }
+      );
+
+      // Submit: Ctrl+S
       editorInstance.addCommand(
         monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-        () => {
-          onSubmit();
-        }
+        () => { onSubmit(); }
       );
     },
     [onRun, onSubmit]
@@ -144,8 +161,8 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
         isFullscreen ? "fixed inset-4 z-50" : "relative"
       }`}
     >
-      {/* Sticky toolbar */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-[#0d0d13]/95 backdrop-blur-md">
+  {/* Sticky toolbar — flex-wrap for small viewports */}
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-[#0d0d13]/95 backdrop-blur-md">
         <div className="flex items-center gap-3">
           {/* Language dropdown */}
           <div className="relative">
@@ -294,6 +311,12 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             lineNumbersMinChars: 3,
             tabSize: 2,
             readOnly: isBusy,
+            // Security: disable the Monaco right-click context menu entirely
+            contextmenu: false,
+            // Security: disable drag-and-drop (another paste bypass vector)
+            dragAndDrop: false,
+            // Security: disable drop into editor
+            dropIntoEditor: { enabled: false },
           }}
         />
       </div>

@@ -51,8 +51,6 @@ export const startExamSession = async (
         currentAnswers: attemptData.currentAnswers || {}
       },
       exam: {
-        // Backend's nested `exam` object has no id of its own — the real
-        // exam ID lives on the attempt itself.
         id: attemptData.examId,
         title: attemptData.exam.title,
         description: attemptData.exam.description || '',
@@ -70,23 +68,14 @@ export const startExamSession = async (
           marks: q.marks,
           difficulty: q.difficulty,
           category: q.category,
-
           constraints: q.constraints,
-
           inputFormat: q.inputFormat,
-
           outputFormat: q.outputFormat,
-
           explanation: q.explanation,
-
           starterCode: q.starterCode,
-
           supportedLanguages: q.supportedLanguages || [],
-
           timeLimit: q.timeLimit,
-
           memoryLimit: q.memoryLimit,
-
           visibleTestCases: q.visibleTestCases || []
         }))
       },
@@ -98,6 +87,13 @@ export const startExamSession = async (
       currentAnswers: attemptData.currentAnswers
     };
   } catch (error: any) {
+    // Phase 9: Specifically handle the ALREADY_SUBMITTED case
+    if (error.response?.status === 409 && error.response?.data?.code === 'ALREADY_SUBMITTED') {
+      const alreadySubmittedError = new Error('ALREADY_SUBMITTED') as any;
+      alreadySubmittedError.code = 'ALREADY_SUBMITTED';
+      alreadySubmittedError.submittedAt = error.response.data.submittedAt;
+      throw alreadySubmittedError;
+    }
     console.error('Error starting exam:', error);
     throw new Error(
       error.response?.data?.error ||
@@ -106,6 +102,7 @@ export const startExamSession = async (
     );
   }
 };
+
 
 /**
  * Auto-save answers to the server

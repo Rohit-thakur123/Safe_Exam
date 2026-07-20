@@ -66,6 +66,24 @@ const ExamAttemptSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    // Phase 2: Detailed violation logging
+    violations: [{
+        type: {
+            type: String,
+            enum: ['tab_switch', 'window_blur', 'copy_attempt', 'paste_attempt', 'devtools_open', 'refresh_attempt', 'keyboard_shortcut'],
+            required: true
+        },
+        timestamp: { type: Date, default: Date.now },
+        metadata: { type: mongoose.Schema.Types.Mixed }
+    }],
+    violationSummary: {
+        tabSwitches: { type: Number, default: 0 },
+        windowBlurs: { type: Number, default: 0 },
+        copyAttempts: { type: Number, default: 0 },
+        pasteAttempts: { type: Number, default: 0 },
+        devToolsAttempts: { type: Number, default: 0 },
+        totalViolations: { type: Number, default: 0 }
+    },
     createdAt: {
         type: Date,
         default: Date.now

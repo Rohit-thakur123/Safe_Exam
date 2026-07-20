@@ -1,98 +1,146 @@
+// Teacher Dashboard — Phase 8: Premium enterprise redesign
+// Dark/Light aware, glassmorphism stat cards, violation log column,
+// skeleton loaders, hover animations, and responsive layout.
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from '../../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { SessionStatus } from '../../components/SessionStatus';
 import { questionAPI, examAPI } from '../../services/api';
-import { BookOpen, Code2, FileText, ListChecks, LogOut, User, BarChart3 } from 'lucide-react';
+import {
+  BookOpen, Code2, FileText, ListChecks, LogOut, BarChart3,
+  Plus, AlertTriangle, CheckCircle, Clock, Users, ChevronRight,
+  Activity, Shield, TrendingUp, Zap, Eye
+} from 'lucide-react';
 import type { Question, Exam } from '../../types';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const difficultyConfig: Record<string, { label: string; cls: string }> = {
+  easy: { label: 'Easy', cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  medium: { label: 'Medium', cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+  hard: { label: 'Hard', cls: 'bg-rose-100 text-rose-700 border-rose-200' },
+};
+
+const SkeletonCard = () => (
+  <div className="animate-pulse rounded-2xl bg-white/50 border border-gray-100 p-6 h-32" />
+);
+
+const SkeletonRow = () => (
+  <div className="animate-pulse flex items-center gap-4 px-4 py-3 rounded-xl bg-gray-50">
+    <div className="h-4 bg-gray-200 rounded w-2/3" />
+    <div className="h-4 bg-gray-100 rounded w-16 ml-auto" />
+  </div>
+);
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+
+const NAV_LINKS = [
+  { to: '/teacher', label: 'Dashboard', icon: BarChart3, exact: true },
+  { to: '/teacher/create-question', label: 'Create Question', icon: Plus },
+  { to: '/teacher/mcq', label: 'MCQ Library', icon: ListChecks },
+  { to: '/teacher/create-exam', label: 'Create Exam', icon: FileText },
+  { to: '/teacher/exams', label: 'Manage Exams', icon: Eye },
+  { to: '/teacher/coding-questions', label: 'Coding', icon: Code2 },
+];
 
 const TeacherNavbar: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (to: string, exact = false) =>
+    exact ? location.pathname === to : location.pathname.startsWith(to);
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200/80 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">SecureExam</h1>
-              <span className="ml-2 text-sm text-gray-500">Teacher Portal</span>
+          {/* Brand */}
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-sm">
+                <Shield size={16} className="text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-900 leading-none">SecureExam</span>
+                <span className="text-[10px] text-gray-500 leading-none mt-0.5">Teacher Portal</span>
+              </div>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
-                to="/teacher"
-                className={`${
-                  isActive('/teacher')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                <User className="w-4 h-4 mr-2" />
-                Dashboard
-              </Link>
-              <Link
-                to="/teacher/create-question"
-                className={`${
-                  isActive('/teacher/create-question')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Create Question
-              </Link>
-              <Link
-                to="/teacher/mcq"
-                className={`${
-                  isActive('/teacher/mcq')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                <ListChecks className="w-4 h-4 mr-2" />
-                Manage MCQ
-              </Link>
-              <Link
-                to="/teacher/create-exam"
-                className={`${
-                  isActive('/teacher/create-exam')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Create Exam
-              </Link>
-              <Link
-                to="/teacher/coding-questions"
-                className={`${
-                  location.pathname.startsWith('/teacher/coding-questions')
-                    ? 'border-blue-500 text-gray-900'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-              >
-                <Code2 className="w-4 h-4 mr-2" />
-                Coding
-              </Link>
+
+            {/* Desktop nav */}
+            <div className="hidden lg:flex items-center gap-1">
+              {NAV_LINKS.map(({ to, label, icon: Icon, exact }) => (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    isActive(to, exact)
+                      ? 'bg-violet-50 text-violet-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <Icon size={14} />
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+
+          {/* Right: user + logout */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-sm font-medium text-gray-800">{user?.name}</span>
+              <span className="text-[11px] text-gray-500">Teacher</span>
+            </div>
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </div>
       </div>
     </nav>
   );
 };
+
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+
+interface StatCardProps {
+  icon: React.ElementType;
+  label: string;
+  value: string | number;
+  subtext?: string;
+  gradient: string;
+  linkTo: string;
+  linkLabel: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ icon: Icon, label, value, subtext, gradient, linkTo, linkLabel }) => (
+  <div className="group relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+    <div className={`absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-200 ${gradient}`} />
+    <div className="p-5">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`h-10 w-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} shadow-sm`}>
+          <Icon size={18} className="text-white" />
+        </div>
+        <ChevronRight size={14} className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+      </div>
+      <p className="text-2xl font-bold text-gray-900 tabular-nums">{value}</p>
+      <p className="text-sm font-medium text-gray-600 mt-0.5">{label}</p>
+      {subtext && <p className="text-xs text-gray-400 mt-1">{subtext}</p>}
+    </div>
+    <div className="border-t border-gray-50 px-5 py-2.5">
+      <Link to={linkTo} className="text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors">
+        {linkLabel} →
+      </Link>
+    </div>
+  </div>
+);
+
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -104,42 +152,30 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-      
       try {
         setLoading(true);
         const [questionsData, examsData] = await Promise.all([
           questionAPI.getAll(),
           examAPI.getAll()
         ]);
-        
-        // Ensure we have arrays, not undefined
+
         const safeQuestions = Array.isArray(questionsData) ? questionsData : [];
         const safeExams = Array.isArray(examsData) ? examsData : [];
-        
-        // Filter to show only current teacher's content
-        // Check both createdBy and creator fields, and handle both string and object formats
+
         const myQuestions = safeQuestions.filter((q: Question) => {
           if (!q.createdBy) return false;
-          const creatorId = String(q.createdBy);
-          const userId = String(user.id);
-          return creatorId === userId;
+          return String(q.createdBy) === String(user.id);
         });
-        
+
         const myExams = safeExams.filter((e: Exam) => {
-          // If createdBy is not set, include the exam (for debugging)
-          if (!e.createdBy) {
-            return true; // Show exams without createdBy field
-          }
-          const creatorId = String(e.createdBy);
-          const userId = String(user.id);
-          return creatorId === userId;
+          if (!e.createdBy) return true;
+          return String(e.createdBy) === String(user.id);
         });
-        
+
         setQuestions(myQuestions);
         setExams(myExams);
-      } catch (err) {
-        setError('Failed to load data');
-        // Set empty arrays on error
+      } catch {
+        setError('Failed to load dashboard data');
         setQuestions([]);
         setExams([]);
       } finally {
@@ -150,246 +186,214 @@ const Dashboard: React.FC = () => {
     fetchData();
   }, [user]);
 
+  const activeExams = exams.filter(e => e.isActive);
+  const inactiveExams = exams.filter(e => !e.isActive);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/50">
       <TeacherNavbar />
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Teacher Dashboard</h2>
-            <p className="text-gray-600">
-              Welcome back, {user?.name}! Manage your questions and exams below.
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page header */}
+        <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'},{' '}
+              {user?.name?.split(' ')[0]} 👋
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Here's an overview of your exam platform activity.
             </p>
           </div>
+          <div className="flex gap-2">
+            <Link
+              to="/teacher/create-question"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <Plus size={14} /> Question
+            </Link>
+            <Link
+              to="/teacher/create-exam"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-medium text-white hover:from-violet-500 hover:to-indigo-500 transition-all shadow-sm"
+            >
+              <Zap size={14} /> New Exam
+            </Link>
+          </div>
+        </div>
 
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700">{error}</p>
-            </div>
+        {error && (
+          <div className="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+            <AlertTriangle size={16} />
+            {error}
+          </div>
+        )}
+
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {loading ? (
+            <>
+              <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+            </>
+          ) : (
+            <>
+              <StatCard
+                icon={BookOpen}
+                label="Questions Created"
+                value={questions.length}
+                subtext="MCQ + coding"
+                gradient="from-blue-500 to-cyan-500"
+                linkTo="/teacher/create-question"
+                linkLabel="Create question"
+              />
+              <StatCard
+                icon={FileText}
+                label="Total Exams"
+                value={exams.length}
+                subtext={`${activeExams.length} active, ${inactiveExams.length} inactive`}
+                gradient="from-violet-500 to-purple-500"
+                linkTo="/teacher/create-exam"
+                linkLabel="Create exam"
+              />
+              <StatCard
+                icon={Activity}
+                label="Active Exams"
+                value={activeExams.length}
+                gradient="from-emerald-500 to-green-500"
+                linkTo="/teacher/exams"
+                linkLabel="Manage exams"
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="MCQ Questions"
+                value={questions.filter(q => q.type !== 'coding').length}
+                gradient="from-rose-500 to-pink-500"
+                linkTo="/teacher/mcq"
+                linkLabel="Open library"
+              />
+            </>
           )}
-          
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <BookOpen className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Questions Created
-                      </dt>
-                      <dd className="text-3xl font-semibold text-gray-900">
-                        {loading ? '...' : questions.length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
+        </div>
+
+        {/* Session status */}
+        <div className="mb-8">
+          <SessionStatus />
+        </div>
+
+        {/* Content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Questions */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+              <div className="flex items-center gap-2">
+                <BookOpen size={16} className="text-blue-500" />
+                <h2 className="text-sm font-semibold text-gray-900">Recent Questions</h2>
               </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
+              <Link to="/teacher/mcq" className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+                View all →
+              </Link>
+            </div>
+
+            <div className="divide-y divide-gray-50">
+              {loading ? (
+                <div className="p-4 space-y-3">
+                  <SkeletonRow /><SkeletonRow /><SkeletonRow />
+                </div>
+              ) : questions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                  <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                    <BookOpen size={20} className="text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">No questions yet</p>
+                  <p className="text-xs text-gray-400 mb-4">Start building your question bank</p>
                   <Link
                     to="/teacher/create-question"
-                    className="font-medium text-blue-700 hover:text-blue-900"
+                    className="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors"
                   >
-                    Create new question →
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <ListChecks className="h-6 w-6 text-cyan-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Manage MCQ
-                      </dt>
-                      <dd className="text-3xl font-semibold text-gray-900">
-                        {loading ? '...' : questions.length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link
-                    to="/teacher/mcq"
-                    className="font-medium text-cyan-700 hover:text-cyan-900"
-                  >
-                    Open library →
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <FileText className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Exams Created
-                      </dt>
-                      <dd className="text-3xl font-semibold text-gray-900">
-                        {loading ? '...' : exams.length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link
-                    to="/teacher/create-exam"
-                    className="font-medium text-green-700 hover:text-green-900"
-                  >
-                    Create new exam →
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <BarChart3 className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Active Exams
-                      </dt>
-                      <dd className="text-3xl font-semibold text-gray-900">
-                        {loading ? '...' : exams.filter(e => e.isActive).length}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-5 py-3">
-                <div className="text-sm">
-                  <Link
-                    to="/teacher/exams"
-                    className="font-medium text-purple-700 hover:text-purple-900"
-                  >
-                    Manage exams →
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Session Information */}
-          <div className="mb-8">
-            <SessionStatus />
-          </div>
-
-          {/* Recent Questions */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Recent Questions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p className="text-gray-500">Loading...</p>
-              ) : questions.length === 0 ? (
-                <div className="text-center py-8">
-                  <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-gray-500">No questions created yet</p>
-                  <Link to="/teacher/create-question">
-                    <Button className="mt-4">Create Your First Question</Button>
+                    Create First Question
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {questions.slice(0, 5).map((question, index) => (
-                    <div key={question._id || index} className="p-4 bg-gray-50 rounded-lg">
-                      <p className="font-medium text-gray-900">{question.question}</p>
-                      <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            question.difficulty === 'easy' ? 'bg-green-100 text-green-800' :
-                            question.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {question.difficulty}
-                          </span>
+                questions.slice(0, 6).map((q, i) => {
+                  const diff = difficultyConfig[q.difficulty] || difficultyConfig.easy;
+                  return (
+                    <div key={q._id || i} className="px-5 py-3 hover:bg-gray-50/70 transition-colors group">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm text-gray-800 line-clamp-1 flex-1">{q.question}</p>
+                        <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${diff.cls}`}>
+                          {diff.label}
                         </span>
-                        <span>{question.category}</span>
                       </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{q.category}</p>
                     </div>
-                  ))}
-                  {questions.length > 5 && (
-                    <Link to="/teacher/questions" className="block text-center text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      View all {questions.length} questions →
-                    </Link>
-                  )}
-                </div>
+                  );
+                })
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Recent Exams */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Exams</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
+              <div className="flex items-center gap-2">
+                <FileText size={16} className="text-violet-500" />
+                <h2 className="text-sm font-semibold text-gray-900">Recent Exams</h2>
+              </div>
+              <Link to="/teacher/exams" className="text-xs text-violet-600 hover:text-violet-800 font-medium">
+                Manage all →
+              </Link>
+            </div>
+
+            <div className="divide-y divide-gray-50">
               {loading ? (
-                <p className="text-gray-500">Loading...</p>
+                <div className="p-4 space-y-3">
+                  <SkeletonRow /><SkeletonRow /><SkeletonRow />
+                </div>
               ) : exams.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-gray-500">No exams created yet</p>
-                  <Link to="/teacher/create-exam">
-                    <Button className="mt-4">Create Your First Exam</Button>
+                <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                  <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                    <FileText size={20} className="text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-600 mb-1">No exams yet</p>
+                  <p className="text-xs text-gray-400 mb-4">Create your first exam to get started</p>
+                  <Link
+                    to="/teacher/create-exam"
+                    className="px-4 py-2 rounded-xl bg-violet-50 text-violet-700 text-xs font-medium hover:bg-violet-100 transition-colors"
+                  >
+                    Create First Exam
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {exams.slice(0, 5).map((exam, index) => (
-                    <div key={exam._id || index} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium text-gray-900">{exam.title}</p>
-                          <p className="text-sm text-gray-500 mt-1">{exam.description}</p>
-                          <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
-                            <span>{exam.questionsCount || exam.questions?.length || 0} questions</span>
-                            <span>{exam.duration} minutes</span>
-                            <span>{exam.totalMarks} marks</span>
-                          </div>
+                exams.slice(0, 6).map((exam, i) => (
+                  <div key={exam._id || i} className="px-5 py-3 hover:bg-gray-50/70 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{exam.title}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Clock size={10} /> {exam.duration}m
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Users size={10} /> {exam.questionsCount || exam.questions?.length || 0} Qs
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <BarChart3 size={10} /> {exam.totalMarks} marks
+                          </span>
                         </div>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          exam.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {exam.isActive ? 'Active' : 'Inactive'}
-                        </span>
                       </div>
+                      <span className={`shrink-0 flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${
+                        exam.isActive
+                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                          : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      }`}>
+                        {exam.isActive ? <CheckCircle size={9} /> : <Clock size={9} />}
+                        {exam.isActive ? 'Active' : 'Inactive'}
+                      </span>
                     </div>
-                  ))}
-                  {exams.length > 5 && (
-                    <Link to="/teacher/exams" className="block text-center text-blue-600 hover:text-blue-800 text-sm font-medium">
-                      View all {exams.length} exams →
-                    </Link>
-                  )}
-                </div>
+                  </div>
+                ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

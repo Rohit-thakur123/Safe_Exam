@@ -59,6 +59,23 @@ export const startExamAttempt = async (req, res) => {
             }
         }
 
+        // Phase 9: Check for COMPLETED attempt FIRST — immutable lockdown.
+        // A submitted exam can never be re-entered, regardless of retake settings.
+        const completedAttempt = await ExamAttempt.findOne({
+            examId,
+            studentId,
+            status: 'completed'
+        });
+
+        if (completedAttempt) {
+            return res.status(409).json({
+                success: false,
+                error: 'Exam Already Submitted',
+                code: 'ALREADY_SUBMITTED',
+                submittedAt: completedAttempt.endTime
+            });
+        }
+
         // Check if student already has an active attempt — if so, RESUME it
         // instead of blocking. This handles SEB crashes, reconnects, and
         // re-entry after the primary frontend redirected them again.
@@ -79,8 +96,6 @@ export const startExamAttempt = async (req, res) => {
             const currentAnswers = existingAttempt.answers
                 ? Object.fromEntries(existingAttempt.answers)
                 : {};
-
-            console.log('🔄 [RESUME] Resuming existing in-progress attempt:', existingAttempt._id.toString());
 
             return res.status(200).json({
                 success: true,
@@ -229,11 +244,13 @@ export const submitExamAttempt = async (req, res) => {
             });
         }
 
-        // Check if already submitted
+        // Check if already submitted — Phase 9: immutable lockdown
         if (attempt.status === 'completed') {
             return res.status(409).json({
                 success: false,
-                error: 'Attempt already submitted'
+                error: 'Exam Already Submitted',
+                code: 'ALREADY_SUBMITTED',
+                submittedAt: attempt.endTime
             });
         }
 
@@ -713,7 +730,9 @@ export const getExamAttempts = async (req, res) => {
             percentage: a.percentage,
             passed: a.passed,
             submittedAt: a.endTime,
-            timeSpent: a.timeSpent
+            timeSpent: a.timeSpent,
+            // Phase 2: Include violation data for teacher dashboard
+            violationSummary: a.violationSummary || { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, totalViolations: 0 }
         }));
 
         res.status(200).json({
@@ -818,5 +837,86 @@ export const getActiveAttemptForExam = async (req, res) => {
             success: false,
             error: error.message || 'Server error fetching active attempt'
         });
+    }
+};
+
+// Phase 2: Report a violation event from the frontend
+export const reportViolation = async (req, res) => {
+    try {
+        const { attemptId, type, metadata } = req.body;
+
+        if (!attemptId || !type) {
+            return res.status(400).json({ success: false, error: 'attemptId and type are required' });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(attemptId)) {
+            return res.status(400).json({ success: false, error: 'Invalid attempt ID' });
+        }
+
+        const attempt = await ExamAttempt.findById(attemptId);
+        if (!attempt) {
+            return res.status(404).json({ success: false, error: 'Attempt not found' });
+        }
+
+        if (attempt.studentId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
+
+        // Append violation record
+        attempt.violations.push({ type, metadata: metadata || {} });
+
+        // Update summary counters
+        if (!attempt.violationSummary) {
+            attempt.violationSummary = { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, totalViolations: 0 };
+        }
+        const s = attempt.violationSummary;
+        if (type === 'tab_switch') s.tabSwitches += 1;
+        else if (type === 'window_blur') s.windowBlurs += 1;
+        else if (type === 'copy_attempt') s.copyAttempts += 1;
+        else if (type === 'paste_attempt') s.pasteAttempts += 1;
+        else if (type === 'devtools_open') s.devToolsAttempts += 1;
+        s.totalViolations += 1;
+
+        await attempt.save();
+
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Report violation error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Server error reporting violation' });
+    }
+};
+
+// Phase 2: Teacher — get detailed violation log for an exam's attempts
+export const getViolationLog = async (req, res) => {
+    try {
+        const { examId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(examId)) {
+            return res.status(400).json({ success: false, error: 'Invalid exam ID' });
+        }
+
+        const exam = await Exam.findById(examId);
+        if (!exam) return res.status(404).json({ success: false, error: 'Exam not found' });
+        if (exam.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, error: 'Unauthorized access' });
+        }
+
+        const attempts = await ExamAttempt.find({ examId })
+            .populate('studentId', 'name email')
+            .select('studentId violations violationSummary status startTime endTime')
+            .sort({ createdAt: -1 });
+
+        const result = attempts.map(a => ({
+            attemptId: a._id.toString(),
+            student: { name: a.studentId?.name, email: a.studentId?.email },
+            status: a.status,
+            violationSummary: a.violationSummary,
+            violations: a.violations
+        }));
+
+        res.status(200).json({ success: true, count: result.length, data: result });
+    } catch (error) {
+        console.error('Get violation log error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Server error' });
     }
 };

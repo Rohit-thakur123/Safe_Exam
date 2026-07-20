@@ -1,5 +1,6 @@
 // Custom hook for auto-saving exam answers
-import { useEffect, useRef, useState } from 'react';
+// Phase 4: sendBeacon now puts token in the request body (Blob), never in the URL.
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { saveAnswers } from '../services/examService';
 
 interface UseAutoSaveOptions {
@@ -24,67 +25,76 @@ export const useAutoSave = ({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const previousAnswers = useRef<Record<string, string>>({});
-  const saveTimeoutRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  
+
+  // Use a ref for answers to avoid stale closures in the interval callback
+  const answersRef = useRef<Record<string, string>>(answers);
+  const previousAnswersRef = useRef<Record<string, string>>({});
+  const attemptIdRef = useRef<string | null>(attemptId);
+
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+  useEffect(() => { attemptIdRef.current = attemptId; }, [attemptId]);
+
+  const doSave = useCallback(async () => {
+    const currentAnswers = answersRef.current;
+    const currentAttemptId = attemptIdRef.current;
+
+    if (!currentAttemptId || Object.keys(currentAnswers).length === 0) return;
+
+    const hasChanges = JSON.stringify(currentAnswers) !== JSON.stringify(previousAnswersRef.current);
+    if (!hasChanges) return;
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      await saveAnswers(currentAttemptId, currentAnswers);
+      previousAnswersRef.current = { ...currentAnswers };
+      setLastSaved(new Date());
+    } catch (err: any) {
+      setError(err.message || 'Auto-save failed');
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!enabled || !attemptId) return;
-    
-    const autoSaveInterval = setInterval(async () => {
-      const hasChanges = JSON.stringify(answers) !== JSON.stringify(previousAnswers.current);
-      
-      if (hasChanges && Object.keys(answers).length > 0) {
-        setSaving(true);
-        setError(null);
-        
-        try {
-          await saveAnswers(attemptId, answers);
-          previousAnswers.current = { ...answers };
-          setLastSaved(new Date());
-        } catch (err: any) {
-          console.error('Auto-save failed:', err);
-          setError(err.message || 'Auto-save failed');
-        } finally {
-          setSaving(false);
-        }
-      }
-    }, interval);
-    
-    // Cleanup
+
+    const autoSaveInterval = setInterval(doSave, interval);
+
     return () => {
       clearInterval(autoSaveInterval);
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
     };
-  }, [attemptId, answers, enabled, interval]);
-  
-  // Save immediately on unmount if there are unsaved changes
+  }, [enabled, attemptId, interval, doSave]);
+
+  // Phase 4: Save on unmount via sendBeacon — token in body, NOT in URL
   useEffect(() => {
     return () => {
-      if (attemptId && Object.keys(answers).length > 0) {
-        const hasChanges = JSON.stringify(answers) !== JSON.stringify(previousAnswers.current);
-        if (hasChanges) {
-          // Use sendBeacon for guaranteed delivery on page unload
-          const data = JSON.stringify({
-            attemptId,
-            answers,
-            lastSavedAt: new Date().toISOString()
-          });
-          
-          const blob = new Blob([data], { type: 'application/json' });
-          
-          
-          if (navigator.sendBeacon) {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-            const token = localStorage.getItem('seb_session_token') || '';
-            const url = `${baseUrl}/api/exam-attempts/save-answers?token=${encodeURIComponent(token)}`;
-            navigator.sendBeacon(url, blob);
-          }
-        }
+      const currentAnswers = answersRef.current;
+      const currentAttemptId = attemptIdRef.current;
+      if (!currentAttemptId || Object.keys(currentAnswers).length === 0) return;
+
+      const hasChanges = JSON.stringify(currentAnswers) !== JSON.stringify(previousAnswersRef.current);
+      if (!hasChanges) return;
+
+      if (navigator.sendBeacon) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+        const token = localStorage.getItem('seb_session_token') || '';
+        const url = `${baseUrl}/api/exam-attempts/save-answers`;
+
+        // Token goes in the body as JSON — never in the URL query string
+        const data = JSON.stringify({
+          attemptId: currentAttemptId,
+          answers: currentAnswers,
+          token,
+          lastSavedAt: new Date().toISOString()
+        });
+
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon(url, blob);
       }
     };
-  }, [attemptId, answers]);
-  
+  }, []); // Empty deps: only runs on component unmount
+
   return { saving, lastSaved, error };
 };
