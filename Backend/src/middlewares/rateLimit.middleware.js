@@ -1,9 +1,21 @@
 import rateLimit from 'express-rate-limit';
 
-// General API rate limiter - 100 requests per 15 minutes
+// General API rate limiter - 100 requests per 15 minutes for standard routes,
+// with background exam sync routes (heartbeat, save-answers, report-violation) excluded
+// to prevent HTTP 429 rate-limiting during active exam sessions.
 export const apiLimiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500, // Increased cap for active sessions
+    skip: (req) => {
+        const path = req.path || req.url || '';
+        return (
+            path.includes('/heartbeat') ||
+            path.includes('/save-answers') ||
+            path.includes('/report-violation') ||
+            path.includes('/start-seb') ||
+            path.includes('/submit-seb')
+        );
+    },
     message: {
         success: false,
         error: 'Too many requests from this IP, please try again later.'
@@ -11,6 +23,7 @@ export const apiLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+
 
 // Login rate limiter - 5 attempts per 15 minutes
 export const loginLimiter = rateLimit({

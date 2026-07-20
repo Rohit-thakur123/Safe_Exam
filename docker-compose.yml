@@ -1,20 +1,18 @@
 services:
-  compiler-backend:
+  compiler-service:
     build:
-      context: ./compiler-backend
+      context: ./compiler-service
       dockerfile: Dockerfile
     ports:
-      - '4000:4000'
+      - '5001:5001'
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - PORT=4000
-      - API_BASE_PATH=/api/compiler
-      - HOST_WORKSPACE_ROOT=D:/SafeExam/Safe_Exam/compiler-backend/workspaces
+      - PORT=5001
       - COMPILER_SERVICE_KEY=${COMPILER_SERVICE_KEY:-safeexam-internal-compiler-key}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./compiler-backend/workspaces:/workspaces
+      - ./compiler-service/temp:/app/temp
     networks:
       - compiler-network
 

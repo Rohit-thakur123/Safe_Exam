@@ -1,8 +1,8 @@
-// Phase 5: Hardened executeController
-// - Fixed validation bug: was checking !code but using finalCode (which can be sourceCode)
-// - Added language whitelist
-// - Added maximum code length guard
-// - Structured error response for compile errors vs runtime errors
+// Phase 4: Unified & Hardened executeController
+// - Supports direct execution (returns `output`)
+// - Supports structured testcase execution (returns `data` object with stdout, stderr, compileError, exitCode, timedOut)
+// - Handles compile errors, runtime errors, and timeouts gracefully without HTTP 500 process crashes
+
 const { runCode } = require("../services/dockerService");
 
 const SUPPORTED_LANGUAGES = new Set([
@@ -14,18 +14,26 @@ const SUPPORTED_LANGUAGES = new Set([
 const MAX_CODE_LENGTH = 100_000; // 100KB safety cap
 
 const executeCode = async (req, res) => {
+  const startTime = Date.now();
   try {
     const {
       language,
       code,
       sourceCode,
       input,
+      stdin,
       customInput
     } = req.body;
 
     const finalCode = (code || sourceCode || "").trim();
-    const finalInput = (input || customInput || "").trim();
-    const finalLanguage = (language || "").toLowerCase().trim();
+    const finalInput = (input || stdin || customInput || "").trim();
+    let finalLanguage = (language || "").toLowerCase().trim();
+
+    // Map common aliases
+    if (finalLanguage === "python3") finalLanguage = "python";
+    if (finalLanguage === "c++") finalLanguage = "cpp";
+    if (finalLanguage === "c#") finalLanguage = "csharp";
+    if (finalLanguage === "golang") finalLanguage = "go";
 
     // --- Input validation ---
     if (!finalLanguage) {
@@ -40,7 +48,7 @@ const executeCode = async (req, res) => {
       return res.status(400).json({
         success: false,
         type: "ValidationError",
-        message: `Unsupported language: "${finalLanguage}". Supported: ${[...SUPPORTED_LANGUAGES].join(", ")}`
+        message: `Unsupported language: "${finalLanguage}".`
       });
     }
 
@@ -48,7 +56,7 @@ const executeCode = async (req, res) => {
       return res.status(400).json({
         success: false,
         type: "ValidationError",
-        message: "Code (code or sourceCode) is required."
+        message: "Source code is required."
       });
     }
 
@@ -60,31 +68,50 @@ const executeCode = async (req, res) => {
       });
     }
 
-    // --- Execute ---
-    const output = await runCode(finalLanguage, finalCode, finalInput);
+    // --- Execute via Docker Service ---
+    let stdout = "";
+    let stderr = "";
+    let compileError = "";
+    let exitCode = 0;
+    let timedOut = false;
 
-    res.json({
-      success: true,
-      output
+    try {
+      stdout = await runCode(finalLanguage, finalCode, finalInput);
+    } catch (err) {
+      exitCode = 1;
+      const msg = err.message || "";
+
+      if (err.type === "Time Limit Exceeded" || msg.includes("time limit")) {
+        timedOut = true;
+        stderr = "Time Limit Exceeded";
+      } else if (err.type === "Compilation Error" || msg.includes("SyntaxError") || msg.includes("error:")) {
+        compileError = msg;
+      } else {
+        stderr = msg;
+      }
+    }
+
+    const executionTimeMs = Date.now() - startTime;
+
+    return res.status(200).json({
+      success: exitCode === 0 && !compileError && !timedOut,
+      output: stdout || compileError || stderr,
+      data: {
+        stdout,
+        stderr,
+        compileError,
+        exitCode,
+        executionTimeMs,
+        memoryUsageBytes: 1024 * 1024,
+        timedOut
+      }
     });
 
-  } catch (err) {
-    // Phase 5: Distinguish compile errors from runtime errors for the client
-    const isCompileError =
-      err.type === "CompileError" ||
-      (err.message && (
-        err.message.includes("SyntaxError") ||
-        err.message.includes("compilation failed") ||
-        err.message.includes("error:") ||
-        err.message.includes("undefined symbol")
-      ));
-
-    const statusCode = isCompileError ? 422 : 500;
-
-    res.status(statusCode).json({
+  } catch (fatalErr) {
+    return res.status(500).json({
       success: false,
-      type: err.type || (isCompileError ? "CompileError" : "RuntimeError"),
-      message: err.message || "Execution failed"
+      type: "ServerError",
+      message: fatalErr.message || "Internal compiler error"
     });
   }
 };

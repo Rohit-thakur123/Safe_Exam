@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const compilerClient = axios.create({
-    baseURL: process.env.COMPILER_BACKEND_URL || 'http://127.0.0.1:4000/api/compiler',
+    baseURL: process.env.COMPILER_BACKEND_URL || 'http://127.0.0.1:5001/api/compiler',
     timeout: 45000,
     headers: {
         'Content-Type': 'application/json',
@@ -11,11 +11,20 @@ const compilerClient = axios.create({
 
 const languageMap = {
     Python: 'python',
+    python: 'python',
+    python3: 'python',
     Java: 'java',
+    java: 'java',
     JavaScript: 'javascript',
+    javascript: 'javascript',
+    typescript: 'javascript',
     C: 'c',
-    'C++': 'cpp'
+    c: 'c',
+    'C++': 'cpp',
+    cpp: 'cpp',
+    'c++': 'cpp'
 };
+
 
 const normalizeOutput = value => String(value ?? '').replace(/\r\n/g, '\n').trimEnd();
 

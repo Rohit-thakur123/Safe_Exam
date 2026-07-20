@@ -78,23 +78,41 @@ function App() {
       }
     };
 
+    // Trap browser back/forward buttons during active exam
+    const handlePopState = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    const preventDragDrop = (e: DragEvent) => {
+      e.preventDefault();
+      return false;
+    };
+
     const devToolsInterval = window.setInterval(detectDevTools, 3000);
 
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener('popstate', handlePopState);
     document.addEventListener('copy', preventCopy, true);
     document.addEventListener('cut', preventCut, true);
     document.addEventListener('paste', preventPaste, true);
     document.addEventListener('contextmenu', preventContextMenu, true);
     document.addEventListener('keydown', preventKeyboardShortcuts, true);
+    document.addEventListener('dragover', preventDragDrop, true);
+    document.addEventListener('drop', preventDragDrop, true);
 
     return () => {
+      window.removeEventListener('popstate', handlePopState);
       document.removeEventListener('copy', preventCopy, true);
       document.removeEventListener('cut', preventCut, true);
       document.removeEventListener('paste', preventPaste, true);
       document.removeEventListener('contextmenu', preventContextMenu, true);
       document.removeEventListener('keydown', preventKeyboardShortcuts, true);
+      document.removeEventListener('dragover', preventDragDrop, true);
+      document.removeEventListener('drop', preventDragDrop, true);
       window.clearInterval(devToolsInterval);
     };
   }, []);
+
 
   // Prevent text selection globally
   useEffect(() => {
