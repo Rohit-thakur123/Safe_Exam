@@ -8,6 +8,10 @@ import {
 
 const router = express.Router();
 
+router.get("/test", (req, res) => {
+  res.json({ message: "Descriptive router is working" });
+});
+
 /**
  * Save Draft
  */
