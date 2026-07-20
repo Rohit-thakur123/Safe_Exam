@@ -300,6 +300,12 @@ export const examAPI = {
     return response.data;
   },
 
+  // Duplicate an exam
+  duplicate: async (id: string): Promise<Exam> => {
+    const response = await api.post(`/exams/${id}/duplicate`);
+    return response.data.exam;
+  },
+
   // Get all students (for assignment)
   getStudents: async () => {
     const response = await api.get('/exams/students/all');

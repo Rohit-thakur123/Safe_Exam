@@ -41,7 +41,7 @@ export const createTestCase = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
 
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only manage your own coding questions' });
         }
 
@@ -77,7 +77,7 @@ export const updateTestCase = async (req, res) => {
         if (!question) {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only manage your own coding questions' });
         }
 
@@ -117,7 +117,7 @@ export const deleteTestCase = async (req, res) => {
         if (!question) {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only manage your own coding questions' });
         }
 
@@ -157,7 +157,7 @@ export const reorderTestCases = async (req, res) => {
         if (!question) {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only manage your own coding questions' });
         }
 
@@ -194,7 +194,7 @@ export const duplicateTestCase = async (req, res) => {
         if (!question) {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only manage your own coding questions' });
         }
         const source = await TestCase.findOne({ _id: testCaseId, codingQuestionId });

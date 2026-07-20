@@ -3,7 +3,7 @@ export interface User {
   _id?: string;
   name: string;
   email: string;
-  role: 'teacher' | 'student' | 'admin';
+  role: 'teacher' | 'student';
 }
 
 export interface ExamAttemptSummary {

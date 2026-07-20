@@ -1,43 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { TeacherNavbar } from '../../components/TeacherNavbar';
 import { Button } from '../../components/ui/Button';
-import { Card, CardContent } from '../../components/ui/Card';
 import { examAPI } from '../../services/api';
-import { FileText, Edit, Trash2, Plus, ArrowLeft, LogOut, Users, ToggleLeft, ToggleRight, Code2 } from 'lucide-react';
+import {
+  FileText, Edit, Trash2, Plus, ArrowLeft, Users, ToggleLeft, ToggleRight,
+  Copy, BarChart3, Search, CheckCircle2, Share2
+} from 'lucide-react';
 import type { Exam } from '../../types';
+import Toast from '../../components/ui/Toast';
+import type { ToastMessage } from '../../components/ui/Toast';
 
 interface Student {
   id: string;
   name: string;
   email: string;
 }
-
-const TeacherNavbar: React.FC = () => {
-  const { user, logout } = useAuth();
-
-  return (
-    <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">SecureExam</h1>
-              <span className="ml-2 text-sm text-gray-500">Teacher Portal</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-};
 
 const AssignStudentsModal: React.FC<{
   exam: Exam;
@@ -46,7 +25,6 @@ const AssignStudentsModal: React.FC<{
 }> = ({ exam, onClose, onSuccess }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-  const [currentAssignments, setCurrentAssignments] = useState<Student[]>([]);
   const [sendEmailNotification, setSendEmailNotification] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -61,14 +39,11 @@ const AssignStudentsModal: React.FC<{
     try {
       setLoading(true);
       const [studentsData, assignedData] = await Promise.all([
-        examAPI.getStudents(),
-        examAPI.getAssignedStudents(exam._id || exam.id!)
+        examAPI.getStudents().catch(() => ({ students: [] })),
+        examAPI.getAssignedStudents(exam._id || exam.id!).catch(() => ({ students: [] }))
       ]);
 
       setStudents(studentsData.students || []);
-      // Backend returns { students: [{ _id, name, email }] } here, not
-      // { assignedStudents }, and uses `_id` rather than `id` — normalize
-      // to the local Student shape ({ id, name, email }).
       const assignedList: Student[] = (assignedData.students || []).map(
         (s: { _id: string; name: string; email: string }) => ({
           id: s._id,
@@ -76,11 +51,10 @@ const AssignStudentsModal: React.FC<{
           email: s.email,
         })
       );
-      setCurrentAssignments(assignedList);
       setSelectedStudents(assignedList.map((s: Student) => s.id));
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError('Failed to load student data');
+      setError('Failed to load student list');
     } finally {
       setLoading(false);
     }
@@ -106,152 +80,116 @@ const AssignStudentsModal: React.FC<{
         sendEmailNotification
       );
 
-      // Backend returns { message, assignedCount, emailsSent } — not an
-      // { emailNotifications: { sent, failed, total } } object — so build
-      // the message from the fields that actually come back.
-      if (response.assignedCount) {
-        if (sendEmailNotification && response.emailsSent) {
-          setSuccess(`Students assigned successfully! Email notifications sent to ${response.assignedCount} student(s).`);
-        } else if (sendEmailNotification && !response.emailsSent) {
-          setSuccess('Students assigned successfully, but email notifications failed to send.');
-        } else {
-          setSuccess('Students assigned successfully!');
-        }
+      if (response.assignedCount !== undefined) {
+        setSuccess(`Assigned ${response.assignedCount} candidate(s) successfully!`);
+      } else {
+        setSuccess('Candidate assignments updated!');
       }
 
       setTimeout(() => {
         onSuccess();
         onClose();
-      }, 2000);
-    } catch (err: unknown) {
-      console.error('Error assigning students:', err);
-      const error = err as any;
-      setError(error.response?.data?.error || 'Failed to assign students');
+      }, 1500);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to update student assignments');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-        <div className="p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Assign Students to Exam</h3>
-          <p className="text-sm text-gray-600 mt-1">{exam.title}</p>
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div>
+            <h3 className="text-base font-bold text-gray-900">Assign Candidates to Assessment</h3>
+            <p className="text-xs text-gray-500 mt-0.5">{exam.title}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 font-bold text-lg">×</button>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[50vh]">
+        <div className="p-6 overflow-y-auto flex-1">
           {loading ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Loading...</p>
-            </div>
+            <div className="text-center py-8 text-sm text-gray-500">Loading student directory...</div>
           ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded p-4">
-              <p className="text-red-700">{error}</p>
-            </div>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-xs text-rose-700">{error}</div>
           ) : students.length === 0 ? (
             <div className="text-center py-8">
-              <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-2 text-gray-500">No students available</p>
+              <Users className="mx-auto h-10 w-10 text-gray-300 mb-2" />
+              <p className="text-xs text-gray-500">No active student accounts registered yet.</p>
             </div>
           ) : (
             <>
-              <div className="mb-4">
-                <p className="text-sm text-gray-600 mb-2">
-                  Currently assigned: <span className="font-medium">
-                    {currentAssignments.length === 0 ? 'All students' : `${currentAssignments.length} students`}
-                  </span>
-                </p>
-                <p className="text-sm text-gray-600">
-                  Selected: <span className="font-medium">
-                    {selectedStudents.length === 0 ? 'All students (no specific assignments)' : `${selectedStudents.length} students`}
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between mb-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedStudents(students.map(s => s.id))}
-                >
-                  Select All
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedStudents([])}
-                >
-                  Clear (Open to All)
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {students.map((student) => (
-                  <div
-                    key={student.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedStudents.includes(student.id)
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    onClick={() => toggleStudent(student.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{student.name}</p>
-                        <p className="text-xs text-gray-500">{student.email}</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={selectedStudents.includes(student.id)}
-                        onChange={() => toggleStudent(student.id)}
-                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {selectedStudents.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={sendEmailNotification}
-                      onChange={(e) => setSendEmailNotification(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700">
-                      📧 Send email notifications
-                    </span>
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1 ml-7">
-                    Selected students will receive a beautifully formatted email with exam details
-                  </p>
+              {success && (
+                <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+                  <CheckCircle2 size={16} /> {success}
                 </div>
               )}
+
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-xs text-gray-600 font-medium">
+                  Selected: <span className="font-bold text-violet-700">{selectedStudents.length} candidates</span>
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudents(students.map(s => s.id))}
+                    className="text-xs font-semibold text-violet-600 hover:text-violet-800"
+                  >
+                    Select All
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStudents([])}
+                    className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {students.map((student) => {
+                  const isSelected = selectedStudents.includes(student.id);
+                  return (
+                    <div
+                      key={student.id}
+                      onClick={() => toggleStudent(student.id)}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
+                        isSelected
+                          ? 'border-violet-300 bg-violet-50/70 text-violet-900 font-medium'
+                          : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-bold">{student.name}</p>
+                        <p className="text-[11px] text-gray-500">{student.email}</p>
+                      </div>
+                      {isSelected && <CheckCircle2 size={16} className="text-violet-600" />}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="sendEmail"
+                  checked={sendEmailNotification}
+                  onChange={e => setSendEmailNotification(e.target.checked)}
+                  className="rounded text-violet-600 focus:ring-violet-500 h-4 w-4"
+                />
+                <label htmlFor="sendEmail" className="text-xs text-gray-600 font-medium">
+                  Send automated email invitation with unique SEB launch credentials
+                </label>
+              </div>
             </>
           )}
         </div>
 
-        {success && (
-          <div className="mx-6 mb-4 bg-green-50 border border-green-200 rounded p-3">
-            <p className="text-sm text-green-700">{success}</p>
-          </div>
-        )}
-
-        {error && !success && (
-          <div className="mx-6 mb-4 bg-red-50 border border-red-200 rounded p-3">
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
-
-        <div className="p-6 border-t bg-gray-50 flex justify-end space-x-3">
-          <Button variant="outline" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
           <Button onClick={handleSave} disabled={saving || loading}>
             {saving ? 'Saving...' : 'Save Assignments'}
           </Button>
@@ -265,10 +203,12 @@ const ManageExams: React.FC = () => {
   const { user } = useAuth();
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'inactive'>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
     fetchExams();
@@ -276,70 +216,72 @@ const ManageExams: React.FC = () => {
 
   const fetchExams = async () => {
     if (!user) return;
-
     try {
       setLoading(true);
       const data = await examAPI.getAll();
-
-      console.log('ManageExams - User ID:', user.id);
-      console.log('ManageExams - All Exams:', data);
-
-      // Ensure we have an array
       const safeExams = Array.isArray(data) ? data : [];
-
-      // Filter to show only current teacher's exams
       const myExams = safeExams.filter((e: Exam) => {
-        // If createdBy is not set, include the exam (for debugging)
-        if (!e.createdBy) {
-          console.log('ManageExams - Exam without createdBy:', e.title);
-          return true; // Show exams without createdBy field
-        }
-        const creatorId = String(e.createdBy);
-        const userId = String(user.id);
-        console.log('ManageExams - Comparing:', e.title, 'creator:', creatorId, 'user:', userId);
-        return creatorId === userId;
+        if (!e.createdBy) return true;
+        return String(e.createdBy) === String(user.id);
       });
-
-      console.log('ManageExams - My Exams:', myExams.length);
       setExams(myExams);
-    } catch (err) {
-      console.error('Error fetching exams:', err);
-      setError('Failed to load exams');
-      setExams([]);
+    } catch (err: any) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        message: err.response?.data?.error || 'Failed to load exams'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this exam? This action cannot be undone.')) {
-      return;
-    }
+  const filteredExams = useMemo(() => {
+    return exams.filter(e => {
+      const matchesTab = activeTab === 'all' || (activeTab === 'active' ? e.isActive : !e.isActive);
+      const matchesSearch = !searchQuery || e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (e.description && e.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesTab && matchesSearch;
+    });
+  }, [exams, activeTab, searchQuery]);
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this exam?')) return;
     setDeleting(id);
     try {
       await examAPI.delete(id);
       setExams(exams.filter(e => (e._id || e.id) !== id));
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        message: 'Exam deleted successfully'
+      });
     } catch (err: any) {
-      console.error('Error deleting exam:', err);
       const errorData = err.response?.data;
       if (errorData?.code === 'EXAM_HAS_ATTEMPTS' && errorData?.canForceDelete) {
-        const attemptsText = errorData.attemptsCount === 1 ? '1 attempt' : `${errorData.attemptsCount} attempts`;
-        const confirmed = window.confirm(
-          `This exam has ${attemptsText}. Do you want to delete all attempts and continue?`
-        );
-
-        if (confirmed) {
+        if (window.confirm(`This exam has ${errorData.attemptsCount} student attempt(s). Delete all attempt records and force delete?`)) {
           try {
             await examAPI.delete(id, true);
             setExams(exams.filter(e => (e._id || e.id) !== id));
+            setToast({
+              id: Date.now().toString(),
+              type: 'success',
+              message: 'Exam and student attempts force deleted'
+            });
           } catch (forceErr: any) {
-            console.error('Error force deleting exam:', forceErr);
-            alert(forceErr.response?.data?.error || 'Failed to delete exam');
+            setToast({
+              id: Date.now().toString(),
+              type: 'error',
+              message: forceErr.response?.data?.error || 'Failed to force delete exam'
+            });
           }
         }
       } else {
-        alert(errorData?.error || 'Failed to delete exam');
+        setToast({
+          id: Date.now().toString(),
+          type: 'error',
+          message: errorData?.error || 'Failed to delete exam'
+        });
       }
     } finally {
       setDeleting(null);
@@ -350,170 +292,245 @@ const ManageExams: React.FC = () => {
     setToggling(id);
     try {
       const result = await examAPI.toggleStatus(id);
-      // Update the local state
-      setExams(exams.map(e =>
-        (e._id || e.id) === id ? { ...e, isActive: result.isActive } : e
-      ));
+      setExams(exams.map(e => (e._id || e.id) === id ? { ...e, isActive: result.isActive } : e));
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        message: `Assessment ${result.isActive ? 'activated' : 'deactivated'}`
+      });
     } catch (err: any) {
-      console.error('Error toggling exam status:', err);
-      alert(err.response?.data?.error || 'Failed to toggle exam status');
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        message: err.response?.data?.error || 'Failed to toggle status'
+      });
     } finally {
       setToggling(null);
     }
   };
 
+  const handleDuplicate = async (id: string, title: string) => {
+    try {
+      const dup = await examAPI.duplicate(id);
+      setExams(prev => [dup, ...prev]);
+      setToast({
+        id: Date.now().toString(),
+        type: 'success',
+        message: `Duplicated "${title}" as draft`
+      });
+    } catch (err: any) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'error',
+        message: err.response?.data?.error || 'Failed to duplicate assessment'
+      });
+    }
+  };
+
+  const copyStudentAccessLink = (examId: string) => {
+    const accessUrl = `${window.location.origin}/exam/launch?examId=${examId}`;
+    navigator.clipboard.writeText(accessUrl);
+    setToast({
+      id: Date.now().toString(),
+      type: 'info',
+      title: 'Link Copied!',
+      message: 'Student access link copied to clipboard.'
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50/60 font-sans">
       <TeacherNavbar />
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Header */}
-          <div className="mb-6 flex justify-between items-center">
-            <div>
-              <Link to="/teacher" className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 mb-2">
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Back to Dashboard
-              </Link>
-              <h2 className="text-2xl font-bold text-gray-900">Manage Exams</h2>
-              <p className="text-gray-600">View, edit, and manage student assignments</p>
-            </div>
-            <Link to="/teacher/create-exam">
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Exam
-              </Button>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <Link to="/teacher" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
+              <ArrowLeft size={14} className="mr-1" /> Back to Dashboard
             </Link>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Assessments & Exams</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage active exams, candidate assignments, SEB configs, and live scorecards</p>
+          </div>
+          <Link
+            to="/teacher/create-exam"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-semibold text-white hover:from-violet-500 hover:to-indigo-500 transition-all shadow-sm"
+          >
+            <Plus size={16} /> Create New Assessment
+          </Link>
+        </div>
+
+        {/* Search & Tabs Toolbar */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search assessments..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+            />
           </div>
 
-          {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700">{error}</p>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'all' ? 'bg-violet-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'
+              }`}
+            >
+              All ({exams.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'active' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'
+              }`}
+            >
+              Active ({exams.filter(e => e.isActive).length})
+            </button>
+            <button
+              onClick={() => setActiveTab('inactive')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === 'inactive' ? 'bg-gray-800 text-white shadow-xs' : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'
+              }`}
+            >
+              Inactive ({exams.filter(e => !e.isActive).length})
+            </button>
+          </div>
+        </div>
 
-          {/* Exams List */}
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <div className="text-lg text-gray-600">Loading exams...</div>
-            </div>
-          ) : exams.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <FileText className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No exams yet</h3>
-                <p className="mt-2 text-gray-500">Get started by creating your first exam</p>
-                <Link to="/teacher/create-exam">
-                  <Button className="mt-4">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Exam
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {exams.map((exam, index) => (
-                <Card key={exam._id || exam.id || index}>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-medium text-gray-900">
-                            {exam.title}
-                          </h3>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${exam.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                            }`}>
-                            {exam.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-
-                        {exam.description && (
-                          <p className="text-sm text-gray-600 mb-3">{exam.description}</p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                          <span className="flex items-center">
-                            <FileText className="w-4 h-4 mr-1" />
-                            {exam.questionsCount || exam.questions?.length || 0} questions
-                          </span>
-                          <span>{exam.duration} minutes</span>
-                          <span>{exam.totalMarks} marks</span>
-                          <span>Pass: {exam.passingMarks}</span>
-                        </div>
+        {/* Exams List */}
+        {loading ? (
+          <div className="text-center py-12 text-sm text-gray-500">Loading assessments...</div>
+        ) : filteredExams.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
+            <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+            <h3 className="text-base font-semibold text-gray-900">No assessments found</h3>
+            <p className="text-xs text-gray-500 mt-1">Create an assessment to start evaluating candidates.</p>
+            <Link
+              to="/teacher/create-exam"
+              className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
+            >
+              <Plus size={14} /> Create Assessment
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredExams.map((exam) => {
+              const examId = exam._id || exam.id || '';
+              return (
+                <div key={examId} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs hover:shadow-md transition-all">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                          exam.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {exam.isActive ? '• Active' : 'Inactive'}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-0.5 rounded-md">
+                          ⏱ {exam.duration} Mins
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-0.5 rounded-md">
+                          🎯 {exam.totalMarks} Total Marks
+                        </span>
+                        <span className="text-xs font-semibold text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-0.5 rounded-md">
+                          Pass: {exam.passingMarks}
+                        </span>
                       </div>
 
-                      <div className="flex items-center space-x-2 ml-4">
-                        <Link to={`/teacher/exams/${exam._id || exam.id}/coding-submissions`}>
-                          <Button variant="outline" size="sm" title="Coding Submissions">
-                            <Code2 className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedExam(exam)}
-                          title="Assign Students"
-                        >
-                          <Users className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(exam._id || exam.id!)}
-                          disabled={toggling === (exam._id || exam.id)}
-                          title={exam.isActive ? 'Deactivate' : 'Activate'}
-                        >
-                          {exam.isActive ? (
-                            <ToggleRight className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4 text-gray-400" />
-                          )}
-                        </Button>
-                        <Link to={`/teacher/edit-exam/${exam._id || exam.id}`}>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            title="Edit Exam"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(exam._id || exam.id!)}
-                          disabled={deleting === (exam._id || exam.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          {deleting === (exam._id || exam.id) ? (
-                            'Deleting...'
-                          ) : (
-                            <Trash2 className="w-4 h-4" />
-                          )}
-                        </Button>
+                      <h3 className="text-base font-bold text-gray-900 mb-1 hover:text-violet-600 transition-colors">
+                        <Link to={`/teacher/exams/${examId}/results`}>{exam.title}</Link>
+                      </h3>
+                      {exam.description && <p className="text-xs text-gray-500 line-clamp-2 mb-3">{exam.description}</p>}
+
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+                        <span>📋 {exam.questionsCount || exam.questions?.length || 0} MCQ Questions</span>
+                        <span>💻 {(exam as any).codingQuestions?.length || 0} Coding Challenges</span>
+                        <span>👥 {(exam.assignedCandidates || []).length} Candidates Assigned</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Assign Students Modal */}
-      {selectedExam && (
-        <AssignStudentsModal
-          exam={selectedExam}
-          onClose={() => setSelectedExam(null)}
-          onSuccess={() => {
-            fetchExams();
-            setSelectedExam(null);
-          }}
-        />
-      )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link
+                        to={`/teacher/exams/${examId}/results`}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 transition-colors shadow-xs"
+                      >
+                        <BarChart3 size={14} /> Results & Analytics
+                      </Link>
+
+                      <button
+                        onClick={() => setSelectedExam(exam)}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        title="Assign Candidates"
+                      >
+                        <Users size={14} /> Assign
+                      </button>
+
+                      <button
+                        onClick={() => copyStudentAccessLink(examId)}
+                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                        title="Copy Exam Link"
+                      >
+                        <Share2 size={14} /> Link
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleStatus(examId)}
+                        disabled={toggling === examId}
+                        className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+                        title={exam.isActive ? 'Deactivate Exam' : 'Activate Exam'}
+                      >
+                        {exam.isActive ? <ToggleRight size={20} className="text-emerald-600" /> : <ToggleLeft size={20} className="text-gray-400" />}
+                      </button>
+
+                      <button
+                        onClick={() => handleDuplicate(examId, exam.title)}
+                        className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        title="Duplicate Assessment"
+                      >
+                        <Copy size={15} />
+                      </button>
+
+                      <Link
+                        to={`/teacher/edit-exam/${examId}`}
+                        className="p-2 rounded-xl text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        title="Edit Assessment"
+                      >
+                        <Edit size={15} />
+                      </Link>
+
+                      <button
+                        onClick={() => handleDelete(examId)}
+                        disabled={deleting === examId}
+                        className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="Delete Assessment"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Assign Modal */}
+        {selectedExam && (
+          <AssignStudentsModal
+            exam={selectedExam}
+            onClose={() => setSelectedExam(null)}
+            onSuccess={() => {
+              fetchExams();
+              setSelectedExam(null);
+            }}
+          />
+        )}
+      </main>
     </div>
   );
 };

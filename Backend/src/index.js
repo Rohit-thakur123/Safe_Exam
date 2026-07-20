@@ -60,7 +60,7 @@ app.use((req, res, next) => {
 app.use(apiLimiter);
 
 // Import and use routes.
-// The primary teacher/admin frontend calls without a prefix, the SEB student
+// The primary teacher frontend calls without a prefix, the SEB student
 // frontend calls with an `/api` prefix — mount both to the same router so
 // neither side has to change its request paths.
 app.use('/', routes);

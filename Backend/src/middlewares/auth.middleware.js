@@ -1,6 +1,5 @@
 import { verifyAccessToken } from '../utils/tokenUtils.js';
 import User from '../models/User/user.js';
-import Admin from '../models/User/admin.js';
 import { sessionManager } from '../config/sessionStore.js';
 
 export const authenticateToken = async (req, res, next) => {
@@ -52,9 +51,7 @@ export const authenticateToken = async (req, res, next) => {
         }
 
         // Get user from database
-        const user = decoded.role === 'admin'
-            ? await Admin.findById(decoded.userId).select('-password')
-            : await User.findById(decoded.userId).select('-password');
+        const user = await User.findById(decoded.userId).select('-password');
 
         if (!user) {
             return res.status(401).json({

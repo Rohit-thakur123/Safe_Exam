@@ -169,10 +169,40 @@ export const getExamCodingSubmissions = async (req, res, next) => {
             examId: exam._id,
             codingQuestionId: { $exists: true }
         })
-            .populate('studentId', 'name email')
-            .populate('codingQuestionId', 'title')
+            .populate('studentId', 'name email role')
+            .populate('codingQuestionId', 'title difficulty points')
             .sort({ submittedAt: -1 });
-        res.status(200).json({ success: true, submissions });
+
+        const formattedSubmissions = submissions.map(sub => {
+            const studentObj = sub.studentId && typeof sub.studentId === 'object' ? sub.studentId : null;
+            const questionObj = sub.codingQuestionId && typeof sub.codingQuestionId === 'object' ? sub.codingQuestionId : null;
+            return {
+                _id: sub._id.toString(),
+                studentId: {
+                    _id: studentObj?._id?.toString() || 'unknown',
+                    name: studentObj?.name || 'Unknown Candidate',
+                    email: studentObj?.email || 'N/A'
+                },
+                codingQuestionId: {
+                    _id: questionObj?._id?.toString() || 'unknown',
+                    title: questionObj?.title || 'Coding Challenge',
+                    difficulty: questionObj?.difficulty || 'Medium',
+                    points: questionObj?.points || 0
+                },
+                examAttemptId: sub.examAttemptId?.toString() || '',
+                language: sub.language,
+                sourceCode: sub.sourceCode,
+                executionTime: sub.executionTime || 0,
+                memoryUsage: sub.memoryUsage || 0,
+                passedTestCases: sub.passedTestCases || 0,
+                failedTestCases: sub.failedTestCases || 0,
+                score: sub.score || 0,
+                totalMarks: sub.totalMarks || 0,
+                submittedAt: sub.submittedAt
+            };
+        });
+
+        res.status(200).json({ success: true, submissions: formattedSubmissions });
     } catch (error) {
         next(error);
     }

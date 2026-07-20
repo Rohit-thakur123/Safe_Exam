@@ -124,7 +124,7 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({
 
         <button
           className="btn btn-success"
-          onClick={handleFinalSubmit}
+          onClick={onSubmit}
         >
           Submit Exam
         </button>

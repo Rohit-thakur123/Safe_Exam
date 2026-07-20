@@ -724,7 +724,7 @@ export const assignStudentsToExam = async (req, res) => {
     }
 };
 
-// Get assigned students for an exam (NEW - TEACHER ONLY)
+// Get assigned students for an exam (TEACHER ONLY)
 export const getAssignedStudents = async (req, res) => {
     try {
         const { examId } = req.params;
@@ -756,7 +756,7 @@ export const getAssignedStudents = async (req, res) => {
         }
 
         res.status(200).json({
-            students: exam.assignedCandidates.map(s => ({
+            students: (exam.assignedCandidates || []).map(s => ({
                 _id: s._id.toString(),
                 name: s.name,
                 email: s.email
@@ -770,7 +770,7 @@ export const getAssignedStudents = async (req, res) => {
     }
 };
 
-// Get all students (NEW - TEACHER ONLY - for assigning to exams)
+// Get all students (TEACHER ONLY - for assigning to exams)
 export const getAllStudents = async (req, res) => {
     try {
         const User = (await import('../models/User/user.js')).default;
@@ -793,5 +793,43 @@ export const getAllStudents = async (req, res) => {
             success: false,
             error: error.message || 'Server error fetching students'
         });
+    }
+};
+
+// Duplicate an existing exam (TEACHER ONLY)
+export const duplicateExam = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, error: 'Invalid exam ID' });
+        }
+        const original = await Exam.findById(id);
+        if (!original) {
+            return res.status(404).json({ success: false, error: 'Exam not found' });
+        }
+        if (original.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ success: false, error: 'Unauthorized access' });
+        }
+
+        const duplicate = new Exam({
+            title: `${original.title} (Copy)`,
+            description: original.description,
+            questions: original.questions,
+            codingQuestions: original.codingQuestions,
+            duration: original.duration,
+            totalMarks: original.totalMarks,
+            passingMarks: original.passingMarks,
+            createdBy: req.user._id,
+            isActive: false,
+            assignedCandidates: original.assignedCandidates,
+            allowRetakes: original.allowRetakes,
+            shuffleQuestions: original.shuffleQuestions
+        });
+
+        await duplicate.save();
+        res.status(201).json({ success: true, exam: duplicate });
+    } catch (error) {
+        console.error('Duplicate exam error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Server error duplicating exam' });
     }
 };

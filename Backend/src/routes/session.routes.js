@@ -55,7 +55,7 @@ router.post('/force-logout', authenticateToken, async (req, res) => {
     }
 });
 
-// Get all active sessions (Admin only - for monitoring)
+// Get all active sessions (Teacher only - for monitoring)
 router.get('/all', authenticateToken, authorizeRole(['teacher']), async (req, res) => {
     try {
         const sessions = await sessionManager.getAllActiveSessions();

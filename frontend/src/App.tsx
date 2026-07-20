@@ -21,6 +21,7 @@ import CreateCodingQuestion from './pages/teacher/CreateCodingQuestion';
 import CodingQuestionDetails from './pages/teacher/CodingQuestionDetails';
 import CodingSubmissions from './pages/teacher/CodingSubmissions';
 import CodingQuestionPreview from './pages/teacher/CodingQuestionPreview';
+import ExamResults from './pages/teacher/ExamResults';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | 'student' }> = ({ 
@@ -52,8 +53,8 @@ if (!user) {
     />
   );
 }
-  if (role && user.role !== role && !(role === 'teacher' && user.role === 'admin')) {
-    return <Navigate to={user.role === 'teacher' || user.role === 'admin' ? '/teacher' : '/student'} replace />;
+  if (role && user.role !== role) {
+    return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
   }
 
   return <>{children}</>;
@@ -140,6 +141,7 @@ function App() {
             <Route path="/teacher/coding-questions/:questionId/testcases" element={<ProtectedRoute role="teacher"><CodingQuestionDetails /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/:questionId/preview" element={<ProtectedRoute role="teacher"><CodingQuestionPreview /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/:questionId" element={<ProtectedRoute role="teacher"><CodingQuestionDetails /></ProtectedRoute>} />
+            <Route path="/teacher/exams/:examId/results" element={<ProtectedRoute role="teacher"><ExamResults /></ProtectedRoute>} />
             <Route path="/teacher/exams/:examId/coding-submissions" element={<ProtectedRoute role="teacher"><CodingSubmissions /></ProtectedRoute>} />
             
             {/* Student Routes */}

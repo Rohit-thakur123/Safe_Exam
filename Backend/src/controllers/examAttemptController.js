@@ -699,12 +699,14 @@ export const getExamAttempts = async (req, res) => {
 
         // Calculate statistics
         const completedAttempts = attempts.filter(a => a.status === 'completed');
-        const scores = completedAttempts.map(a => a.score);
+        const inProgressAttempts = attempts.filter(a => a.status === 'in_progress');
+        const scores = completedAttempts.map(a => a.score || 0);
         const passedCount = completedAttempts.filter(a => a.passed).length;
 
         const statistics = {
             totalAttempts: attempts.length,
             completedAttempts: completedAttempts.length,
+            inProgressAttempts: inProgressAttempts.length,
             averageScore: scores.length > 0
                 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
                 : 0,
@@ -715,24 +717,31 @@ export const getExamAttempts = async (req, res) => {
                 : 0
         };
 
-        const formattedAttempts = completedAttempts.map(a => ({
-            id: a._id.toString(),
-            student: {
-                name: a.studentId.name,
-                email: a.studentId.email
-            },
-            score: a.score,
-            percentage: a.percentage,
-            passed: a.passed,
-            submittedAt: a.endTime,
-            timeSpent: a.timeSpent,
-            // Phase 2: Include violation data for teacher dashboard
-            violationSummary: a.violationSummary || { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, totalViolations: 0 }
-        }));
+        const formattedAttempts = attempts.map(a => {
+            const studentObj = a.studentId && typeof a.studentId === 'object' ? a.studentId : null;
+            return {
+                id: a._id.toString(),
+                status: a.status,
+                student: {
+                    id: studentObj?._id?.toString() || (typeof a.studentId === 'string' ? a.studentId : 'unknown'),
+                    name: studentObj?.name || 'Unknown Candidate',
+                    email: studentObj?.email || 'N/A'
+                },
+                score: a.score || 0,
+                totalMarks: exam.totalMarks || 0,
+                percentage: a.percentage || 0,
+                passed: Boolean(a.passed),
+                submittedAt: a.endTime || a.updatedAt || a.createdAt,
+                startTime: a.startTime,
+                timeSpent: a.timeSpent || 0,
+                violationSummary: a.violationSummary || { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, totalViolations: 0 },
+                violations: a.violations || []
+            };
+        });
 
         res.status(200).json({
             success: true,
-            count: completedAttempts.length,
+            count: formattedAttempts.length,
             statistics,
             attempts: formattedAttempts
         });

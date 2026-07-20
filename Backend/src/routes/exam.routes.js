@@ -9,7 +9,8 @@ import {
     toggleExamStatus,
     assignStudentsToExam,
     getAssignedStudents,
-    getAllStudents
+    getAllStudents,
+    duplicateExam
 } from '../controllers/examController.js';
 import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware.js';
 
@@ -17,12 +18,13 @@ const router = express.Router();
 
 // Teacher only routes
 router.post('/new', authenticateToken, authorizeRole(['teacher']), createExam);
+router.post('/:id/duplicate', authenticateToken, authorizeRole(['teacher']), duplicateExam);
 router.put('/:id', authenticateToken, authorizeRole(['teacher']), updateExam);
 router.delete('/:id', authenticateToken, authorizeRole(['teacher']), deleteExam);
 router.patch('/:id/toggle-status', authenticateToken, authorizeRole(['teacher']), toggleExamStatus);
 router.get('/teacher/:teacherId', authenticateToken, authorizeRole(['teacher']), getExamsByTeacher);
 
-// Student assignment endpoints (Teacher only) - Fixed to match frontend expectations
+// Student assignment endpoints (Teacher only)
 router.get('/students/all', authenticateToken, authorizeRole(['teacher']), getAllStudents);
 router.post('/:examId/assign-students', authenticateToken, authorizeRole(['teacher']), assignStudentsToExam);
 router.get('/:examId/assigned-students', authenticateToken, authorizeRole(['teacher']), getAssignedStudents);

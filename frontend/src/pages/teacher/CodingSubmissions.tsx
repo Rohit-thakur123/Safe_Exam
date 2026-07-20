@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { TeacherNavbar } from '../../components/TeacherNavbar';
 import { codingExecutionAPI } from '../../services/api';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { ArrowLeft, Code2, Search, User } from 'lucide-react';
+import Toast from '../../components/ui/Toast';
+import type { ToastMessage } from '../../components/ui/Toast';
 
 interface CodingSubmission {
   _id: string;
   studentId?: { name: string; email: string };
-  codingQuestionId?: { title: string };
+  codingQuestionId?: { title: string; difficulty?: string; points?: number };
   language: string;
   sourceCode: string;
   executionTime: number;
@@ -22,54 +24,141 @@ interface CodingSubmission {
 const CodingSubmissions: React.FC = () => {
   const { examId = '' } = useParams<{ examId: string }>();
   const [submissions, setSubmissions] = useState<CodingSubmission[]>([]);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
     codingExecutionAPI.getExamSubmissions(examId)
       .then(setSubmissions)
-      .catch((requestError: unknown) => {
-        const message = (requestError as { response?: { data?: { error?: string } } }).response?.data?.error;
-        setError(message || 'Failed to load coding submissions');
+      .catch((err: any) => {
+        setToast({
+          id: Date.now().toString(),
+          type: 'error',
+          message: err.response?.data?.error || 'Failed to load coding submissions'
+        });
       })
       .finally(() => setLoading(false));
   }, [examId]);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <Link to="/teacher/exams" className="mb-5 inline-flex items-center text-sm text-blue-600">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Exams
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Coding Submissions</h1>
-        <p className="mt-1 text-gray-600">Review submitted code and testcase totals for this exam.</p>
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter(sub => {
+      const q = searchQuery.toLowerCase();
+      const studentName = sub.studentId?.name || '';
+      const studentEmail = sub.studentId?.email || '';
+      const questionTitle = sub.codingQuestionId?.title || '';
+      return !q || studentName.toLowerCase().includes(q) || studentEmail.toLowerCase().includes(q) || questionTitle.toLowerCase().includes(q);
+    });
+  }, [submissions, searchQuery]);
 
-        {error && <div className="mt-5 rounded-md bg-red-50 p-4 text-sm text-red-700">{error}</div>}
-        {loading ? <p className="mt-6 text-gray-500">Loading submissions...</p> :
-          submissions.length === 0 ? <Card className="mt-6"><CardContent className="p-8 text-center text-gray-500">No coding submissions yet.</CardContent></Card> :
-            <div className="mt-6 space-y-5">
-              {submissions.map(submission => (
-                <Card key={submission._id}>
-                  <CardHeader>
-                    <CardTitle>{submission.codingQuestionId?.title || 'Coding Question'}</CardTitle>
-                    <p className="text-sm text-gray-500">
-                      {submission.studentId?.name} · {submission.studentId?.email} · {new Date(submission.submittedAt).toLocaleString()}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
-                      <span>Language: {submission.language}</span>
-                      <span>Passed: {submission.passedTestCases}</span>
-                      <span>Failed: {submission.failedTestCases}</span>
-                      <span>Score: {submission.score}/{submission.totalMarks}</span>
-                      <span>Time: {submission.executionTime} ms</span>
-                      <span>Memory: {Math.ceil(submission.memoryUsage / 1024)} KB</span>
+  return (
+    <div className="min-h-screen bg-gray-50/60 font-sans">
+      <TeacherNavbar />
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <Link to="/teacher/exams" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
+              <ArrowLeft size={14} className="mr-1" /> Back to Assessments
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Coding Submissions Review</h1>
+            <p className="text-sm text-gray-500 mt-1">Review source code, execution logs, and testcase pass/fail ratios</p>
+          </div>
+
+          <Link
+            to={`/teacher/exams/${examId}/results`}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors shadow-xs"
+          >
+            View Full Candidate Scorecards →
+          </Link>
+        </div>
+
+        {/* Search Toolbar */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-xs flex justify-between items-center">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by student name, email, or problem..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+            />
+          </div>
+          <span className="text-xs text-gray-500 font-medium">{filteredSubmissions.length} submissions</span>
+        </div>
+
+        {/* List */}
+        {loading ? (
+          <div className="text-center py-12 text-sm text-gray-500">Loading code submissions...</div>
+        ) : filteredSubmissions.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
+            <Code2 className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+            <h3 className="text-base font-semibold text-gray-900">No coding submissions found</h3>
+            <p className="text-xs text-gray-500 mt-1">When students submit code for this assessment, their source code will appear here.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredSubmissions.map(sub => (
+              <div key={sub._id} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs hover:shadow-md transition-all">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-xs">
+                      {sub.studentId?.name?.slice(0, 2).toUpperCase() || <User size={16} />}
                     </div>
-                    <pre className="max-h-96 overflow-auto rounded-md bg-gray-950 p-4 text-sm text-gray-100">{submission.sourceCode}</pre>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>}
+                    <div>
+                      <h3 className="text-base font-bold text-gray-900">{sub.codingQuestionId?.title || 'Coding Challenge'}</h3>
+                      <p className="text-xs text-gray-500">
+                        {sub.studentId?.name || 'Candidate'} · {sub.studentId?.email || 'N/A'} · {new Date(sub.submittedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Score: {sub.score} / {sub.totalMarks}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs mb-4 p-3 bg-gray-50/70 rounded-xl border border-gray-100">
+                  <div>
+                    <span className="text-gray-400 block text-[10px]">Language</span>
+                    <span className="font-bold text-gray-900">{sub.language}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px]">Passed Cases</span>
+                    <span className="font-bold text-emerald-600">{sub.passedTestCases}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px]">Failed Cases</span>
+                    <span className="font-bold text-rose-600">{sub.failedTestCases}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px]">Execution Time</span>
+                    <span className="font-bold text-gray-900">{sub.executionTime} ms</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px]">Memory Usage</span>
+                    <span className="font-bold text-gray-900">{Math.ceil(sub.memoryUsage / 1024)} KB</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block text-[10px]">Ratio</span>
+                    <span className="font-bold text-violet-700">
+                      {Math.round((sub.passedTestCases / (sub.passedTestCases + sub.failedTestCases || 1)) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <pre className="p-4 bg-gray-950 text-gray-100 text-xs rounded-xl overflow-x-auto font-mono max-h-96 shadow-inner">
+                  {sub.sourceCode}
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

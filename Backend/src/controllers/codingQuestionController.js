@@ -7,7 +7,7 @@ import ExamAttempt from '../models/exam/examAttempt.js';
 const ALLOWED_LANGUAGES = ['Python', 'Java', 'JavaScript', 'C', 'C++'];
 
 const getAllowedFilters = (req) => {
-    const isTeacher = req.user?.role === 'teacher' || req.user?.role === 'admin';
+    const isTeacher = req.user?.role === 'teacher';
     // Teachers see all their own questions; students/public only see active ones
     const filters = isTeacher ? { createdBy: req.user._id } : { isActive: true };
 
@@ -160,7 +160,7 @@ export const updateCodingQuestion = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
 
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only edit your own coding questions' });
         }
 
@@ -191,7 +191,7 @@ export const deleteCodingQuestion = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
 
-        if (req.user.role !== 'admin' && question.createdBy.toString() !== req.user._id.toString()) {
+        if (question.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only delete your own coding questions' });
         }
 
@@ -230,7 +230,7 @@ export const duplicateCodingQuestion = async (req, res) => {
         if (!source) {
             return res.status(404).json({ success: false, error: 'Coding question not found' });
         }
-        if (req.user.role !== 'admin' && source.createdBy.toString() !== req.user._id.toString()) {
+        if (source.createdBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ success: false, error: 'Can only duplicate your own coding questions' });
         }
 

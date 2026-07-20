@@ -133,6 +133,7 @@ const inMemoryStore = new InMemorySessionStore();
 // Export session manager interface
 export const sessionManager = {
     setActiveSession: (userId, sessionData) => inMemoryStore.setActiveSession(userId, sessionData),
+    createSession: (userId, sessionData) => inMemoryStore.setActiveSession(userId, sessionData),
     getActiveSession: (userId) => inMemoryStore.getActiveSession(userId),
     removeSession: (userId) => inMemoryStore.removeSession(userId),
     hasActiveSession: (userId) => inMemoryStore.hasActiveSession(userId),
