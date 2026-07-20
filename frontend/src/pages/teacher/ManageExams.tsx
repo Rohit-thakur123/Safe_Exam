@@ -64,10 +64,20 @@ const AssignStudentsModal: React.FC<{
         examAPI.getStudents(),
         examAPI.getAssignedStudents(exam._id || exam.id!)
       ]);
-      
+
       setStudents(studentsData.students || []);
-      setCurrentAssignments(assignedData.assignedStudents || []);
-      setSelectedStudents((assignedData.assignedStudents || []).map((s: Student) => s.id));
+      // Backend returns { students: [{ _id, name, email }] } here, not
+      // { assignedStudents }, and uses `_id` rather than `id` — normalize
+      // to the local Student shape ({ id, name, email }).
+      const assignedList: Student[] = (assignedData.students || []).map(
+        (s: { _id: string; name: string; email: string }) => ({
+          id: s._id,
+          name: s.name,
+          email: s.email,
+        })
+      );
+      setCurrentAssignments(assignedList);
+      setSelectedStudents(assignedList.map((s: Student) => s.id));
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Failed to load student data');
@@ -88,24 +98,27 @@ const AssignStudentsModal: React.FC<{
     setSaving(true);
     setError('');
     setSuccess('');
-    
+
     try {
       const response = await examAPI.assignStudents(
-        exam._id || exam.id!, 
+        exam._id || exam.id!,
         selectedStudents,
         sendEmailNotification
       );
-      
-      // Show success message with email stats if available
-      if (response.emailNotifications) {
-        const { sent, failed, total } = response.emailNotifications;
-        if (sent > 0) {
-          setSuccess(`Students assigned successfully! Email notifications sent to ${sent}/${total} student(s).`);
-        } else if (failed > 0) {
-          setSuccess(`Students assigned successfully, but ${failed} email(s) failed to send.`);
+
+      // Backend returns { message, assignedCount, emailsSent } — not an
+      // { emailNotifications: { sent, failed, total } } object — so build
+      // the message from the fields that actually come back.
+      if (response.assignedCount) {
+        if (sendEmailNotification && response.emailsSent) {
+          setSuccess(`Students assigned successfully! Email notifications sent to ${response.assignedCount} student(s).`);
+        } else if (sendEmailNotification && !response.emailsSent) {
+          setSuccess('Students assigned successfully, but email notifications failed to send.');
+        } else {
+          setSuccess('Students assigned successfully!');
         }
       }
-      
+
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -179,11 +192,10 @@ const AssignStudentsModal: React.FC<{
                 {students.map((student) => (
                   <div
                     key={student.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedStudents.includes(student.id)
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedStudents.includes(student.id)
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                     onClick={() => toggleStudent(student.id)}
                   >
                     <div className="flex items-center justify-between">
@@ -268,13 +280,13 @@ const ManageExams: React.FC = () => {
     try {
       setLoading(true);
       const data = await examAPI.getAll();
-      
+
       console.log('ManageExams - User ID:', user.id);
       console.log('ManageExams - All Exams:', data);
-      
+
       // Ensure we have an array
       const safeExams = Array.isArray(data) ? data : [];
-      
+
       // Filter to show only current teacher's exams
       const myExams = safeExams.filter((e: Exam) => {
         // If createdBy is not set, include the exam (for debugging)
@@ -287,7 +299,7 @@ const ManageExams: React.FC = () => {
         console.log('ManageExams - Comparing:', e.title, 'creator:', creatorId, 'user:', userId);
         return creatorId === userId;
       });
-      
+
       console.log('ManageExams - My Exams:', myExams.length);
       setExams(myExams);
     } catch (err) {
@@ -339,7 +351,7 @@ const ManageExams: React.FC = () => {
     try {
       const result = await examAPI.toggleStatus(id);
       // Update the local state
-      setExams(exams.map(e => 
+      setExams(exams.map(e =>
         (e._id || e.id) === id ? { ...e, isActive: result.isActive } : e
       ));
     } catch (err: any) {
@@ -409,15 +421,14 @@ const ManageExams: React.FC = () => {
                           <h3 className="text-lg font-medium text-gray-900">
                             {exam.title}
                           </h3>
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            exam.isActive 
-                              ? 'bg-green-100 text-green-800' 
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${exam.isActive
+                              ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800'
-                          }`}>
+                            }`}>
                             {exam.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </div>
-                        
+
                         {exam.description && (
                           <p className="text-sm text-gray-600 mb-3">{exam.description}</p>
                         )}

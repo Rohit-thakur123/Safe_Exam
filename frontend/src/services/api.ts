@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { Category, Question, Exam, CodingQuestion } from '../types';
 
-// Get API base URL from environment variable, fallback to localhost:4000
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+// Get API base URL from environment variable, fallback to localhost:3000
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -74,6 +74,12 @@ export const generateSEBConfig = ({ startUrl, quitPassword }) => {
     <true/>
     <key>browserExamKey</key>
     <string>exam-demo-key</string>
+    <key>allowSwitchToApplications</key>
+    <false/>
+    <key>allowVirtualMachine</key>
+    <false/>
+    <key>browserViewMode</key>
+    <integer>1</integer>
 </dict>
 </plist>
 `;

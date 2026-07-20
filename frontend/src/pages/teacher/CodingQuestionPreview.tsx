@@ -65,13 +65,14 @@ const CodingQuestionPreview: React.FC = () => {
   const normalisedQuestion: CodingQuestion & { id: string } = {
     ...question,
     id: question.id || question._id || '',
-    // Normalise starterCode to string for CodingAssessment backward compat
+    // Keep starterCode as Record<string, string> for type compatibility
     starterCode: (() => {
-      if (!question.starterCode) return '';
-      if (typeof question.starterCode === 'string') return question.starterCode;
-      // Return the first language's code as the base — CodingAssessment will parse the answer JSON
-      const langs = question.supportedLanguages || [];
-      return (question.starterCode as Record<string, string>)[langs[0]] || '';
+      if (!question.starterCode) return {} as Record<string, string>;
+      if (typeof question.starterCode === 'string') {
+        const lang = question.supportedLanguages?.[0] || 'text';
+        return { [lang]: question.starterCode } as Record<string, string>;
+      }
+      return question.starterCode as Record<string, string>;
     })()
   };
 

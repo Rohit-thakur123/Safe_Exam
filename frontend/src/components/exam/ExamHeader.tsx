@@ -2,7 +2,15 @@
 import React from 'react';
 import { Timer } from '../ui/Timer';
 import { Save, CheckCircle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+// Lightweight relative-time formatter (avoids date-fns dependency)
+const formatDistanceToNow = (date: Date, _opts?: { addSuffix?: boolean }): string => {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'less than a minute ago';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+};
 import  { useEffect, useState } from "react";
 import { ShieldCheck, Clock } from "lucide-react";
 

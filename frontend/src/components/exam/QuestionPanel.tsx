@@ -113,14 +113,15 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
 
   // Backend sends this as either a single (possibly multi-line) string or an
   // array of strings — normalize both shapes into one flat list of lines.
-  const constraintLines: string[] = Array.isArray(question.constraints)
-    ? question.constraints
-        .map((line) => line.trim().replace(/^[-*•]\s*/, ""))
-        .filter((line) => line.length > 0)
-    : (question.constraints ?? "")
+  const rawConstraints: string | string[] = question.constraints ?? "";
+  const constraintLines: string[] = Array.isArray(rawConstraints)
+    ? rawConstraints
+        .map((line: string) => line.trim().replace(/^[-*•]\s*/, ""))
+        .filter((line: string) => line.length > 0)
+    : rawConstraints
         .split("\n")
-        .map((line) => line.trim().replace(/^[-*•]\s*/, ""))
-        .filter((line) => line.length > 0);
+        .map((line: string) => line.trim().replace(/^[-*•]\s*/, ""))
+        .filter((line: string) => line.length > 0);
 
   return (
     <div className="h-full w-full overflow-y-auto custom-scrollbar bg-[#0a0a0f] px-5 py-6 lg:px-6">
@@ -140,9 +141,9 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
       <div className="mb-6">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span
-            className={`text-xs font-bold uppercase tracking-wider rounded-full border px-2.5 py-1 ${difficultyStyles[question.difficulty]}`}
+            className={`text-xs font-bold uppercase tracking-wider rounded-full border px-2.5 py-1 ${difficultyStyles[question.difficulty as Difficulty]}`}
           >
-            {capitalize(question.difficulty)}
+            {capitalize(question.difficulty as Difficulty)}
           </span>
           <span className="flex items-center gap-1 text-xs font-medium text-slate-400 bg-white/5 border border-white/10 rounded-full px-2.5 py-1">
             <Award size={12} className="text-violet-400" />
@@ -216,7 +217,7 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
           count={question.visibleTestCases.length}
         >
           <div className="flex flex-col gap-3">
-            {question.visibleTestCases.map((testCase, idx) => (
+            {question.visibleTestCases.map((testCase: { order: number; input: string; expectedOutput: string }, idx: number) => (
               <div
                 key={idx}
                 className="rounded-xl border border-white/10 bg-black/30 overflow-hidden"

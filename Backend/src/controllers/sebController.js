@@ -87,9 +87,30 @@ const runExamLinkVerification = async (examId, studentId, token) => {
 
     const activeAttempt = await ExamAttempt.findOne({ examId, studentId, status: 'in_progress' });
     if (activeAttempt) {
+        // Allow re-entry: student is resuming an in-progress attempt (e.g. SEB crashed and reopened)
         return {
-            success: false, status: 409, error: 'You already have an active attempt for this exam', code: 'ACTIVE_ATTEMPT_EXISTS',
-            data: { attemptId: activeAttempt._id.toString(), startTime: activeAttempt.startTime }
+            success: true,
+            status: 200,
+            exam,
+            resumed: true,
+            data: {
+                examId: exam._id.toString(),
+                canAttempt: true,
+                resumed: true,
+                exam: {
+                    id: exam._id.toString(),
+                    title: exam.title,
+                    description: exam.description,
+                    duration: exam.duration,
+                    totalMarks: exam.totalMarks,
+                    passingMarks: exam.passingMarks,
+                    startDate: exam.startDate,
+                    endDate: exam.endDate,
+                    allowRetakes: exam.allowRetakes
+                },
+                student: { id: student._id.toString(), name: student.name, email: student.email },
+                attemptStatus: { hasAttempted: true, previousAttempts: 1, allowRetakes: exam.allowRetakes }
+            }
         };
     }
 

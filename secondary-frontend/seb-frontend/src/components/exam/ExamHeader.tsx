@@ -107,7 +107,9 @@ const TopBar: React.FC<TopBarProps> = ({
  
   useEffect(() => {
     if (secondsRemaining <= 0) {
-      onTimeExpired();
+      if (initialSecondsRemaining > 0) {
+        onTimeExpired();
+      }
       return;
     }
     const intervalId = window.setInterval(() => {

@@ -148,7 +148,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({
   const passedCount = useMemo(() => {
     const results = runResult?.testCaseResults ?? submitResult?.testCaseResults;
     if (!results) return null;
-    return results.filter((r) => r.passed).length;
+    return results.filter((r: TestCaseResult) => r.passed).length;
   }, [runResult, submitResult]);
 
   const totalCount = useMemo(() => {
@@ -306,7 +306,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({
 
                 {runResult.testCaseResults && runResult.testCaseResults.length > 0 && (
                   <div className="flex flex-col gap-2 mt-1">
-                    {runResult.testCaseResults.map((tc, idx) => (
+                    {runResult.testCaseResults.map((tc: TestCaseResult, idx: number) => (
                       <TestCaseRow key={idx} result={tc} index={idx} />
                     ))}
                   </div>
@@ -400,7 +400,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({
 
                 {submitResult.testCaseResults && submitResult.testCaseResults.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    {submitResult.testCaseResults.map((tc, idx) => (
+                    {submitResult.testCaseResults.map((tc: TestCaseResult, idx: number) => (
                       <TestCaseRow key={idx} result={tc} index={idx} />
                     ))}
                   </div>

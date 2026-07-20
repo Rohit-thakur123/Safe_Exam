@@ -59,7 +59,9 @@ export const startExamAttempt = async (req, res) => {
             }
         }
 
-        // Check if student already has an active attempt
+        // Check if student already has an active attempt — if so, RESUME it
+        // instead of blocking. This handles SEB crashes, reconnects, and
+        // re-entry after the primary frontend redirected them again.
         const existingAttempt = await ExamAttempt.findOne({
             examId,
             studentId,
@@ -67,9 +69,46 @@ export const startExamAttempt = async (req, res) => {
         });
 
         if (existingAttempt) {
-            return res.status(409).json({
-                success: false,
-                error: 'You already have an active attempt for this exam'
+            // Re-populate the exam so we can return questions
+            const questionsForStudent = await buildStudentExamQuestions(exam);
+            const computedEndTime = new Date(
+                existingAttempt.startTime.getTime() + exam.duration * 60 * 1000
+            );
+
+            // Convert the Map answers back to a plain object for the client
+            const currentAnswers = existingAttempt.answers
+                ? Object.fromEntries(existingAttempt.answers)
+                : {};
+
+            console.log('🔄 [RESUME] Resuming existing in-progress attempt:', existingAttempt._id.toString());
+
+            return res.status(200).json({
+                success: true,
+                resumed: true,
+                attempt: {
+                    _id: existingAttempt._id.toString(),
+                    id: existingAttempt._id.toString(),
+                    examId: exam._id.toString(),
+                    studentId: studentId.toString(),
+                    startTime: existingAttempt.startTime,
+                    endTime: computedEndTime,
+                    status: existingAttempt.status,
+                    currentAnswers,
+                    exam: {
+                        title: exam.title,
+                        description: exam.description || '',
+                        duration: exam.duration,
+                        totalMarks: exam.totalMarks,
+                        passingMarks: exam.passingMarks,
+                        totalQuestions: questionsForStudent.length,
+                        questions: questionsForStudent
+                    },
+                    student: {
+                        id: studentId.toString(),
+                        name: req.user.name,
+                        email: req.user.email
+                    }
+                }
             });
         }
 

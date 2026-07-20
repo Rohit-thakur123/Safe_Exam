@@ -5,9 +5,9 @@ import { sessionManager } from '../config/sessionStore.js';
 
 export const authenticateToken = async (req, res, next) => {
     try {
-        // Get token from header
+        // Get token from header or query parameter (for sendBeacon)
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+        const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
 
         if (!token) {
             return res.status(401).json({

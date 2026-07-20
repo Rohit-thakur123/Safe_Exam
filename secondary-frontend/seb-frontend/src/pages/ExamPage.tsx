@@ -36,6 +36,12 @@ export const ExamPage = () => {
   const [codingStatus, setCodingStatus] = useState<CodingStatus>('locked');
   const [sectionsInitialized, setSectionsInitialized] = useState(false);
 
+  // Tab-switch / cheating detection — escalating warning, auto-submit after
+  // MAX_TAB_SWITCHES violations.
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabWarning, setShowTabWarning] = useState(false);
+  const MAX_TAB_SWITCHES = 3;
+
   const {
     examSession,
     loading,
@@ -62,9 +68,9 @@ export const ExamPage = () => {
   );
   const codingQuestions = useMemo(
     () =>
-      (examSession
-        ? (examSession.exam.questions.filter((q) => q.type === 'coding') as CodingQuestion[])
-        : []),
+    (examSession
+      ? (examSession.exam.questions.filter((q) => q.type === 'coding') as CodingQuestion[])
+      : []),
     [examSession]
   );
 
@@ -108,14 +114,48 @@ export const ExamPage = () => {
   // Keep session alive
   useHeartbeat(examSession?.attempt.id || null);
 
-  // Monitor tab switching
+  // Auto-submit the exam when tab-switch violations hit the threshold —
+  // mirrors the timer's onTimeUp auto-submit path below.
+  const handleCheatingAutoSubmit = async () => {
+    if (!examSession) return;
+    try {
+      const result = await submitExam();
+      navigate(`/exam/submit-success?autoSubmit=true&reason=tab_switch_violation&score=${result.score}&percentage=${result.percentage}`);
+    } catch (err) {
+      console.error('Auto-submit (tab-switch violation) failed:', err);
+      navigate('/exam/error?message=Exam%20auto-submitted%20due%20to%20tab%20switch%20violations');
+    }
+  };
+
+  // Monitor tab switching — escalating warning, auto-submit after MAX_TAB_SWITCHES
   useTabVisibility({
     onTabSwitch: (isHidden) => {
-      if (isHidden) {
-        console.warn('Student switched tabs - potential cheating detected');
-      }
+      if (!isHidden) return;
+      setTabSwitchCount((prev) => {
+        const next = prev + 1;
+        if (next >= MAX_TAB_SWITCHES) {
+          handleCheatingAutoSubmit();
+        } else {
+          setShowTabWarning(true);
+        }
+        return next;
+      });
     }
   });
+
+  // Auto-hide the warning banner a few seconds after it appears
+  useEffect(() => {
+    if (!showTabWarning) return;
+    const timeoutId = setTimeout(() => setShowTabWarning(false), 4000);
+    return () => clearTimeout(timeoutId);
+  }, [showTabWarning]);
+
+  const tabWarningBanner = showTabWarning ? (
+    <div className="fixed top-0 inset-x-0 z-50 bg-red-600 text-white text-center py-3 px-4 shadow-lg">
+      <strong>Warning ({tabSwitchCount}/{MAX_TAB_SWITCHES}):</strong> Leaving the exam window is recorded.
+      Your exam will be auto-submitted if this happens {MAX_TAB_SWITCHES} times.
+    </div>
+  ) : null;
 
   if (loading) {
     return (
@@ -155,51 +195,57 @@ export const ExamPage = () => {
     const codingMarks = codingQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
 
     return (
-      <ExamDashboard
-        companyName={examSession.exam.title}
-        examTitle={examSession.exam.title}
-        totalMarks={examSession.exam.totalMarks}
-        candidateName={examSession.student.name}
-        candidateId={examSession.student.id}
-        timeRemainingSeconds={timeRemaining}
-        mcqStatus={mcqStatus}
-        mcqMeta={{
-          itemCountLabel: `${mcqQuestions.length} Question${mcqQuestions.length === 1 ? '' : 's'}`,
-          marks: mcqMarks
-        }}
-        codingStatus={codingStatus}
-        codingMeta={{
-          itemCountLabel: `${codingQuestions.length} Problem${codingQuestions.length === 1 ? '' : 's'}`,
-          marks: codingMarks
-        }}
-        onStartMcq={() => {
-          setMcqStatus('in_progress');
-          setStage('mcq');
-        }}
-        onContinueMcq={() => setStage('mcq')}
-        onReviewMcq={() => setStage('mcq')}
-        onStartCoding={() => {
-          setCodingStatus('in_progress');
-          setStage('coding');
-        }}
-        onContinueCoding={() => setStage('coding')}
-        onReviewCoding={() => setStage('coding')}
-        onSubmitExam={handleFinalSubmit}
-      />
+      <>
+        {tabWarningBanner}
+        <ExamDashboard
+          companyName={examSession.exam.title}
+          examTitle={examSession.exam.title}
+          totalMarks={examSession.exam.totalMarks}
+          candidateName={examSession.student.name}
+          candidateId={examSession.student.id}
+          timeRemainingSeconds={timeRemaining}
+          mcqStatus={mcqStatus}
+          mcqMeta={{
+            itemCountLabel: `${mcqQuestions.length} Question${mcqQuestions.length === 1 ? '' : 's'}`,
+            marks: mcqMarks
+          }}
+          codingStatus={codingStatus}
+          codingMeta={{
+            itemCountLabel: `${codingQuestions.length} Problem${codingQuestions.length === 1 ? '' : 's'}`,
+            marks: codingMarks
+          }}
+          onStartMcq={() => {
+            setMcqStatus('in_progress');
+            setStage('mcq');
+          }}
+          onContinueMcq={() => setStage('mcq')}
+          onReviewMcq={() => setStage('mcq')}
+          onStartCoding={() => {
+            setCodingStatus('in_progress');
+            setStage('coding');
+          }}
+          onContinueCoding={() => setStage('coding')}
+          onReviewCoding={() => setStage('coding')}
+          onSubmitExam={handleFinalSubmit}
+        />
+      </>
     );
   }
 
   // ---- Stage: Coding ------------------------------------------------------------------
   if (stage === 'coding') {
     return (
-      <CodingTest
-        questions={codingQuestions}
-        attemptId={examSession.attempt.id}
-        onFinish={() => {
-          setCodingStatus('completed');
-          setStage('dashboard');
-        }}
-      />
+      <>
+        {tabWarningBanner}
+        <CodingTest
+          questions={codingQuestions}
+          attemptId={examSession.attempt.id}
+          onFinish={() => {
+            setCodingStatus('completed');
+            setStage('dashboard');
+          }}
+        />
+      </>
     );
   }
 
@@ -211,6 +257,7 @@ export const ExamPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {tabWarningBanner}
       {/* Header with timer */}
       <ExamHeader
         title={examSession.exam.title}

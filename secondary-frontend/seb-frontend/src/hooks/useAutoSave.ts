@@ -76,7 +76,9 @@ export const useAutoSave = ({
           
           
           if (navigator.sendBeacon) {
-            const url = `${import.meta.env.VITE_API_BASE_URL}/api/exam-attempts/save-answers`;
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+            const token = localStorage.getItem('seb_session_token') || '';
+            const url = `${baseUrl}/api/exam-attempts/save-answers?token=${encodeURIComponent(token)}`;
             navigator.sendBeacon(url, blob);
           }
         }

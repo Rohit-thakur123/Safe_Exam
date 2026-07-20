@@ -20,7 +20,7 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
       <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-sm font-medium text-gray-700 mb-4">Select your answer:</h3>
         <div className="space-y-3">
-          {question.options.map((option, index) => {
+          {question.options.map((option: string, index: number) => {
             const optionLabel = String.fromCharCode(65 + index); // A, B, C, D...
             const isSelected = currentAnswer === option;
 

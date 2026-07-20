@@ -19,7 +19,12 @@ export const useTimer = ({
   onTimeUp,
   warningThreshold = 300 // 5 minutes warning by default
 }: UseTimerOptions): UseTimerReturn => {
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [timeRemaining, setTimeRemaining] = useState<number>(() => {
+    if (!endTime) return 0;
+    const now = new Date().getTime();
+    const end = new Date(endTime).getTime();
+    return Math.max(0, Math.floor((end - now) / 1000));
+  });
   const [isExpired, setIsExpired] = useState(false);
   const onTimeUpRef = useRef(onTimeUp);
   const hasTriggeredRef = useRef(false);
