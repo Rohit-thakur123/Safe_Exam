@@ -7,6 +7,9 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { apiLimiter } from './middlewares/rateLimit.middleware.js';
 
+import descriptiveRoutes from "./routes/descriptive.routes.js";
+
+
 dotenv.config();
 
 const app = express();
@@ -71,6 +74,9 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+
+//for descriptive part
+app.use("/api/descriptive", descriptiveRoutes);
 
 // 404 handler
 app.use((req, res) => {
