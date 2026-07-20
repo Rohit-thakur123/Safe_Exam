@@ -43,7 +43,7 @@ function App() {
           key === 'a' ||   // Select All
           key === 'p' ||   // Print
           key === 'u' ||   // View Source
-          key === 's' ||   // Save (browser)
+          // key === 's' removed — EditorPanel uses Ctrl+S for Submit action
           key === 'o' ||   // Open
           key === 'n' ||   // New window
           key === 'w' ||   // Close tab
@@ -109,16 +109,18 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/dashboard" element={<DashboardPage />} />
+
+          {/* IMPORTANT: Static paths must come BEFORE dynamic params.
+               /exam/submit-success and /exam/error must be above
+               /exam/:examId/:sessionToken or React Router will treat
+               'submit-success' and 'error' as the examId param. */}
+          <Route path="/exam/submit-success" element={<SubmitSuccessPage />} />
+          <Route path="/exam/error" element={<ErrorPage />} />
+
           {/* Main exam route */}
           <Route path="/exam/:examId/:sessionToken" element={<ExamPage />} />
 
-          {/* Success page after submission */}
-          <Route path="/exam/submit-success" element={<SubmitSuccessPage />} />
-
-          {/* Error page */}
-          <Route path="/exam/error" element={<ErrorPage />} />
-
-          {/* Default redirect to error (no home page needed) */}
+          {/* Default redirect */}
           <Route path="/" element={<Navigate to="/exam/error?message=No%20exam%20link%20provided&code=INVALID_ACCESS" replace />} />
 
           {/* 404 page */}
