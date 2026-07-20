@@ -5,9 +5,15 @@ import { sessionManager } from '../config/sessionStore.js';
 
 export const authenticateToken = async (req, res, next) => {
     try {
-        // Get token from header or query parameter (for sendBeacon)
+        // Phase 4: Token can come from:
+        //  1. Authorization header (normal requests)
+        //  2. req.body.token (sendBeacon — cannot set custom headers)
+        // Never from query string (logs/proxies would capture it).
         const authHeader = req.headers['authorization'];
-        const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
+        const token =
+            (authHeader && authHeader.split(' ')[1]) ||
+            (req.body && req.body.token) ||
+            null;
 
         if (!token) {
             return res.status(401).json({

@@ -2,11 +2,7 @@
 // codeEditor.tsx
 // Top-level orchestrator: responsive 2-column layout, state management, API integration.
 // -------------------------------------------------------------------------------------
-// NOTE: `CodingAssessmentProps["question"]` is typed as the loose `Question` upstream
-// (title/starterCode/supportedLanguages/etc. all optional), but QuestionPanel and
-// EditorPanel require the strict `CodingQuestion`. `normalizeCodingQuestion` below
-// fills every optional field with a safe default exactly once, so nothing downstream
-// has to deal with `undefined` or the `string | Record<string,string>` union again.
+// Phase 1: Accepts examId prop and persists language selection per question to storage.
 // =====================================================================================
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,6 +17,7 @@ import type {
   SubmitResult,
 } from "../types/exam.types";
 import { compilerAPI, codingExecutionAPI } from "../services/api";
+import { StorageService } from "../services/storageService";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -66,13 +63,19 @@ const codeEditor: React.FC<CodingAssessmentProps> = ({
   answer,
   onAnswerChange,
   attemptId,
+  examId,
   onSubmitSuccess,
 }) => {
   // Normalize once per incoming question; every reference below uses this,
   // never `rawQuestion` directly.
   const question = useMemo(() => normalizeCodingQuestion(rawQuestion), [rawQuestion]);
 
-  const defaultLanguage = question.supportedLanguages[0] ?? DEFAULT_LANGUAGE_FALLBACK;
+  // Phase 1: Restore persisted language for this question
+  const savedLanguages = examId ? StorageService.loadCodingLanguages(examId) : {};
+  const savedLanguage = savedLanguages[question.id];
+  const defaultLanguage = savedLanguage && question.supportedLanguages.includes(savedLanguage)
+    ? savedLanguage
+    : (question.supportedLanguages[0] ?? DEFAULT_LANGUAGE_FALLBACK);
 
   // Per-language code cache kept in-memory for the session so switching languages
   // back and forth does not discard work, even though only one `answer` string
@@ -140,8 +143,15 @@ const codeEditor: React.FC<CodingAssessmentProps> = ({
       setRunResult(null);
       setSubmitResult(null);
       setApiError(null);
+
+      // Phase 1: Persist language selection per question
+      if (examId) {
+        const langs = StorageService.loadCodingLanguages(examId);
+        langs[question.id] = newLanguage;
+        StorageService.saveCodingLanguages(examId, langs);
+      }
     },
-    [language, sourceCode, question.starterCode]
+    [language, sourceCode, question.starterCode, examId, question.id]
   );
 
   const handleReset = useCallback(() => {

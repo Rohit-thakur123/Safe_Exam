@@ -1,58 +1,65 @@
-// Custom hook for detecting tab visibility changes (potential cheating)
+// Custom hook for detecting tab visibility changes (anti-cheating)
+// Phase 2 — now reports violations to backend via violationService.
 import { useEffect, useCallback, useRef } from 'react';
+import { reportViolation } from '../services/violationService';
 
 interface UseTabVisibilityOptions {
   onTabSwitch?: (isHidden: boolean) => void;
   onFocusLoss?: () => void;
-  logToBackend?: boolean;
+  attemptId?: string | null;
 }
 
 export const useTabVisibility = (options: UseTabVisibilityOptions = {}) => {
-  const { onTabSwitch, onFocusLoss, logToBackend = false } = options;
+  const { onTabSwitch, onFocusLoss, attemptId } = options;
   const switchCountRef = useRef(0);
-  
+  const blurCountRef = useRef(0);
+
   const handleVisibilityChange = useCallback(() => {
     const isHidden = document.hidden;
-    
+
     if (isHidden) {
       switchCountRef.current += 1;
-      console.warn(`[Security] Tab switched away (Count: ${switchCountRef.current})`);
-      
+
+      // Report to backend
+      if (attemptId) {
+        reportViolation(attemptId, 'tab_switch', {
+          count: switchCountRef.current,
+        });
+      }
+
       if (onTabSwitch) {
         onTabSwitch(isHidden);
       }
-      
-      // TODO: Log to backend if enabled
-      if (logToBackend) {
-        // Send tab switch event to backend
-        console.log('[Security] Would log to backend:', {
-          event: 'tab_switch',
-          count: switchCountRef.current,
-          timestamp: new Date().toISOString()
-        });
-      }
     }
-  }, [onTabSwitch, logToBackend]);
-  
+  }, [onTabSwitch, attemptId]);
+
   const handleBlur = useCallback(() => {
-    console.warn('[Security] Window lost focus');
-    
+    blurCountRef.current += 1;
+
+    // Report to backend
+    if (attemptId) {
+      reportViolation(attemptId, 'window_blur', {
+        count: blurCountRef.current,
+      });
+    }
+
     if (onFocusLoss) {
       onFocusLoss();
     }
-  }, [onFocusLoss]);
-  
+  }, [onFocusLoss, attemptId]);
+
   useEffect(() => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleBlur);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
     };
   }, [handleVisibilityChange, handleBlur]);
-  
+
   return {
-    switchCount: switchCountRef.current
+    switchCount: switchCountRef.current,
+    blurCount: blurCountRef.current,
   };
 };

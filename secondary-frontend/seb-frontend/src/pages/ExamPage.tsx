@@ -1,11 +1,16 @@
 // Main exam page component — orchestrates Dashboard -> MCQ -> Coding -> Submit
-import { useEffect, useMemo, useState } from 'react';
+// Phase 1: Persistent stage/section/question across page refreshes via StorageService
+// Phase 2: Violation reporting wired to useTabVisibility
+// Phase 3: Navigation confirmation dialogs before leaving active sections
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useExamSession } from '../hooks/useExamSession';
+import { useExamSession, AlreadySubmittedError } from '../hooks/useExamSession';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useTimer } from '../hooks/useTimer';
 import { useHeartbeat } from '../hooks/useHeartbeat';
 import { useTabVisibility } from '../hooks/useTabVisibility';
+import { StorageService } from '../services/storageService';
+import { reportViolation } from '../services/violationService';
 
 import ExamDashboard from '../components/exam/ExamDashboard';
 import { ExamHeader } from '../components/exam/ExamHeader';
@@ -27,17 +32,18 @@ export const ExamPage = () => {
   }>();
 
   const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>('dashboard');
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  // Section completion — the exam config has no explicit section-order field,
-  // so we default to "MCQ first, then Coding unlocks" (mcqFirst).
-  const [mcqStatus, setMcqStatus] = useState<McqStatus>('not_started');
-  const [codingStatus, setCodingStatus] = useState<CodingStatus>('locked');
+  // Section completion state (persisted)
+  const [stage, setStageRaw] = useState<Stage>('dashboard');
+  const [currentQuestionIndex, setCurrentQuestionIndexRaw] = useState(0);
+  const [mcqStatus, setMcqStatusRaw] = useState<McqStatus>('not_started');
+  const [codingStatus, setCodingStatusRaw] = useState<CodingStatus>('locked');
   const [sectionsInitialized, setSectionsInitialized] = useState(false);
 
-  // Tab-switch / cheating detection — escalating warning, auto-submit after
-  // MAX_TAB_SWITCHES violations.
+  // Phase 3: Confirmation dialogs
+  const [leaveSectionPending, setLeaveSectionPending] = useState<Stage | null>(null);
+
+  // Phase 2: Tab violation tracking
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showTabWarning, setShowTabWarning] = useState(false);
   const MAX_TAB_SWITCHES = 3;
@@ -51,17 +57,69 @@ export const ExamPage = () => {
     submitExam
   } = useExamSession();
 
-  // Initialize exam
+  // --- Phase 1: Persisted state setters ---
+  const setStage = useCallback((s: Stage) => {
+    setStageRaw(s);
+    if (examId) StorageService.saveExamStage(examId, s);
+  }, [examId]);
+
+  const setCurrentQuestionIndex = useCallback((idx: number | ((prev: number) => number)) => {
+    setCurrentQuestionIndexRaw((prev) => {
+      const next = typeof idx === 'function' ? idx(prev) : idx;
+      if (examId) StorageService.saveCurrentQuestion(examId, next);
+      return next;
+    });
+  }, [examId]);
+
+  const setMcqStatus = useCallback((s: McqStatus) => {
+    setMcqStatusRaw(s);
+    setCodingStatusRaw((prevCoding) => {
+      if (examId) StorageService.saveSectionStatuses(examId, { mcqStatus: s, codingStatus: prevCoding });
+      return prevCoding;
+    });
+  }, [examId]);
+
+  const setCodingStatus = useCallback((s: CodingStatus) => {
+    setCodingStatusRaw(s);
+    setMcqStatusRaw((prevMcq) => {
+      if (examId) StorageService.saveSectionStatuses(examId, { mcqStatus: prevMcq, codingStatus: s });
+      return prevMcq;
+    });
+  }, [examId]);
+
+  // --- Initialize exam ---
   useEffect(() => {
     if (examId && sessionToken) {
       initializeExam(examId, sessionToken).catch((err) => {
-        navigate(`/exam/error?message=${encodeURIComponent(err.message)}`);
+        // Phase 9: If the exam was already submitted, redirect to success page
+        if (err instanceof AlreadySubmittedError) {
+          // Clean up any lingering local data
+          StorageService.clearExamData(examId);
+          navigate('/exam/submit-success?reason=already_submitted');
+          return;
+        }
+        navigate(`/exam/error?message=${encodeURIComponent(err.message)}&code=LOAD_FAILED`);
       });
     }
   }, [examId, sessionToken, initializeExam, navigate]);
 
-  // Split the flat question list into MCQ/text questions and coding questions,
-  // and set up initial section statuses (mcqFirst default) once per session.
+  // --- Phase 1: Restore stage from storage after session loads ---
+  useEffect(() => {
+    if (!examSession || !examId) return;
+
+    const savedStage = StorageService.loadExamStage(examId) as Stage | null;
+    const savedIndex = StorageService.loadCurrentQuestion(examId);
+    const savedStatuses = StorageService.loadSectionStatuses(examId);
+
+    if (savedStage) setStageRaw(savedStage);
+    if (savedIndex) setCurrentQuestionIndexRaw(savedIndex);
+    if (savedStatuses) {
+      setMcqStatusRaw(savedStatuses.mcqStatus as McqStatus);
+      setCodingStatusRaw(savedStatuses.codingStatus as CodingStatus);
+      setSectionsInitialized(true);
+    }
+  }, [examSession, examId]);
+
   const mcqQuestions = useMemo(
     () => (examSession ? examSession.exam.questions.filter((q) => q.type !== 'coding') : []),
     [examSession]
@@ -78,17 +136,24 @@ export const ExamPage = () => {
     if (!examSession || sectionsInitialized) return;
 
     if (mcqQuestions.length === 0) {
-      // No MCQ section — coding unlocks immediately.
-      setMcqStatus('completed');
-      setCodingStatus(codingQuestions.length > 0 ? 'not_started' : 'completed');
+      setMcqStatusRaw('completed');
+      setCodingStatusRaw(codingQuestions.length > 0 ? 'not_started' : 'completed');
     } else {
-      setMcqStatus('not_started');
-      setCodingStatus(codingQuestions.length > 0 ? 'locked' : 'completed');
+      setMcqStatusRaw('not_started');
+      setCodingStatusRaw(codingQuestions.length > 0 ? 'locked' : 'completed');
     }
     setSectionsInitialized(true);
-  }, [examSession, sectionsInitialized, mcqQuestions.length, codingQuestions.length]);
 
-  // Auto-save answers
+    // Persist initial statuses
+    if (examId) {
+      StorageService.saveSectionStatuses(examId, {
+        mcqStatus: mcqQuestions.length === 0 ? 'completed' : 'not_started',
+        codingStatus: codingQuestions.length > 0 ? (mcqQuestions.length === 0 ? 'not_started' : 'locked') : 'completed',
+      });
+    }
+  }, [examSession, sectionsInitialized, mcqQuestions.length, codingQuestions.length, examId]);
+
+  // Auto-save MCQ answers
   const { saving, lastSaved, error: autoSaveError } = useAutoSave({
     attemptId: examSession?.attempt.id || null,
     answers: examSession?.currentAnswers || {},
@@ -102,6 +167,8 @@ export const ExamPage = () => {
       if (examSession) {
         try {
           const result = await submitExam();
+          // Phase 9: Clear storage on submission
+          if (examId) StorageService.clearExamData(examId);
           navigate(`/exam/submit-success?autoSubmit=true&score=${result.score}&percentage=${result.percentage}`);
         } catch (error) {
           console.error('Auto-submit failed:', error);
@@ -111,15 +178,13 @@ export const ExamPage = () => {
     }
   });
 
-  // Keep session alive
   useHeartbeat(examSession?.attempt.id || null);
 
-  // Auto-submit the exam when tab-switch violations hit the threshold —
-  // mirrors the timer's onTimeUp auto-submit path below.
   const handleCheatingAutoSubmit = async () => {
     if (!examSession) return;
     try {
       const result = await submitExam();
+      if (examId) StorageService.clearExamData(examId);
       navigate(`/exam/submit-success?autoSubmit=true&reason=tab_switch_violation&score=${result.score}&percentage=${result.percentage}`);
     } catch (err) {
       console.error('Auto-submit (tab-switch violation) failed:', err);
@@ -127,8 +192,9 @@ export const ExamPage = () => {
     }
   };
 
-  // Monitor tab switching — escalating warning, auto-submit after MAX_TAB_SWITCHES
+  // Phase 2: Tab visibility with violation reporting
   useTabVisibility({
+    attemptId: examSession?.attempt.id || null,
     onTabSwitch: (isHidden) => {
       if (!isHidden) return;
       setTabSwitchCount((prev) => {
@@ -143,17 +209,53 @@ export const ExamPage = () => {
     }
   });
 
-  // Auto-hide the warning banner a few seconds after it appears
+  // Auto-hide the warning banner
   useEffect(() => {
     if (!showTabWarning) return;
     const timeoutId = setTimeout(() => setShowTabWarning(false), 4000);
     return () => clearTimeout(timeoutId);
   }, [showTabWarning]);
 
+  // Phase 3: Navigation guard
+  const requestStageChange = useCallback((target: Stage) => {
+    if (stage === 'mcq' || stage === 'coding') {
+      setLeaveSectionPending(target);
+    } else {
+      setStage(target);
+    }
+  }, [stage, setStage]);
+
+  const confirmLeaveSection = useCallback(() => {
+    if (leaveSectionPending) {
+      setStage(leaveSectionPending);
+    }
+    setLeaveSectionPending(null);
+  }, [leaveSectionPending, setStage]);
+
+  const cancelLeaveSection = useCallback(() => {
+    setLeaveSectionPending(null);
+  }, []);
+
   const tabWarningBanner = showTabWarning ? (
     <div className="fixed top-0 inset-x-0 z-50 bg-red-600 text-white text-center py-3 px-4 shadow-lg">
-      <strong>Warning ({tabSwitchCount}/{MAX_TAB_SWITCHES}):</strong> Leaving the exam window is recorded.
+      <strong>⚠ Warning ({tabSwitchCount}/{MAX_TAB_SWITCHES}):</strong> Leaving the exam window is recorded.
       Your exam will be auto-submitted if this happens {MAX_TAB_SWITCHES} times.
+    </div>
+  ) : null;
+
+  // Phase 3: Confirmation modal
+  const leaveConfirmModal = leaveSectionPending ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+        <h2 className="text-lg font-bold text-gray-900 mb-2">Leave This Section?</h2>
+        <p className="text-gray-600 mb-6">
+          You are about to leave the current section. Your answers are saved. You can return at any time before final submission.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={cancelLeaveSection}>Stay Here</Button>
+          <Button variant="default" onClick={confirmLeaveSection}>Leave Section</Button>
+        </div>
+      </div>
     </div>
   ) : null;
 
@@ -171,7 +273,7 @@ export const ExamPage = () => {
         <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">
           <h2 className="text-xl font-bold text-red-600 mb-4">Error</h2>
           <p className="text-gray-700 mb-6">{error || 'Failed to load exam'}</p>
-          <Button variant="primary" onClick={() => window.location.reload()}>
+          <Button variant="default" onClick={() => window.location.reload()}>
             Try Again
           </Button>
         </div>
@@ -182,6 +284,8 @@ export const ExamPage = () => {
   const handleFinalSubmit = async () => {
     try {
       const result = await submitExam();
+      // Phase 9: Clear all local data immediately on successful submission
+      if (examId) StorageService.clearExamData(examId);
       navigate(`/exam/submit-success?score=${result.score}&percentage=${result.percentage}`);
     } catch (err) {
       console.error('Final submit failed:', err);
@@ -189,7 +293,7 @@ export const ExamPage = () => {
     }
   };
 
-  // ---- Stage: Dashboard --------------------------------------------------------------
+  // ---- Stage: Dashboard -------------------------------------------------------
   if (stage === 'dashboard') {
     const mcqMarks = mcqQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
     const codingMarks = codingQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
@@ -197,6 +301,7 @@ export const ExamPage = () => {
     return (
       <>
         {tabWarningBanner}
+        {leaveConfirmModal}
         <ExamDashboard
           companyName={examSession.exam.title}
           examTitle={examSession.exam.title}
@@ -232,24 +337,26 @@ export const ExamPage = () => {
     );
   }
 
-  // ---- Stage: Coding ------------------------------------------------------------------
+  // ---- Stage: Coding ----------------------------------------------------------
   if (stage === 'coding') {
     return (
       <>
         {tabWarningBanner}
+        {leaveConfirmModal}
         <CodingTest
           questions={codingQuestions}
           attemptId={examSession.attempt.id}
+          examId={examSession.attempt.examId}
           onFinish={() => {
             setCodingStatus('completed');
-            setStage('dashboard');
+            requestStageChange('dashboard');
           }}
         />
       </>
     );
   }
 
-  // ---- Stage: MCQ ---------------------------------------------------------------------
+  // ---- Stage: MCQ -------------------------------------------------------------
   const currentQuestion = mcqQuestions[currentQuestionIndex];
   const answeredQuestions = Object.keys(examSession.currentAnswers).filter((id) =>
     mcqQuestions.some((q) => q.id === id)
@@ -258,6 +365,7 @@ export const ExamPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {tabWarningBanner}
+      {leaveConfirmModal}
       {/* Header with timer */}
       <ExamHeader
         title={examSession.exam.title}
@@ -281,7 +389,7 @@ export const ExamPage = () => {
         {/* Question area */}
         <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="mb-4">
-            <Button variant="secondary" onClick={() => setStage('dashboard')}>
+            <Button variant="secondary" onClick={() => requestStageChange('dashboard')}>
               ← Back to Dashboard
             </Button>
           </div>
@@ -295,7 +403,10 @@ export const ExamPage = () => {
           <AnswerInput
             question={currentQuestion}
             currentAnswer={examSession.currentAnswers[currentQuestion.id] || ''}
-            onAnswerChange={(answer) => updateAnswer(currentQuestion.id, answer)}
+            onAnswerChange={(answer) => {
+              // Phase 2: Report paste attempts by tracking the source (keyboard shortcuts are blocked in App.tsx)
+              updateAnswer(currentQuestion.id, answer);
+            }}
           />
 
           {/* Auto-save error message */}
@@ -323,7 +434,7 @@ export const ExamPage = () => {
 
             {currentQuestionIndex < mcqQuestions.length - 1 ? (
               <Button
-                variant="primary"
+                variant="default"
                 onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
               >
                 Next →
@@ -335,7 +446,7 @@ export const ExamPage = () => {
                   if (codingStatus === 'locked') {
                     setCodingStatus('not_started');
                   }
-                  setStage('dashboard');
+                  requestStageChange('dashboard');
                 }}
                 answeredCount={answeredQuestions.length}
                 totalQuestions={mcqQuestions.length}

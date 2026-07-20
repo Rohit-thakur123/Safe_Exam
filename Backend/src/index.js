@@ -18,8 +18,7 @@ const allowedOrigins = [
     "http://localhost:5174",
 ];
 
-console.log("MONGO_URI:", process.env.MONGO_URI);
-console.log("SMTP_USER:", process.env.SMTP_USER);
+// Phase 7: Removed credential logging (MONGO_URI, SMTP_USER exposed in plain text)
 
 
 connectDb();
@@ -48,10 +47,12 @@ app.use(helmet({
 app.use(compression()); // Compress responses
 app.use(express.json());
 
-// Request logger - logs all incoming requests
+// Request logger — method and path only; body is intentionally omitted to
+// prevent JWT tokens and student answers appearing in plain-text server logs.
 app.use((req, res, next) => {
-    console.log(`\n📨 ${new Date().toISOString()} - ${req.method} ${req.url}`);
-    console.log('Body:', JSON.stringify(req.body));
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+    }
     next();
 });
 

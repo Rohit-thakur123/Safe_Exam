@@ -217,6 +217,8 @@ export interface CodingAssessmentProps {
   answer: string;
   onAnswerChange: (answer: string) => void;
   attemptId: string;
+  /** Phase 1: examId for localStorage persistence (language, answers) */
+  examId?: string;
   /** Called after a successful submit, e.g. so a parent can mark this problem as done */
   onSubmitSuccess?: (result: SubmitResult) => void;
 }

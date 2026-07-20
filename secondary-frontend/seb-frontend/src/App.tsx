@@ -9,7 +9,8 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import DashboardPage from './pages/DashboardPage';
 
 function App() {
-  // Security: Disable copy, cut, paste, and right-click
+  // Phase 2 Security: Block ALL keyboard shortcuts, copy/paste, right-click context menu globally.
+  // This is an intentional policy decision — no exceptions are made for Monaco editor.
   useEffect(() => {
     const preventCopy = (e: ClipboardEvent) => {
       e.preventDefault();
@@ -32,30 +33,66 @@ function App() {
     };
 
     const preventKeyboardShortcuts = (e: KeyboardEvent) => {
-      // Prevent common keyboard shortcuts
-      if (
-        (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'a' || e.key === 'p')) ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-        e.key === 'F12' ||
-        (e.ctrlKey && e.key === 'u')
-      ) {
+      // Block ALL copy/paste/cut shortcuts
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (
+          key === 'c' ||   // Copy
+          key === 'v' ||   // Paste
+          key === 'x' ||   // Cut
+          key === 'a' ||   // Select All
+          key === 'p' ||   // Print
+          key === 'u' ||   // View Source
+          key === 's' ||   // Save (browser)
+          key === 'o' ||   // Open
+          key === 'n' ||   // New window
+          key === 'w' ||   // Close tab
+          key === 't' ||   // New tab
+          key === 'r'      // Refresh
+        ) {
+          e.preventDefault();
+          return false;
+        }
+        // Block Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C (DevTools)
+        if (e.shiftKey && (key === 'i' || key === 'j' || key === 'c')) {
+          e.preventDefault();
+          return false;
+        }
+      }
+      // Block function keys that open DevTools / refresh
+      if (e.key === 'F5' || e.key === 'F12') {
         e.preventDefault();
         return false;
       }
     };
 
-    document.addEventListener('copy', preventCopy);
-    document.addEventListener('cut', preventCut);
-    document.addEventListener('paste', preventPaste);
-    document.addEventListener('contextmenu', preventContextMenu);
-    document.addEventListener('keydown', preventKeyboardShortcuts);
+    // DevTools detection via window size heuristic
+    const detectDevTools = () => {
+      const threshold = 160;
+      if (
+        window.outerWidth - window.innerWidth > threshold ||
+        window.outerHeight - window.innerHeight > threshold
+      ) {
+        // DevTools is likely open — navigate to error page
+        window.location.href = '/exam/error?message=DevTools%20detected.%20Exam%20terminated.&code=DEVTOOLS_DETECTED';
+      }
+    };
+
+    const devToolsInterval = window.setInterval(detectDevTools, 3000);
+
+    document.addEventListener('copy', preventCopy, true);
+    document.addEventListener('cut', preventCut, true);
+    document.addEventListener('paste', preventPaste, true);
+    document.addEventListener('contextmenu', preventContextMenu, true);
+    document.addEventListener('keydown', preventKeyboardShortcuts, true);
 
     return () => {
-      document.removeEventListener('copy', preventCopy);
-      document.removeEventListener('cut', preventCut);
-      document.removeEventListener('paste', preventPaste);
-      document.removeEventListener('contextmenu', preventContextMenu);
-      document.removeEventListener('keydown', preventKeyboardShortcuts);
+      document.removeEventListener('copy', preventCopy, true);
+      document.removeEventListener('cut', preventCut, true);
+      document.removeEventListener('paste', preventPaste, true);
+      document.removeEventListener('contextmenu', preventContextMenu, true);
+      document.removeEventListener('keydown', preventKeyboardShortcuts, true);
+      window.clearInterval(devToolsInterval);
     };
   }, []);
 
