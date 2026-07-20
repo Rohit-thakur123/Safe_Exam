@@ -8,7 +8,7 @@ import SessionRouter from "./session.routes.js";
 import SEBRouter from "./seb.routes.js";
 import CategoryRouter from "./category.routes.js";
 import CodingExecutionRouter from "./codingExecution.routes.js";
-
+import DescriptiveRouter from "./descriptive.routes.js";
 const router = express.Router();
 
 router.get('/', (req, res) => {
@@ -24,5 +24,6 @@ router.use('/exams', ExamRouter);
 router.use('/exam-attempts', ExamAttemptRouter);
 router.use('/sessions', SessionRouter);
 router.use('/seb', SEBRouter);
+router.use("/descriptive", DescriptiveRouter);
 
 export default router;
