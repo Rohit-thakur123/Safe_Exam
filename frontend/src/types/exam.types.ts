@@ -43,9 +43,17 @@ export type SubmitResult = {
   [key: string]: any;
 };
 
-// ---- Shared UI types used by exam components ----
+// =======================================================
+// Shared Question Types
+// =======================================================
 
-export type QuestionType = "mcq" | "text" | "file" | "coding";
+export type QuestionType =
+  | "mcq"
+  | "text"
+  | "descriptive"
+  | "file"
+  | "coding";
+
 export type Difficulty = "easy" | "medium" | "hard";
 
 export interface Question {
@@ -54,25 +62,41 @@ export interface Question {
   question: string;
   description?: string;
   type: QuestionType;
+
   options?: string[];
+
   marks: number;
   difficulty: Difficulty;
   category: string;
+
   constraints?: string | string[];
   inputFormat?: string;
   outputFormat?: string;
   explanation?: string;
+
   starterCode?: string | Record<string, string>;
   supportedLanguages?: string[];
+
   timeLimit?: number;
   memoryLimit?: number;
+
+  // Descriptive Question Support
+  maxWords?: number;
+  maxCharacters?: number;
+  placeholder?: string;
+
   visibleTestCases?: {
     order: number;
     input: string;
     expectedOutput: string;
   }[];
+
   hiddenTestCases?: number;
 }
+
+// =======================================================
+// Coding Types
+// =======================================================
 
 export type Verdict =
   | "Accepted"
@@ -93,33 +117,82 @@ export interface TestCaseResult {
   errorMessage?: string;
 }
 
-// ---- Exam Dashboard types ----
+// =======================================================
+// Dashboard Status
+// =======================================================
 
-export type McqStatus = "not_started" | "in_progress" | "completed";
-export type CodingStatus = "locked" | "not_started" | "in_progress" | "completed";
-export type SectionStatus = McqStatus | CodingStatus;
+export type McqStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed";
+
+export type CodingStatus =
+  | "locked"
+  | "not_started"
+  | "in_progress"
+  | "completed";
+
+export type DescriptiveStatus =
+  | "locked"
+  | "not_started"
+  | "in_progress"
+  | "completed";
+
+export type SectionStatus =
+  | McqStatus
+  | CodingStatus
+  | DescriptiveStatus;
+
+// =======================================================
+// Dashboard Meta
+// =======================================================
 
 export interface SectionMeta {
   itemCountLabel: string;
   marks: number;
 }
 
+// =======================================================
+// Dashboard Props
+// =======================================================
+
 export interface ExamDashboardProps {
   companyName: string;
   examTitle: string;
   totalMarks: number;
+
   candidateName: string;
   candidateId: string;
+
   timeRemainingSeconds: number;
+
+  // MCQ
   mcqStatus: McqStatus;
   mcqMeta: SectionMeta;
+
+  // Coding
   codingStatus: CodingStatus;
   codingMeta: SectionMeta;
+
+  // Descriptive
+  descriptiveStatus: DescriptiveStatus;
+  descriptiveMeta: SectionMeta;
+
+  // MCQ Actions
   onStartMcq: () => void;
   onContinueMcq: () => void;
   onReviewMcq: () => void;
+
+  // Coding Actions
   onStartCoding: () => void;
   onContinueCoding: () => void;
   onReviewCoding: () => void;
+
+  // Descriptive Actions
+  onStartDescriptive: () => void;
+  onContinueDescriptive: () => void;
+  onReviewDescriptive: () => void;
+
+  // Submit
   onSubmitExam: () => void;
 }

@@ -1,12 +1,13 @@
 // =====================================================================================
 // ExamDashboard.tsx
-// The exam "home base": candidates land here before, between, and after each section.
-// Vertical stepper (not side-by-side cards) because the flow is sequential and gated,
-// not a parallel choice.
+// Exam dashboard with three sections:
+// 1. MCQ
+// 2. Coding
+// 3. Descriptive
 // =====================================================================================
 
 import React, { useMemo } from "react";
-import { ListChecks, Code2 } from "lucide-react";
+import { ListChecks, Code2, FileText } from "lucide-react";
 import TopBar from "./ExamHeader";
 import SectionCard from "./AssessmentCard";
 import SubmitFooter from "./SubmitFooter";
@@ -19,26 +20,57 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
   candidateName,
   candidateId,
   timeRemainingSeconds,
+
+  // MCQ
   mcqStatus,
   mcqMeta,
+
+  // Coding
   codingStatus,
   codingMeta,
+
+  // Descriptive
+  descriptiveStatus,
+  descriptiveMeta,
+
+  // MCQ Actions
   onStartMcq,
   onContinueMcq,
   onReviewMcq,
+
+  // Coding Actions
   onStartCoding,
   onContinueCoding,
   onReviewCoding,
+
+  // Descriptive Actions
+  onStartDescriptive,
+  onContinueDescriptive,
+  onReviewDescriptive,
+
+  // Final Submit
   onSubmitExam,
 }) => {
   const mcqCompleted = mcqStatus === "completed";
   const codingCompleted = codingStatus === "completed";
-  const bothCompleted = mcqCompleted && codingCompleted;
+  const descriptiveCompleted = descriptiveStatus === "completed";
+
+  const allCompleted =
+    mcqCompleted &&
+    codingCompleted &&
+    descriptiveCompleted;
 
   const connectorColorClass = useMemo(
     () => (mcqCompleted ? "bg-emerald-500/40" : "bg-white/10"),
     [mcqCompleted]
   );
+
+  const connectorColorClass2 = useMemo(
+    () => (codingCompleted ? "bg-emerald-500/40" : "bg-white/10"),
+    [codingCompleted]
+  );
+
+  // ---------------- MCQ ----------------
 
   const handleMcqAction = () => {
     if (mcqStatus === "not_started") onStartMcq();
@@ -46,17 +78,27 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
     else onReviewMcq();
   };
 
+  // ---------------- Coding ----------------
+
   const handleCodingAction = () => {
     if (codingStatus === "not_started") onStartCoding();
     else if (codingStatus === "in_progress") onContinueCoding();
     else if (codingStatus === "completed") onReviewCoding();
-    // "locked" renders no button, so this is never called in that state
   };
 
+  // ---------------- Descriptive ----------------
+
+  const handleDescriptiveAction = () => {
+    if (descriptiveStatus === "not_started") onStartDescriptive();
+    else if (descriptiveStatus === "in_progress")
+      onContinueDescriptive();
+    else if (descriptiveStatus === "completed")
+      onReviewDescriptive();
+  };
+
+  // ---------------- Timer ----------------
+
   const handleTimeExpired = () => {
-    // The dashboard owns the global clock. When it hits zero, whatever the
-    // candidate was doing should already have been auto-submitted by the
-    // section screens; this is the final safety net that locks the exam here.
     onSubmitExam();
   };
 
@@ -75,10 +117,13 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
           <p className="mb-1.5 text-[19px] font-medium text-slate-50">
             {examTitle}
           </p>
+
           <p className="text-[13px] text-slate-500">
-            2 sections · {totalMarks} marks total · Candidate ID #{candidateId}
+            3 Sections · {totalMarks} Marks · Candidate ID #{candidateId}
           </p>
         </div>
+
+        {/* ================= MCQ ================= */}
 
         <SectionCard
           stepNumber={1}
@@ -90,7 +135,11 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
           onPrimaryAction={handleMcqAction}
         />
 
-        <div className={`ml-[38px] h-7 w-0.5 ${connectorColorClass}`} />
+        <div
+          className={`ml-[38px] h-7 w-0.5 ${connectorColorClass}`}
+        />
+
+        {/* ================= Coding ================= */}
 
         <SectionCard
           stepNumber={2}
@@ -103,10 +152,30 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
           onPrimaryAction={handleCodingAction}
         />
 
+        <div
+          className={`ml-[38px] h-7 w-0.5 ${connectorColorClass2}`}
+        />
+
+        {/* ================= Descriptive ================= */}
+
+        <SectionCard
+          stepNumber={3}
+          icon={<FileText size={20} />}
+          title="Descriptive Assessment"
+          itemCountLabel={descriptiveMeta.itemCountLabel}
+          marks={descriptiveMeta.marks}
+          status={descriptiveStatus}
+          lockedHelperText="Unlocks after Coding is submitted."
+          onPrimaryAction={handleDescriptiveAction}
+        />
+
+        {/* ================= Submit ================= */}
+
         <SubmitFooter
-          isReady={bothCompleted}
+          isReady={allCompleted}
           mcqCompleted={mcqCompleted}
           codingCompleted={codingCompleted}
+          descriptiveCompleted={descriptiveCompleted}
           onConfirmSubmit={onSubmitExam}
         />
       </div>
