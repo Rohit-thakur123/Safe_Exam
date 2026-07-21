@@ -418,7 +418,7 @@ export const submitExamAttempt = async (req, res) => {
         attempt.percentage = exam.totalMarks > 0
             ? Math.round((score / exam.totalMarks) * 100 * 100) / 100
             : 0;
-        attempt.passed = !hasDescriptiveQuestions && score >= exam.passingMarks;
+        attempt.passed = score >= (exam.passingMarks || 0);
         attempt.endTime = new Date();
         attempt.timeSpent = timeSpent || Math.floor(elapsedTime / 1000);
         attempt.status = 'completed';
@@ -817,9 +817,21 @@ export const getExamAttempts = async (req, res) => {
             });
         }
 
-        const attempts = await ExamAttempt.find({ examId })
+        const allAttempts = await ExamAttempt.find({ examId })
             .populate('studentId', 'name email')
             .sort({ createdAt: -1 });
+
+        // Keep only the latest attempt per student
+        const latestAttemptsMap = new Map();
+        for (const a of allAttempts) {
+            const studentIdStr = a.studentId && typeof a.studentId === 'object'
+                ? a.studentId._id.toString()
+                : String(a.studentId);
+            if (!latestAttemptsMap.has(studentIdStr)) {
+                latestAttemptsMap.set(studentIdStr, a);
+            }
+        }
+        const attempts = Array.from(latestAttemptsMap.values());
 
         // Calculate statistics
         const completedAttempts = attempts.filter(a => a.status === 'completed');
@@ -855,6 +867,8 @@ export const getExamAttempts = async (req, res) => {
                 totalMarks: exam.totalMarks || 0,
                 percentage: a.percentage || 0,
                 passed: Boolean(a.passed),
+                subjectiveStatus: a.subjectiveStatus || 'not_applicable',
+                subjectiveScore: a.subjectiveScore || 0,
                 submittedAt: a.endTime || a.updatedAt || a.createdAt,
                 startTime: a.startTime,
                 timeSpent: a.timeSpent || 0,

@@ -45,12 +45,13 @@ const getExecutionContext = async (req) => {
         error.status = 403;
         throw error;
     }
-    if (!question.supportedLanguages.includes(language)) {
+    const matchedLanguage = question.supportedLanguages.find(l => l.toLowerCase() === language.toLowerCase());
+    if (!matchedLanguage) {
         const error = new Error('Language is not supported for this question');
         error.status = 400;
         throw error;
     }
-    return { question, attempt, exam, language, sourceCode };
+    return { question, attempt, exam, language: matchedLanguage, sourceCode };
 };
 
 const handleExecutionError = (error, res, next) => {
@@ -69,12 +70,19 @@ const handleExecutionError = (error, res, next) => {
 export const runCodingQuestion = async (req, res, next) => {
     try {
         const context = await getExecutionContext(req);
-        const testCases = await TestCase.find({
+        let testCases = await TestCase.find({
             codingQuestionId: context.question._id,
             isHidden: false
         }).sort({ order: 1 }).lean();
+
         if (!testCases.length) {
-            return res.status(422).json({ success: false, error: 'No visible testcases are configured' });
+            testCases = await TestCase.find({
+                codingQuestionId: context.question._id
+            }).sort({ order: 1 }).lean();
+        }
+
+        if (!testCases.length) {
+            return res.status(422).json({ success: false, error: 'No testcases configured for this coding question' });
         }
         const results = await executeTestCases({
             ...context,
@@ -99,12 +107,19 @@ export const runCodingQuestion = async (req, res, next) => {
 export const submitCodingQuestion = async (req, res, next) => {
     try {
         const context = await getExecutionContext(req);
-        const testCases = await TestCase.find({
+        let testCases = await TestCase.find({
             codingQuestionId: context.question._id,
             isHidden: true
         }).sort({ order: 1 }).lean();
+
         if (!testCases.length) {
-            return res.status(422).json({ success: false, error: 'No hidden testcases are configured' });
+            testCases = await TestCase.find({
+                codingQuestionId: context.question._id
+            }).sort({ order: 1 }).lean();
+        }
+
+        if (!testCases.length) {
+            return res.status(422).json({ success: false, error: 'No testcases configured for this coding question' });
         }
         const results = await executeTestCases({
             ...context,

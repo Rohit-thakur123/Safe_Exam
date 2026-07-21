@@ -64,6 +64,7 @@ const Dashboard: React.FC = () => {
   const [mcqQuestions, setMcqQuestions] = useState<Question[]>([]);
   const [codingQuestions, setCodingQuestions] = useState<CodingQuestion[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -72,23 +73,32 @@ const Dashboard: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [mcqData, codingData, examsData] = await Promise.all([
+      const [mcqData, codingData, examsData, analyticsRes] = await Promise.all([
         questionAPI.getAll().catch(() => []),
         codingQuestionAPI.getAll({ limit: 100 }).then(res => res.questions).catch(() => []),
-        examAPI.getAll().catch(() => [])
+        examAPI.getAll().catch(() => []),
+        examAPI.getAnalytics().catch(() => null)
       ]);
 
       const myMcqs = (Array.isArray(mcqData) ? mcqData : []).filter((q: Question) =>
         !q.createdBy || String(q.createdBy) === String(user.id)
       );
 
-      const myExams = (Array.isArray(examsData) ? examsData : []).filter((e: Exam) =>
-        !e.createdBy || String(e.createdBy) === String(user.id)
-      );
+      const uniqueExamsMap = new Map();
+      (Array.isArray(examsData) ? examsData : []).forEach((e: Exam) => {
+        const id = e._id || e.id;
+        if (id && (!e.createdBy || String(e.createdBy) === String(user.id))) {
+          if (!uniqueExamsMap.has(id)) {
+            uniqueExamsMap.set(id, e);
+          }
+        }
+      });
+      const myExams = Array.from(uniqueExamsMap.values());
 
       setMcqQuestions(myMcqs);
       setCodingQuestions(codingData || []);
       setExams(myExams);
+      setAnalytics(analyticsRes?.analytics || null);
     } catch (err: any) {
       setToast({
         id: Date.now().toString(),
@@ -177,8 +187,8 @@ const Dashboard: React.FC = () => {
               <StatCard
                 icon={FileText}
                 label="Total Exams"
-                value={exams.length}
-                subtext={`${activeExams.length} active assessments`}
+                value={analytics?.totalExams ?? exams.length}
+                subtext={`${analytics?.activeExams ?? activeExams.length} active assessments`}
                 gradient="from-violet-600 to-indigo-600"
                 linkTo="/teacher/exams"
                 linkLabel="Manage all exams"
@@ -186,8 +196,8 @@ const Dashboard: React.FC = () => {
               <StatCard
                 icon={Activity}
                 label="Active Exams"
-                value={activeExams.length}
-                badge={activeExams.length > 0 ? 'Live Now' : 'Idle'}
+                value={analytics?.activeExams ?? activeExams.length}
+                badge={(analytics?.activeExams ?? activeExams.length) > 0 ? 'Live Now' : 'Idle'}
                 subtext="Currently accessible by candidates"
                 gradient="from-emerald-500 to-teal-600"
                 linkTo="/teacher/exams"
@@ -196,7 +206,7 @@ const Dashboard: React.FC = () => {
               <StatCard
                 icon={ListChecks}
                 label="MCQ Questions"
-                value={mcqQuestions.length}
+                value={analytics?.totalMcqs ?? mcqQuestions.length}
                 subtext="Multiple choice question bank"
                 gradient="from-blue-500 to-cyan-600"
                 linkTo="/teacher/mcq"
@@ -205,7 +215,7 @@ const Dashboard: React.FC = () => {
               <StatCard
                 icon={Code2}
                 label="Coding Challenges"
-                value={codingQuestions.length}
+                value={analytics?.totalCoding ?? codingQuestions.length}
                 subtext="Algorithm & programming tasks"
                 gradient="from-indigo-500 to-purple-600"
                 linkTo="/teacher/coding-questions"
@@ -213,6 +223,46 @@ const Dashboard: React.FC = () => {
               />
             </>
           )}
+        </div>
+
+        {/* Subjective Dashboard Widgets (P0-8) */}
+        <div className="mb-8">
+          <h2 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider flex items-center gap-2">
+            <FileText size={16} className="text-violet-600" /> Subjective Evaluation Widgets
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {loading ? (
+              <>
+                <SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard />
+              </>
+            ) : (
+              <>
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
+                  <p className="text-xs font-semibold text-gray-500">Subjective Question Count</p>
+                  <p className="text-3xl font-extrabold text-gray-900 mt-1">{analytics?.subjectiveQuestionsCount ?? 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">Descriptive questions in repository</p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
+                  <p className="text-xs font-semibold text-gray-500">Pending Evaluation</p>
+                  <p className="text-3xl font-extrabold text-amber-600 mt-1">{analytics?.pendingEvaluationCount ?? 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">Answers awaiting grading</p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
+                  <p className="text-xs font-semibold text-gray-500">Evaluated Answers</p>
+                  <p className="text-3xl font-extrabold text-emerald-600 mt-1">{analytics?.evaluatedCount ?? 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">Completed subjective evaluations</p>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
+                  <p className="text-xs font-semibold text-gray-500">Manual Review Queue</p>
+                  <p className="text-3xl font-extrabold text-violet-600 mt-1">{analytics?.manualReviewQueueCount ?? 0}</p>
+                  <p className="text-xs text-gray-400 mt-1">Candidates in grading queue</p>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Active Exams Monitor & Recent Activity */}

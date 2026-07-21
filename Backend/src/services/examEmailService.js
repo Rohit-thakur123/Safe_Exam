@@ -62,6 +62,7 @@ export const sendExamAssignmentEmail = async (student, examDetails, teacher, fro
  */
 export const sendBulkExamAssignmentEmails = async (students, examDetails, teacher, frontendBaseUrl = null) => {
     // Use environment variable if not provided
+    console.log("📨  sendBulkExamAssignmentEmails CALLED");
     const baseUrl = frontendBaseUrl || process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const results = {

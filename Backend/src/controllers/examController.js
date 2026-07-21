@@ -757,23 +757,22 @@ export const assignStudentsToExam = async (req, res) => {
             });
         }
 
-        console.log('=== ASSIGNING STUDENTS DEBUG ===');
-        console.log('Exam ID:', examId);
-        console.log('Student IDs to assign:', studentIds);
-        console.log('Student IDs types:', studentIds.map(id => typeof id));
-        console.log('Valid students found:', students.map(s => ({ id: s._id.toString(), email: s.email })));
+        // Track which students are newly added (to send emails only to them)
+        const previouslyAssigned = new Set(
+            exam.assignedCandidates.map(id => id.toString())
+        );
+        const newlyAssignedStudents = students.filter(
+            s => !previouslyAssigned.has(s._id.toString())
+        );
 
-        // Update assigned students
+        // Replace the full assignment list
         exam.assignedCandidates = studentIds;
         exam.updatedAt = Date.now();
         await exam.save();
 
-        console.log('After save - Assigned candidates:', exam.assignedCandidates.map(c => c.toString()));
-        console.log('=== END ASSIGN DEBUG ===');
-
-        // Send email notifications to newly assigned students (if requested)
+        // Send email notifications ONLY to newly assigned students (not re-sends)
         let emailResults = null;
-        if (sendEmailNotification !== false && students.length > 0) {
+        if (sendEmailNotification !== false && newlyAssignedStudents.length > 0) {
             const examDetails = {
                 _id: exam._id,
                 title: exam.title,
@@ -785,16 +784,20 @@ export const assignStudentsToExam = async (req, res) => {
                 duration: exam.duration,
                 totalMarks: exam.totalMarks,
                 passingMarks: exam.passingMarks,
-                questionsCount: exam.questions.length + exam.codingQuestions.length
+                questionsCount: exam.questions.length + exam.codingQuestions.length + (exam.descriptiveQuestions?.length || 0)
             };
 
-            emailResults = await sendBulkExamAssignmentEmails(students, examDetails, req.user);
+            emailResults = await sendBulkExamAssignmentEmails(newlyAssignedStudents, examDetails, req.user);
+            console.log(`📧 Emails sent to ${emailResults.sent}/${newlyAssignedStudents.length} newly assigned students`);
         }
 
         res.status(200).json({
+            success: true,
             message: 'Students assigned successfully',
             assignedCount: studentIds.length,
-            emailsSent: emailResults ? emailResults.sent > 0 : false
+            newlyAssigned: newlyAssignedStudents.length,
+            emailsSent: emailResults ? emailResults.sent : 0,
+            emailsFailed: emailResults ? emailResults.failed : 0
         });
     } catch (error) {
         console.error('Assign students error:', error);

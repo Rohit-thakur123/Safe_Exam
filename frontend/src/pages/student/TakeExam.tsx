@@ -17,7 +17,7 @@ const TakeExam: React.FC = () => {
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -43,7 +43,14 @@ const TakeExam: React.FC = () => {
         const response = await examAttemptAPI.start(examId);
         setAttempt(response.attempt);
         setQuestions(response.attempt.exam?.questions || []);
-        setTimeLeft((response.attempt.exam?.duration || 0) * 60); // Convert minutes to seconds
+        
+        let initialSeconds = (response.attempt.exam?.duration || 0) * 60;
+        if (response.attempt.expectedEndTime) {
+          const endMs = new Date(response.attempt.expectedEndTime).getTime();
+          const diffSec = Math.floor((endMs - Date.now()) / 1000);
+          initialSeconds = Math.max(0, diffSec);
+        }
+        setTimeLeft(initialSeconds);
       } catch (err: unknown) {
         console.error('Error starting exam:', err);
         const requestError = err as { response?: { status?: number; data?: { error?: string; attemptId?: string } } };
@@ -78,12 +85,12 @@ const TakeExam: React.FC = () => {
   }, [examId, user]);
 
   const handleSubmit = useCallback(async () => {
-    if (!attempt || !attempt.exam) return;
+    if (!attempt || !attempt.exam || submitting) return;
     
     setSubmitting(true);
     try {
-      const timeSpent = (attempt.exam.duration * 60) - timeLeft;
-      const result = await examAttemptAPI.submit(attempt.id, answers, timeSpent);
+      const timeSpent = (attempt.exam.duration * 60) - (timeLeft || 0);
+      const result = await examAttemptAPI.submit(attempt.id, answers, Math.max(0, timeSpent));
       
       // Navigate to results page
       navigate(`/student/result/${attempt.id}`, { 
@@ -100,17 +107,17 @@ const TakeExam: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [attempt, timeLeft, answers, navigate]);
+  }, [attempt, timeLeft, answers, navigate, submitting]);
 
-  // Timer effect
+  // Timer effect — submit ONLY when timer has been initialized AND reaches zero
   useEffect(() => {
-    if (timeLeft > 0) {
+    if (timeLeft !== null && timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && attempt) {
+    } else if (timeLeft !== null && timeLeft === 0 && attempt && !submitting) {
       handleSubmit();
     }
-  }, [timeLeft, attempt, handleSubmit]);
+  }, [timeLeft, attempt, submitting, handleSubmit]);
 
   const handleAnswerChange = (questionId: string, answer: string) => {
     setAnswers(prev => ({
@@ -119,7 +126,8 @@ const TakeExam: React.FC = () => {
     }));
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number | null) => {
+    if (seconds === null) return '--:--';
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -201,7 +209,7 @@ const TakeExam: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center text-lg font-semibold">
                 <Clock className="w-5 h-5 mr-2 text-red-600" />
-                <span className={timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}>
+                <span className={timeLeft !== null && timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}>
                   {formatTime(timeLeft)}
                 </span>
               </div>

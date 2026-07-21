@@ -25,10 +25,11 @@ export const apiLimiter = rateLimit({
 });
 
 
-// Login rate limiter - 5 attempts per 15 minutes
+// Login rate limiter
 export const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,
+    windowMs: 15 * 60 * 1000,
+    max: 50,
+    skip: () => process.env.NODE_ENV === 'test' || process.env.SKIP_RATE_LIMIT === 'true' || process.env.NODE_ENV === 'development',
     message: {
         success: false,
         error: 'Too many login attempts, please try again after 15 minutes.'
@@ -38,10 +39,11 @@ export const loginLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Registration rate limiter - 3 attempts per hour
+// Registration rate limiter
 export const registrationLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3,
+    windowMs: 60 * 60 * 1000,
+    max: 50,
+    skip: () => process.env.NODE_ENV === 'test' || process.env.SKIP_RATE_LIMIT === 'true' || process.env.NODE_ENV === 'development',
     message: {
         success: false,
         error: 'Too many registration attempts, please try again after an hour.'

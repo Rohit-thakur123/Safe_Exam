@@ -45,8 +45,17 @@ const Dashboard: React.FC = () => {
           examAPI.getAll(),
           examAttemptAPI.getByStudent(user.id)
         ]);
-        setExams(Array.isArray(examsResponse) ? examsResponse : []);
-        setAttempts(Array.isArray(attemptsResponse?.attempts) ? attemptsResponse.attempts : []);
+        const rawExams = Array.isArray(examsResponse) ? examsResponse : ((examsResponse as any)?.data || []);
+        const uniqueExamsMap = new Map();
+        rawExams.forEach((e: Exam) => {
+          const id = e._id || e.id;
+          if (id && !uniqueExamsMap.has(id)) {
+            uniqueExamsMap.set(id, e);
+          }
+        });
+        setExams(Array.from(uniqueExamsMap.values()));
+        const attRes = attemptsResponse as any;
+        setAttempts(Array.isArray(attRes?.attempts) ? attRes.attempts : (Array.isArray(attRes?.data) ? attRes.data : (Array.isArray(attRes) ? attRes : [])));
       } catch {
         setError('Failed to load dashboard data');
         setExams([]);

@@ -161,7 +161,15 @@ const CreateExam: React.FC = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("🔥 handleSubmit START");
     e.preventDefault();
+    console.log({
+      title,
+      selectedQuestions,
+      selectedCodingQuestions,
+      selectedSubjectiveQuestions,
+      selectedStudents,
+    });
     if (!title.trim()) {
       setToast({ id: Date.now().toString(), type: 'warning', message: 'Exam title is required' });
       setActiveStep(1);
@@ -207,7 +215,9 @@ const CreateExam: React.FC = () => {
         await examAPI.update(examId, examData);
         setToast({ id: Date.now().toString(), type: 'success', message: 'Assessment updated successfully!' });
       } else {
+        console.log("🔥 About to call examAPI.create");
         await examAPI.create(examData);
+        console.log("🔥 examAPI.create SUCCESS");
         setToast({ id: Date.now().toString(), type: 'success', message: 'Assessment created successfully!' });
       }
 
@@ -251,11 +261,10 @@ const CreateExam: React.FC = () => {
               <button
                 key={step.num}
                 onClick={() => setActiveStep(step.num as any)}
-                className={`flex-1 py-3 px-4 text-xs font-bold rounded-xl transition-all text-center ${
-                  isActive
-                    ? 'bg-violet-600 text-white shadow-xs'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`flex-1 py-3 px-4 text-xs font-bold rounded-xl transition-all text-center ${isActive
+                  ? 'bg-violet-600 text-white shadow-xs'
+                  : 'text-gray-600 hover:bg-gray-100'
+                  }`}
               >
                 {step.label}
               </button>
@@ -331,7 +340,7 @@ const CreateExam: React.FC = () => {
               {/* Professional Scheduling & Timezone Configuration */}
               <div className="border-t border-gray-100 pt-4 space-y-4">
                 <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Exam Schedule & Timezone Settings</h3>
-                
+
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Timezone *</label>
                   <select
@@ -485,11 +494,10 @@ const CreateExam: React.FC = () => {
                       <div
                         key={qId}
                         onClick={() => toggleQuestionSelection(qId)}
-                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
-                          isSelected
-                            ? 'border-violet-300 bg-violet-50/70 text-violet-900 font-medium'
-                            : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
-                        }`}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                          ? 'border-violet-300 bg-violet-50/70 text-violet-900 font-medium'
+                          : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                          }`}
                       >
                         <div className="pr-4">
                           <p className="font-bold text-gray-900 mb-0.5">{q.question}</p>
@@ -519,11 +527,10 @@ const CreateExam: React.FC = () => {
                       <div
                         key={cqId}
                         onClick={() => toggleCodingSelection(cqId)}
-                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
-                          isSelected
-                            ? 'border-indigo-300 bg-indigo-50/70 text-indigo-900 font-medium'
-                            : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
-                        }`}
+                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                          ? 'border-indigo-300 bg-indigo-50/70 text-indigo-900 font-medium'
+                          : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                          }`}
                       >
                         <div className="pr-4">
                           <p className="font-bold text-gray-900 mb-0.5">{cq.title}</p>
@@ -556,11 +563,10 @@ const CreateExam: React.FC = () => {
                         <div
                           key={sqId}
                           onClick={() => toggleSubjectiveSelection(sqId)}
-                          className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
-                            isSelected
-                              ? 'border-purple-300 bg-purple-50/70 text-purple-900 font-medium'
-                              : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
-                          }`}
+                          className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                            ? 'border-purple-300 bg-purple-50/70 text-purple-900 font-medium'
+                            : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                            }`}
                         >
                           <div className="pr-4">
                             <p className="font-bold text-gray-900 mb-0.5">{sq.title}</p>
@@ -597,11 +603,10 @@ const CreateExam: React.FC = () => {
                     <div
                       key={s.id}
                       onClick={() => toggleStudentSelection(s.id)}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
-                        isSelected
-                          ? 'border-emerald-300 bg-emerald-50/70 text-emerald-900 font-medium'
-                          : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
-                      }`}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                        ? 'border-emerald-300 bg-emerald-50/70 text-emerald-900 font-medium'
+                        : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                        }`}
                     >
                       <div>
                         <p className="font-bold">{s.name}</p>

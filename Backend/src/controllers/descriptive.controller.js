@@ -12,12 +12,34 @@ import mongoose from "mongoose";
  */
 export const saveDraft = async (req, res) => {
   try {
-    const { student, exam, question, answer, attemptId } = req.body;
+    let { student, exam, question, questionId, answer, attemptId } = req.body;
+    question = question || questionId;
+    student = student || req.user?._id;
+
+    if (attemptId && (!exam || !student)) {
+      const att = await ExamAttempt.findById(attemptId);
+      if (att) {
+        exam = exam || att.examId;
+        student = student || att.studentId;
+      }
+    }
 
     if (!student || !exam || !question) {
       return res.status(400).json({
         success: false,
         message: "Student, Exam and Question are required.",
+      });
+    }
+
+    if (
+      !mongoose.Types.ObjectId.isValid(student) ||
+      !mongoose.Types.ObjectId.isValid(exam) ||
+      !mongoose.Types.ObjectId.isValid(question) ||
+      (attemptId && !mongoose.Types.ObjectId.isValid(attemptId))
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student, exam, question, or attemptId format.",
       });
     }
 
@@ -76,6 +98,10 @@ export const getAnswer = async (req, res) => {
   try {
     const { attemptId, questionId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(attemptId) || !mongoose.Types.ObjectId.isValid(questionId)) {
+      return res.status(400).json({ success: false, error: "Invalid attemptId or questionId format" });
+    }
+
     const answer = await DescriptiveAnswer.findOne({
       exam: attemptId,
       question: questionId,
@@ -109,12 +135,28 @@ export const getAnswer = async (req, res) => {
  */
 export const submitAnswer = async (req, res) => {
   try {
-    const { student, exam } = req.body;
+    let { student, exam, attemptId } = req.body;
+    student = student || req.user?._id;
+
+    if (attemptId && (!exam || !student)) {
+      const att = await ExamAttempt.findById(attemptId);
+      if (att) {
+        exam = exam || att.examId;
+        student = student || att.studentId;
+      }
+    }
 
     if (!student || !exam) {
       return res.status(400).json({
         success: false,
         message: "Student and Exam are required.",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(student) || !mongoose.Types.ObjectId.isValid(exam)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid student or exam ID format.",
       });
     }
 

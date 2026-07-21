@@ -62,8 +62,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | '
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
+
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -189,8 +190,9 @@ function App() {
             <Route path="/exam-verify/:examId/:studentId/:token" element={<ExamVerification />} />
           </Routes>
         </div>
-      </Router>
-    </AuthProvider>
+      </AuthProvider >
+    </Router>
+
   );
 }
 

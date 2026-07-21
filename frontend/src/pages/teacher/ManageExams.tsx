@@ -31,9 +31,10 @@ const AssignStudentsModal: React.FC<{
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const examId = exam._id || exam.id;
   useEffect(() => {
     fetchData();
-  }, [exam]);
+  }, [examId]);
 
   const fetchData = async () => {
     try {
@@ -69,6 +70,7 @@ const AssignStudentsModal: React.FC<{
   };
 
   const handleSave = async () => {
+    if (saving) return;
     setSaving(true);
     setError('');
     setSuccess('');

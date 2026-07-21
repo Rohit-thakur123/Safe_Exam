@@ -7,10 +7,20 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { apiLimiter } from './middlewares/rateLimit.middleware.js';
 
-import descriptiveRoutes from "./routes/descriptive.routes.js";
+
+import path from "path";
+import { fileURLToPath } from "url";
 
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const result = dotenv.config({
+    path: path.resolve(__dirname, "../.env"),
+});
+
+console.log("Dotenv loaded:", result.error || "SUCCESS");
+console.log("SMTP_USER:", process.env.SMTP_USER);
 
 const app = express();
 const allowedOrigins = [
@@ -74,9 +84,6 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-
-//for descriptive part
-app.use("/api/descriptive", descriptiveRoutes);
 
 // 404 handler
 app.use((req, res) => {

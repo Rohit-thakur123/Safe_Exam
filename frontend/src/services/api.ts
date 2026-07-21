@@ -238,7 +238,9 @@ export const codingExecutionAPI = {
 export const examAPI = {
   // Create a new exam
   create: async (examData: Omit<Exam, '_id' | 'createdAt'>): Promise<Exam> => {
+    console.log("🚀 examAPI.create CALLED", examData);
     const response = await api.post('/exams/new', examData);
+    console.log("✅ Response", response);
     return response.data.exam;
   },
 
@@ -324,6 +326,12 @@ export const examAPI = {
   // Get assigned students for an exam
   getAssignedStudents: async (examId: string) => {
     const response = await api.get(`/exams/${examId}/assigned-students`);
+    return response.data;
+  },
+
+  // Get teacher analytics summary
+  getAnalytics: async () => {
+    const response = await api.get('/exams/analytics');
     return response.data;
   }
 };
