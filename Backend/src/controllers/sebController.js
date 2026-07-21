@@ -4,6 +4,7 @@ import User from '../models/User/user.js';
 import mongoose from 'mongoose';
 import { verifyExamAccessToken, generateSEBSessionToken } from '../utils/examLinkUtils.js';
 import { generateSEBConfig as buildSEBConfig } from '../utils/sebConfigGenerator.js';
+import { validateExamScheduleWindow } from '../utils/timeUtils.js';
 
 /**
  * Verify exam link and student eligibility
@@ -52,23 +53,15 @@ const runExamLinkVerification = async (examId, studentId, token) => {
         return { success: false, status: 403, error: 'This exam is not active', code: 'EXAM_INACTIVE', data: { exam: { title: exam.title, isActive: false } } };
     }
 
-    const now = new Date();
-
-    if (exam.startDate && new Date(exam.startDate) > now) {
-        return { success: false, status: 403, error: 'Exam has not started yet', code: 'EXAM_NOT_STARTED', data: { exam: { title: exam.title, startDate: exam.startDate } } };
-    }
-
-    if (exam.endDate) {
-        const endDate = new Date(exam.endDate);
-        if (exam.endTime) {
-            const [hours, minutes] = exam.endTime.split(':');
-            endDate.setHours(parseInt(hours));
-            endDate.setMinutes(parseInt(minutes));
-            endDate.setSeconds(59);
-        }
-        if (now > endDate) {
-            return { success: false, status: 403, error: 'Exam has ended', code: 'EXAM_ENDED', data: { exam: { title: exam.title, endDate: exam.endDate, endTime: exam.endTime } } };
-        }
+    const scheduleValidation = validateExamScheduleWindow(exam);
+    if (!scheduleValidation.isValid) {
+        return {
+            success: false,
+            status: 403,
+            error: scheduleValidation.error,
+            code: scheduleValidation.code,
+            data: { exam: { title: exam.title, startDate: exam.startDate, endDate: exam.endDate, endTime: exam.endTime } }
+        };
     }
 
     const student = await User.findById(studentId);

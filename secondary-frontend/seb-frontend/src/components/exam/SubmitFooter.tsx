@@ -11,6 +11,7 @@ interface SubmitFooterProps {
   isReady: boolean;
   mcqCompleted: boolean;
   codingCompleted: boolean;
+  subjectiveCompleted?: boolean;
   onConfirmSubmit: () => void;
 }
 
@@ -18,6 +19,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
   isReady,
   mcqCompleted,
   codingCompleted,
+  subjectiveCompleted,
   onConfirmSubmit,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -39,7 +41,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
       <p className="mb-3.5 text-[13px] text-slate-500">
         {isReady
           ? "You're ready to submit. This action is final."
-          : "Complete both sections to submit your exam"}
+          : "Complete all sections to submit your exam"}
       </p>
 
       <button
@@ -78,8 +80,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
             </div>
 
             <p className="mb-5 text-sm leading-relaxed text-slate-400">
-              Once you submit, you won't be able to return to the MCQ or
-              Coding sections. Make sure you're finished before continuing.
+              Once you submit, your responses will be submitted for evaluation. This action is final.
             </p>
 
             <div className="mb-5 flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3.5 text-[13px]">
@@ -95,6 +96,14 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
                   {codingCompleted ? "Completed" : "Incomplete"}
                 </span>
               </div>
+              {subjectiveCompleted !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Subjective Assessment</span>
+                  <span className={subjectiveCompleted ? "text-emerald-300" : "text-slate-500"}>
+                    {subjectiveCompleted ? "Completed" : "Incomplete"}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2.5">

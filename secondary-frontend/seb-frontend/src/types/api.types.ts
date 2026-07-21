@@ -12,6 +12,7 @@ export interface StartExamRequest {
 }
 
 export interface StartExamResponse extends ApiResponse {
+  serverTime?: string;
   attempt: {
     id: string;
     examId: string;

@@ -5,7 +5,7 @@
 // Phase 3: Confirmation dialog before leaving and before finishing.
 // =====================================================================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { CheckCircle2, ChevronLeft, AlertCircle } from "lucide-react";
 import CodeEditor from "../components/codeEditor";
 import type { CodingQuestion, SubmitResult } from "../types/exam.types";

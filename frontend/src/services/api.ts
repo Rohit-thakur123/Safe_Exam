@@ -426,4 +426,53 @@ export const sebAPI = {
   }
 };
 
+export const subjectiveQuestionAPI = {
+  getAll: async (params?: { search?: string; difficulty?: string; isActive?: string; page?: number; limit?: number }) => {
+    const response = await api.get('/subjective-questions', { params });
+    return {
+      questions: (response.data.data || []) as import('../types').SubjectiveQuestion[],
+      total: Number(response.data.total || 0),
+      page: Number(response.data.page || 1),
+      totalPages: Number(response.data.totalPages || 1),
+    };
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get(`/subjective-questions/${id}`);
+    return response.data.question as import('../types').SubjectiveQuestion;
+  },
+
+  create: async (data: Partial<import('../types').SubjectiveQuestion>) => {
+    const response = await api.post('/subjective-questions', data);
+    return response.data.question as import('../types').SubjectiveQuestion;
+  },
+
+  update: async (id: string, data: Partial<import('../types').SubjectiveQuestion>) => {
+    const response = await api.put(`/subjective-questions/${id}`, data);
+    return response.data.question as import('../types').SubjectiveQuestion;
+  },
+
+  delete: async (id: string) => {
+    const response = await api.delete(`/subjective-questions/${id}`);
+    return response.data;
+  },
+};
+
+export const subjectiveGradingAPI = {
+  getExamAnswers: async (examId: string) => {
+    const response = await api.get(`/descriptive/exam/${examId}`);
+    return response.data.data as import('../types').SubjectiveAnswer[];
+  },
+
+  getStudentAnswers: async (examId: string, studentId: string) => {
+    const response = await api.get(`/descriptive/exam/${examId}/student/${studentId}`);
+    return response.data.data as import('../types').SubjectiveAnswer[];
+  },
+
+  evaluateAnswer: async (answerId: string, marksAwarded: number, feedback: string) => {
+    const response = await api.post('/descriptive/evaluate', { answerId, marksAwarded, feedback });
+    return response.data;
+  },
+};
+
 export default api;

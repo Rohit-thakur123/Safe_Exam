@@ -17,7 +17,8 @@ const categorySchema = new mongoose.Schema({
     }
 });
 
-categorySchema.index({ name: 1 }, { unique: true });
+// Note: unique: true on the name field above already creates the index.
+// No additional .index() call needed.
 
 categorySchema.set('toJSON', {
     transform: function(doc, ret) {

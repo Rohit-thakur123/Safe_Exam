@@ -21,15 +21,14 @@ export const useHeartbeat = (
   
   useEffect(() => {
     if (!enabled || !attemptId) return;
-    
-    // Send initial heartbeat
-    sendHeartbeat(attemptId);
-    
-    // Setup interval for periodic heartbeats
+
+    // Do NOT send an immediate heartbeat here — in React StrictMode (dev), effects
+    // fire twice on mount, which would send two heartbeats in rapid succession.
+    // The interval below handles the first heartbeat after `interval` milliseconds.
     intervalRef.current = setInterval(async () => {
       try {
         await sendHeartbeat(attemptId);
-        
+
         if (import.meta.env.VITE_DEBUG_MODE === 'true') {
           console.log('[Heartbeat] Sent at:', new Date().toISOString());
         }
@@ -37,7 +36,7 @@ export const useHeartbeat = (
         console.error('[Heartbeat] Failed:', error);
       }
     }, interval);
-    
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

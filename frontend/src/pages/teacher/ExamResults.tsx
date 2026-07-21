@@ -13,6 +13,8 @@ import type { ToastMessage } from '../../components/ui/Toast';
 interface CandidateAttempt {
   id: string;
   status: string;
+  subjectiveStatus?: 'not_applicable' | 'pending_evaluation' | 'evaluated';
+  subjectiveScore?: number;
   student: {
     id: string;
     name: string;
@@ -161,6 +163,11 @@ export const ExamResults: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to={`/teacher/exams/${examId}/grade-subjective`}>
+              <Button className="bg-gradient-to-r from-violet-600 to-purple-600">
+                <BarChart3 size={14} className="mr-1.5" /> Grade Subjective Questions
+              </Button>
+            </Link>
             <Button onClick={exportToCSV} disabled={attempts.length === 0} variant="outline">
               <Download size={14} className="mr-1.5" /> Export Report (CSV)
             </Button>
@@ -248,11 +255,23 @@ export const ExamResults: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                            isCompleted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}>
-                            {isCompleted ? 'Completed' : 'In Progress'}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold w-fit ${
+                              isCompleted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {isCompleted ? 'Completed' : 'In Progress'}
+                            </span>
+                            {attempt.subjectiveStatus === 'pending_evaluation' && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 w-fit">
+                                Subjective Pending
+                              </span>
+                            )}
+                            {attempt.subjectiveStatus === 'evaluated' && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 w-fit">
+                                Subjective Graded (+{attempt.subjectiveScore || 0})
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 font-bold text-gray-900 text-xs">
                           {attempt.score} / {attempt.totalMarks}

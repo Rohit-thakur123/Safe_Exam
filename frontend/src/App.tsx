@@ -22,11 +22,14 @@ import CodingQuestionDetails from './pages/teacher/CodingQuestionDetails';
 import CodingSubmissions from './pages/teacher/CodingSubmissions';
 import CodingQuestionPreview from './pages/teacher/CodingQuestionPreview';
 import ExamResults from './pages/teacher/ExamResults';
+import SubjectiveQuestions from './pages/teacher/SubjectiveQuestions';
+import CreateSubjectiveQuestion from './pages/teacher/CreateSubjectiveQuestion';
+import SubjectiveGrading from './pages/teacher/SubjectiveGrading';
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | 'student' }> = ({ 
-  children, 
-  role 
+const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | 'student' }> = ({
+  children,
+  role
 }) => {
   const { user, isLoading } = useAuth();
 
@@ -38,21 +41,18 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | '
     );
   }
 
-  // if (!user) {
-  //   return <Navigate to="/login" replace />;
-  // }
-if (!user) {
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        state={{
+          redirectTo: window.location.pathname
+        }}
+        replace
+      />
+    );
+  }
 
-  return (
-    <Navigate
-      to="/login"
-      state={{
-        redirectTo: window.location.pathname
-      }}
-      replace
-    />
-  );
-}
   if (role && user.role !== role) {
     return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
   }
@@ -69,31 +69,31 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
-            
+
             {/* Teacher Routes */}
-            <Route 
-              path="/teacher" 
+            <Route
+              path="/teacher"
               element={
                 <ProtectedRoute role="teacher">
                   <TeacherDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/teacher/create-question" 
+            <Route
+              path="/teacher/create-question"
               element={
                 <ProtectedRoute role="teacher">
                   <CreateQuestion />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/teacher/create-exam" 
+            <Route
+              path="/teacher/create-exam"
               element={
                 <ProtectedRoute role="teacher">
                   <CreateExam />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route
               path="/teacher/edit-exam/:examId"
@@ -103,13 +103,13 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route 
-              path="/teacher/questions" 
+            <Route
+              path="/teacher/questions"
               element={
                 <ProtectedRoute role="teacher">
                   <ManageQuestions />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route
               path="/teacher/mcq"
@@ -119,22 +119,27 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route 
-              path="/teacher/exams" 
+            <Route
+              path="/teacher/exams"
               element={
                 <ProtectedRoute role="teacher">
                   <ManageExams />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/teacher/debug" 
-              element={
-                <ProtectedRoute role="teacher">
-                  <DebugPage />
-                </ProtectedRoute>
-              } 
-            />
+
+            {/* Debug route: only available in development, never in production */}
+            {import.meta.env.DEV && (
+              <Route
+                path="/teacher/debug"
+                element={
+                  <ProtectedRoute role="teacher">
+                    <DebugPage />
+                  </ProtectedRoute>
+                }
+              />
+            )}
+
             <Route path="/teacher/coding-questions" element={<ProtectedRoute role="teacher"><CodingQuestions /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/create" element={<ProtectedRoute role="teacher"><CreateCodingQuestion /></ProtectedRoute>} />
             <Route path="/teacher/coding-questions/edit/:questionId" element={<ProtectedRoute role="teacher"><CreateCodingQuestion /></ProtectedRoute>} />
@@ -143,53 +148,45 @@ function App() {
             <Route path="/teacher/coding-questions/:questionId" element={<ProtectedRoute role="teacher"><CodingQuestionDetails /></ProtectedRoute>} />
             <Route path="/teacher/exams/:examId/results" element={<ProtectedRoute role="teacher"><ExamResults /></ProtectedRoute>} />
             <Route path="/teacher/exams/:examId/coding-submissions" element={<ProtectedRoute role="teacher"><CodingSubmissions /></ProtectedRoute>} />
-            
+            <Route path="/teacher/subjective-questions" element={<ProtectedRoute role="teacher"><SubjectiveQuestions /></ProtectedRoute>} />
+            <Route path="/teacher/subjective-questions/create" element={<ProtectedRoute role="teacher"><CreateSubjectiveQuestion /></ProtectedRoute>} />
+            <Route path="/teacher/subjective-questions/edit/:questionId" element={<ProtectedRoute role="teacher"><CreateSubjectiveQuestion /></ProtectedRoute>} />
+            <Route path="/teacher/exams/:examId/grade-subjective" element={<ProtectedRoute role="teacher"><SubjectiveGrading /></ProtectedRoute>} />
+
             {/* Student Routes */}
-            <Route 
-              path="/student" 
+            <Route
+              path="/student"
               element={
                 <ProtectedRoute role="student">
                   <StudentDashboard />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/student/exam/:examId" 
+            <Route
+              path="/student/exam/:examId"
               element={
                 <ProtectedRoute role="student">
                   <TakeExam />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/student/result/:attemptId" 
+            <Route
+              path="/student/result/:attemptId"
               element={
                 <ProtectedRoute role="student">
                   <Result />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Public Exam Verification Routes (no auth required) */}
-            <Route
-              path="/exam/launch"
-              element={<ExamLaunch />}
-            />
+            <Route path="/exam/launch" element={<ExamLaunch />} />
             {/* Handle query parameter format: /exam/start?examId=xxx&token=xxx */}
-            <Route 
-              path="/exam/start" 
-              element={<ExamStart />} 
-            />
+            <Route path="/exam/start" element={<ExamStart />} />
             {/* Handle path parameter format: /exam/:token */}
-            <Route 
-              path="/exam/:token" 
-              element={<ExamStart />} 
-            />
+            <Route path="/exam/:token" element={<ExamStart />} />
             {/* Handle path parameter format: /exam-verify/:examId/:studentId/:token */}
-            <Route 
-              path="/exam-verify/:examId/:studentId/:token" 
-              element={<ExamVerification />} 
-            />            
+            <Route path="/exam-verify/:examId/:studentId/:token" element={<ExamVerification />} />
           </Routes>
         </div>
       </Router>

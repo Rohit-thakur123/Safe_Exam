@@ -86,7 +86,7 @@ export class StorageService {
    */
   static saveSectionStatuses(
     examId: string,
-    statuses: { mcqStatus: string; codingStatus: string }
+    statuses: { mcqStatus: string; codingStatus: string; subjectiveStatus?: string }
   ): void {
     try {
       const key = this.getKey(examId, 'section_statuses');
@@ -101,7 +101,7 @@ export class StorageService {
    */
   static loadSectionStatuses(
     examId: string
-  ): { mcqStatus: string; codingStatus: string } | null {
+  ): { mcqStatus: string; codingStatus: string; subjectiveStatus?: string } | null {
     try {
       const key = this.getKey(examId, 'section_statuses');
       const stored = localStorage.getItem(key);

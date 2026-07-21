@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CheckCircle, Award, Clock, TrendingUp, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { StorageService } from '../services/storageService';
 
 export const SubmitSuccessPage = () => {
   const [searchParams] = useSearchParams();

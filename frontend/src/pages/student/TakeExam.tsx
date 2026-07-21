@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import { examAttemptAPI } from '../../services/api';
 import { ArrowLeft, Clock, CheckCircle } from 'lucide-react';
-import type { ExamAttempt, ExamQuestion } from '../../types';
+import type { ExamAttempt, ExamQuestion, Question } from '../../types';
 import CodingAssessment from '../../components/exam/CodingAssessment';
 
 const TakeExam: React.FC = () => {
@@ -254,43 +254,48 @@ const TakeExam: React.FC = () => {
             attemptId={attempt.id}
           />
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {currentQ.question}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {currentQ.type === 'text' ? (
-                <textarea
-                  value={answers[currentQuestionId] || ''}
-                  onChange={(event) => handleAnswerChange(currentQuestionId, event.target.value)}
-                  rows={10}
-                  className="mb-6 w-full rounded-md border border-gray-300 px-3 py-2"
-                  placeholder="Type your answer here..."
-                />
-              ) : (
-                <div className="space-y-3 mb-6">
-                  {(currentQ.options || []).map((option, index) => (
-                <label 
-                  key={index} 
-                  className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name={`question-${currentQuestionId}`}
-                    value={option}
-                    checked={answers[currentQuestionId] === option}
-                    onChange={(e) => handleAnswerChange(currentQuestionId, e.target.value)}
-                    className="mt-1 w-4 h-4 text-blue-600"
-                  />
-                  <span className="flex-1">{option}</span>
-                </label>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          (() => {
+            const mcqQ = currentQ as Question;
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {mcqQ.question || (currentQ as any).title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {currentQ.type === 'text' || currentQ.type === 'descriptive' ? (
+                    <textarea
+                      value={answers[currentQuestionId] || ''}
+                      onChange={(event) => handleAnswerChange(currentQuestionId, event.target.value)}
+                      rows={10}
+                      className="mb-6 w-full rounded-md border border-gray-300 px-3 py-2"
+                      placeholder="Type your answer here..."
+                    />
+                  ) : (
+                    <div className="space-y-3 mb-6">
+                      {(mcqQ.options || []).map((option: string, index: number) => (
+                        <label 
+                          key={index} 
+                          className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        >
+                          <input
+                            type="radio"
+                            name={`question-${currentQuestionId}`}
+                            value={option}
+                            checked={answers[currentQuestionId] === option}
+                            onChange={(e) => handleAnswerChange(currentQuestionId, e.target.value)}
+                            className="mt-1 w-4 h-4 text-blue-600"
+                          />
+                          <span className="flex-1">{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()
         )}
 
             {/* Navigation Buttons */}

@@ -1,6 +1,7 @@
 import Exam from '../models/exam/exam.js';
 import Question from '../models/exam/question.js';
 import CodingQuestion from '../models/exam/codingQuestion.js';
+import DescriptiveQuestion from '../models/descriptive/descriptiveQuestion.js';
 import ExamAttempt from '../models/exam/examAttempt.js';
 import User from '../models/User/user.js';
 import mongoose from 'mongoose';
@@ -10,18 +11,25 @@ import {
     getVisibleSamplesByQuestion,
     serializeCodingQuestionForStudent
 } from '../utils/examQuestionUtils.js';
+import { combineDateAndTimeToUTC } from '../utils/timeUtils.js';
 
 // Create new exam
 export const createExam = async (req, res) => {
     try {
-        const { title, description, questions = [], codingQuestions = [], duration, totalMarks, passingMarks, startDate, endDate, startTime, endTime, allowRetakes, shuffleQuestions, assignedStudents, sendEmailNotification } = req.body;
+        const {
+            title, description, questions = [], codingQuestions = [], descriptiveQuestions = [],
+            duration, totalMarks, passingMarks, startDate, endDate, startTime, endTime,
+            timezone = 'UTC', allowLateEntry = false, lateEntryWindowMinutes = 15,
+            autoSubmit = true, resultPublishDate, resultPublishTime,
+            allowRetakes, shuffleQuestions, assignedStudents, sendEmailNotification
+        } = req.body;
 
-        if (!Array.isArray(questions) || !Array.isArray(codingQuestions)) {
-            return res.status(400).json({ success: false, error: 'Questions and coding questions must be arrays' });
+        if (!Array.isArray(questions) || !Array.isArray(codingQuestions) || !Array.isArray(descriptiveQuestions)) {
+            return res.status(400).json({ success: false, error: 'Questions, coding questions and descriptive questions must be arrays' });
         }
 
         // Validate required fields
-        if (!title || (!questions.length && !codingQuestions.length) || !duration || !totalMarks || !passingMarks) {
+        if (!title || (!questions.length && !codingQuestions.length && !descriptiveQuestions.length) || !duration || !totalMarks || !passingMarks) {
             return res.status(400).json({
                 success: false,
                 error: 'Missing required fields'
@@ -30,6 +38,22 @@ export const createExam = async (req, res) => {
 
         if (new Set(questions.map(String)).size !== questions.length) {
             return res.status(400).json({ success: false, error: 'Duplicate questions are not allowed' });
+        }
+
+        // Compute UTC dates
+        const startDateTimeUTC = combineDateAndTimeToUTC(startDate, startTime, timezone, false);
+        const endDateTimeUTC = combineDateAndTimeToUTC(endDate, endTime, timezone, true);
+        const resultPublishDateTimeUTC = combineDateAndTimeToUTC(resultPublishDate, resultPublishTime, timezone, false);
+
+        if (startDateTimeUTC && endDateTimeUTC && endDateTimeUTC <= startDateTimeUTC) {
+            return res.status(400).json({ success: false, error: 'End Date & Time must be strictly after Start Date & Time' });
+        }
+
+        // Determine FSM status
+        const now = new Date();
+        let examStatus = 'active';
+        if (startDateTimeUTC && startDateTimeUTC > now) {
+            examStatus = 'scheduled';
         }
 
         // Validate questions exist
@@ -50,6 +74,14 @@ export const createExam = async (req, res) => {
         });
         if (validCodingQuestions.length !== codingQuestions.length) {
             return res.status(400).json({ success: false, error: 'One or more coding questions are invalid or inactive' });
+        }
+
+        if (new Set(descriptiveQuestions.map(String)).size !== descriptiveQuestions.length) {
+            return res.status(400).json({ success: false, error: 'Duplicate descriptive questions are not allowed' });
+        }
+        const validDescriptiveQuestions = await DescriptiveQuestion.find({ _id: { $in: descriptiveQuestions }, isActive: true });
+        if (validDescriptiveQuestions.length !== descriptiveQuestions.length) {
+            return res.status(400).json({ success: false, error: 'One or more descriptive questions are invalid or inactive' });
         }
 
         // Validate assigned students if provided
@@ -78,15 +110,26 @@ export const createExam = async (req, res) => {
             description,
             questions,
             codingQuestions,
+            descriptiveQuestions,
             duration,
             totalMarks,
             passingMarks,
+            status: examStatus,
             createdBy: req.user._id,
             assignedCandidates: validatedStudents,
             startDate,
             endDate,
             startTime,
             endTime,
+            timezone,
+            startDateTimeUTC,
+            endDateTimeUTC,
+            allowLateEntry,
+            lateEntryWindowMinutes,
+            autoSubmit,
+            resultPublishDate,
+            resultPublishTime,
+            resultPublishDateTimeUTC,
             allowRetakes,
             shuffleQuestions
         });
@@ -107,7 +150,7 @@ export const createExam = async (req, res) => {
                 duration: exam.duration,
                 totalMarks: exam.totalMarks,
                 passingMarks: exam.passingMarks,
-                questionsCount: exam.questions.length + exam.codingQuestions.length
+                questionsCount: exam.questions.length + exam.codingQuestions.length + (exam.descriptiveQuestions?.length || 0)
             };
 
             emailResults = await sendBulkExamAssignmentEmails(studentObjects, examDetails, req.user);
@@ -165,7 +208,7 @@ export const getAllExams = async (req, res) => {
             const examObj = exam.toJSON();
             return {
                 ...examObj,
-                questionsCount: exam.questions.length + exam.codingQuestions.length,
+                questionsCount: exam.questions.length + exam.codingQuestions.length + (exam.descriptiveQuestions?.length || 0),
                 createdBy: exam.createdBy ? exam.createdBy._id.toString() : null
             };
         });
@@ -199,7 +242,13 @@ export const getExamById = async (req, res) => {
         const exam = await Exam.findById(id)
             .populate('createdBy', 'name email')
             .populate('questions')
-            .populate('codingQuestions');
+            .populate('codingQuestions')
+            .populate({
+                path: 'descriptiveQuestions',
+                select: req.user?.role === 'student'
+                    ? '-referenceAnswer -rubric -teacherNotes'
+                    : ''
+            });
 
         if (!exam) {
             return res.status(404).json({
@@ -227,6 +276,19 @@ export const getExamById = async (req, res) => {
             examData.codingQuestions = exam.codingQuestions.map(q =>
                 serializeCodingQuestionForStudent(q, samplesByQuestion)
             );
+            // Students see descriptive questions without referenceAnswer/rubric/teacherNotes
+            examData.descriptiveQuestions = (exam.descriptiveQuestions || []).map(q => ({
+                id: q._id.toString(),
+                type: 'descriptive',
+                title: q.title,
+                description: q.description,
+                instructions: q.instructions,
+                maxMarks: q.maxMarks,
+                wordLimit: q.wordLimit,
+                minWords: q.minWords,
+                difficulty: q.difficulty,
+                category: q.category
+            }));
         } else {
             // For teachers, include full question details
             examData.questions = examData.questions.map(q => ({
@@ -243,6 +305,11 @@ export const getExamById = async (req, res) => {
                 id: q._id.toString(),
                 type: 'coding',
                 visibleTestCases: samplesByQuestion[q._id.toString()] || []
+            }));
+            examData.descriptiveQuestions = (exam.descriptiveQuestions || []).map(q => ({
+                ...q.toObject(),
+                id: q._id.toString(),
+                type: 'descriptive'
             }));
         }
 
@@ -271,7 +338,8 @@ export const getExamById = async (req, res) => {
                             ...examData.codingQuestions
                         ])
                 ],
-                codingQuestions: examData.codingQuestions
+                codingQuestions: examData.codingQuestions,
+                descriptiveQuestions: examData.descriptiveQuestions || []
             }
         });
     } catch (error) {
@@ -348,6 +416,7 @@ export const updateExam = async (req, res) => {
             'description',
             'questions',
             'codingQuestions',
+            'descriptiveQuestions',
             'duration',
             'totalMarks',
             'passingMarks',
@@ -484,9 +553,20 @@ export const updateExam = async (req, res) => {
                 }
             }
 
+            if (updateData.descriptiveQuestions) {
+                if (!Array.isArray(updateData.descriptiveQuestions)) {
+                    return res.status(400).json({ success: false, error: 'Descriptive questions must be an array' });
+                }
+                const validDescQ = await DescriptiveQuestion.find({ _id: { $in: updateData.descriptiveQuestions }, isActive: true });
+                if (validDescQ.length !== updateData.descriptiveQuestions.length) {
+                    return res.status(400).json({ success: false, error: 'One or more descriptive questions are invalid or inactive' });
+                }
+            }
+
             const nextQuestions = updateData.questions ?? exam.questions;
             const nextCodingQuestions = updateData.codingQuestions ?? exam.codingQuestions;
-            if (nextQuestions.length === 0 && nextCodingQuestions.length === 0) {
+            const nextDescriptiveQuestions = updateData.descriptiveQuestions ?? exam.descriptiveQuestions;
+            if (nextQuestions.length === 0 && nextCodingQuestions.length === 0 && nextDescriptiveQuestions.length === 0) {
                 return res.status(400).json({ success: false, error: 'Please select at least one question' });
             }
         }
@@ -816,6 +896,7 @@ export const duplicateExam = async (req, res) => {
             description: original.description,
             questions: original.questions,
             codingQuestions: original.codingQuestions,
+            descriptiveQuestions: original.descriptiveQuestions,
             duration: original.duration,
             totalMarks: original.totalMarks,
             passingMarks: original.passingMarks,

@@ -90,13 +90,25 @@ export interface Exam {
   description?: string;
   questions: string[]; // Array of Question IDs
   codingQuestions?: string[] | CodingQuestion[];
+  descriptiveQuestions?: string[] | SubjectiveQuestion[];
   duration: number; // in minutes
   totalMarks: number;
   passingMarks: number;
+  status?: 'draft' | 'scheduled' | 'active' | 'completed' | 'evaluated' | 'results_published';
   startDate?: string | Date;
   endDate?: string | Date;
   startTime?: string;
   endTime?: string;
+  timezone?: string;
+  startDateTimeUTC?: string | Date;
+  endDateTimeUTC?: string | Date;
+  allowLateEntry?: boolean;
+  lateEntryWindowMinutes?: number;
+  autoSubmit?: boolean;
+  resultPublishDate?: string | Date;
+  resultPublishTime?: string;
+  resultPublishDateTimeUTC?: string | Date;
+  resultsPublished?: boolean;
   assignedCandidates?: Array<string | { _id?: string; id?: string }>;
   assignedStudents?: string[];
   sendEmailNotification?: boolean;
@@ -106,9 +118,49 @@ export interface Exam {
   questionsCount?: number;
 }
 
+export interface SubjectiveQuestion {
+  _id?: string;
+  id?: string;
+  type?: 'descriptive';
+  title: string;
+  description: string;
+  instructions?: string;
+  maxMarks: number;
+  wordLimit?: number;
+  minWords?: number;
+  referenceAnswer?: string; // teacher only
+  rubric?: string;          // teacher only
+  teacherNotes?: string;    // teacher only
+  tags?: string[];
+  difficulty?: 'easy' | 'medium' | 'hard';
+  category?: string;
+  categoryId?: string;
+  isActive?: boolean;
+  createdBy?: string;
+  createdAt?: string;
+}
+
+export interface SubjectiveAnswer {
+  _id: string;
+  student: string | { _id: string; name: string; email: string };
+  exam: string;
+  question: string | SubjectiveQuestion;
+  answer: string;
+  wordCount: number;
+  status: 'draft' | 'submitted' | 'evaluated';
+  isSubmitted: boolean;
+  submittedAt?: string;
+  marksAwarded: number;
+  feedback: string;
+  evaluatedBy?: string;
+  evaluatedAt?: string;
+}
+
 export type ExamQuestion =
   | (Question & { type?: 'mcq' | 'text' })
-  | (CodingQuestion & { id: string; type: 'coding' });
+  | (CodingQuestion & { id: string; type: 'coding' })
+  | (SubjectiveQuestion & { id: string; type: 'descriptive' });
+
 
 export interface ExamAttempt {
   id: string;
@@ -123,6 +175,8 @@ export interface ExamAttempt {
   endTime?: Date;
   timeSpent?: number; // in seconds
   status: 'in_progress' | 'completed' | 'abandoned';
+  subjectiveStatus?: 'not_applicable' | 'pending_evaluation' | 'evaluated';
+  subjectiveScore?: number;
   createdAt?: Date;
   exam?: Omit<Exam, 'questions'> & { questions: ExamQuestion[] };
 }
@@ -138,6 +192,8 @@ export interface ExamResult {
   totalQuestions: number;
   timeSpent: number;
   submittedAt: Date;
+  subjectiveStatus?: 'not_applicable' | 'pending_evaluation' | 'evaluated';
+  subjectiveScore?: number;
   detailed_results: QuestionResult[];
 }
 

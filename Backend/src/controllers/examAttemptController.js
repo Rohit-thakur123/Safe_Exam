@@ -29,7 +29,11 @@ export const startExamAttempt = async (req, res) => {
         // Get exam with questions
         const exam = await Exam.findById(examId)
             .populate('questions')
-            .populate('codingQuestions');
+            .populate('codingQuestions')
+            .populate({
+                path: 'descriptiveQuestions',
+                select: '-referenceAnswer -rubric -teacherNotes'
+            });
 
         if (!exam) {
             return res.status(404).json({
@@ -59,55 +63,71 @@ export const startExamAttempt = async (req, res) => {
             }
         }
 
-        // Phase 9: Check for COMPLETED attempt FIRST — immutable lockdown.
-        // A submitted exam can never be re-entered, regardless of retake settings.
-        const completedAttempt = await ExamAttempt.findOne({
-            examId,
-            studentId,
-            status: 'completed'
-        });
+        const now = new Date();
 
-        if (completedAttempt) {
-            return res.status(409).json({
-                success: false,
-                error: 'Exam Already Submitted',
-                code: 'ALREADY_SUBMITTED',
-                submittedAt: completedAttempt.endTime
-            });
-        }
+        // STRICT DATABASE INTEGRITY: Search for ANY existing attempt for (examId, studentId).
+        // Candidate receives EXACTLY ONE ExamAttempt document per exam.
+        let attempt = await ExamAttempt.findOne({ examId, studentId });
 
-        // Check if student already has an active attempt — if so, RESUME it
-        // instead of blocking. This handles SEB crashes, reconnects, and
-        // re-entry after the primary frontend redirected them again.
-        const existingAttempt = await ExamAttempt.findOne({
-            examId,
-            studentId,
-            status: 'in_progress'
-        });
+        if (attempt) {
+            // Case A: Attempt is completed, submitted, or evaluated -> ALREADY_SUBMITTED lockdown.
+            if (['completed', 'submitted', 'evaluated'].includes(attempt.status)) {
+                return res.status(409).json({
+                    success: false,
+                    error: 'Exam Already Submitted',
+                    code: 'ALREADY_SUBMITTED',
+                    submittedAt: attempt.endTime || attempt.createdAt
+                });
+            }
 
-        if (existingAttempt) {
-            // Re-populate the exam so we can return questions
-            const questionsForStudent = await buildStudentExamQuestions(exam);
-            const computedEndTime = new Date(
-                existingAttempt.startTime.getTime() + exam.duration * 60 * 1000
+            // Case B: Attempt is abandoned -> Lock re-entry
+            if (attempt.status === 'abandoned') {
+                return res.status(409).json({
+                    success: false,
+                    error: 'Exam Attempt Expired / Abandoned',
+                    code: 'ALREADY_SUBMITTED',
+                    submittedAt: attempt.endTime || attempt.createdAt
+                });
+            }
+
+            // Case C: Attempt is in_progress / started / not_started -> Check if time window expired
+            const computedEndTime = attempt.expectedEndTime || new Date(
+                attempt.startTime.getTime() + exam.duration * 60 * 1000
             );
 
-            // Convert the Map answers back to a plain object for the client
-            const currentAnswers = existingAttempt.answers
-                ? Object.fromEntries(existingAttempt.answers)
+            // If time window expired by > 1 minute grace period, mark THIS document as abandoned
+            if (now.getTime() > computedEndTime.getTime() + 60000) {
+                attempt.status = 'abandoned';
+                attempt.endTime = now;
+                await attempt.save();
+
+                return res.status(409).json({
+                    success: false,
+                    error: 'Exam Attempt Window Expired',
+                    code: 'ALREADY_SUBMITTED',
+                    submittedAt: attempt.endTime
+                });
+            }
+
+            // Resume existing in_progress attempt
+            const questionsForStudent = await buildStudentExamQuestions(exam);
+            const currentAnswers = attempt.answers
+                ? Object.fromEntries(attempt.answers)
                 : {};
 
             return res.status(200).json({
                 success: true,
                 resumed: true,
+                serverTime: now.toISOString(),
                 attempt: {
-                    _id: existingAttempt._id.toString(),
-                    id: existingAttempt._id.toString(),
+                    _id: attempt._id.toString(),
+                    id: attempt._id.toString(),
                     examId: exam._id.toString(),
                     studentId: studentId.toString(),
-                    startTime: existingAttempt.startTime,
+                    startTime: attempt.startTime,
                     endTime: computedEndTime,
-                    status: existingAttempt.status,
+                    expectedEndTime: computedEndTime,
+                    status: attempt.status,
                     currentAnswers,
                     exam: {
                         title: exam.title,
@@ -116,7 +136,19 @@ export const startExamAttempt = async (req, res) => {
                         totalMarks: exam.totalMarks,
                         passingMarks: exam.passingMarks,
                         totalQuestions: questionsForStudent.length,
-                        questions: questionsForStudent
+                        questions: questionsForStudent,
+                        descriptiveQuestions: (exam.descriptiveQuestions || []).map(q => ({
+                            id: q._id.toString(),
+                            type: 'descriptive',
+                            title: q.title,
+                            description: q.description,
+                            instructions: q.instructions,
+                            maxMarks: q.maxMarks,
+                            wordLimit: q.wordLimit,
+                            minWords: q.minWords,
+                            difficulty: q.difficulty,
+                            category: q.category
+                        }))
                     },
                     student: {
                         id: studentId.toString(),
@@ -127,55 +159,82 @@ export const startExamAttempt = async (req, res) => {
             });
         }
 
-        // Check if retakes are allowed
-        if (!exam.allowRetakes) {
-            const previousAttempt = await ExamAttempt.findOne({
-                examId,
-                studentId,
-                status: 'completed'
-            });
-
-            if (previousAttempt) {
-                return res.status(409).json({
-                    success: false,
-                    error: 'Retakes are not allowed for this exam'
-                });
-            }
-        }
-
-        // Get client info
+        // Case D: NO ATTEMPT EXISTS -> Create the ONE and ONLY attempt document for this candidate!
         const ipAddress = req.ip || req.connection.remoteAddress;
         const userAgent = req.headers['user-agent'];
 
-        // Create exam attempt
-        const attempt = new ExamAttempt({
-            examId,
-            studentId,
-            totalMarks: exam.totalMarks,
-            startTime: new Date(),
-            status: 'in_progress',
-            ipAddress,
-            userAgent
-        });
+        let expectedEndTime = new Date(now.getTime() + exam.duration * 60 * 1000);
+        if (exam.endDateTimeUTC && exam.endDateTimeUTC < expectedEndTime) {
+            expectedEndTime = exam.endDateTimeUTC;
+        }
 
-        await attempt.save();
+        try {
+            attempt = new ExamAttempt({
+                examId,
+                studentId,
+                totalMarks: exam.totalMarks,
+                startTime: now,
+                expectedEndTime,
+                status: 'in_progress',
+                ipAddress,
+                userAgent
+            });
+            await attempt.save();
+        } catch (dbErr) {
+            // Handle race conditions via MongoDB unique index catch (code 11000)
+            if (dbErr.code === 11000) {
+                const retryAttempt = await ExamAttempt.findOne({ examId, studentId });
+                if (retryAttempt) {
+                    const questionsForStudent = await buildStudentExamQuestions(exam);
+                    return res.status(200).json({
+                        success: true,
+                        resumed: true,
+                        serverTime: now.toISOString(),
+                        attempt: {
+                            _id: retryAttempt._id.toString(),
+                            id: retryAttempt._id.toString(),
+                            examId: exam._id.toString(),
+                            studentId: studentId.toString(),
+                            startTime: retryAttempt.startTime,
+                            endTime: retryAttempt.expectedEndTime || expectedEndTime,
+                            expectedEndTime: retryAttempt.expectedEndTime || expectedEndTime,
+                            status: retryAttempt.status,
+                            currentAnswers: retryAttempt.answers ? Object.fromEntries(retryAttempt.answers) : {},
+                            exam: {
+                                title: exam.title,
+                                description: exam.description || '',
+                                duration: exam.duration,
+                                totalMarks: exam.totalMarks,
+                                passingMarks: exam.passingMarks,
+                                totalQuestions: questionsForStudent.length,
+                                questions: questionsForStudent
+                            },
+                            student: {
+                                id: studentId.toString(),
+                                name: req.user.name,
+                                email: req.user.email
+                            }
+                        }
+                    });
+                }
+            }
+            throw dbErr;
+        }
 
         // Prepare questions without answers
         const questionsForStudent = await buildStudentExamQuestions(exam);
 
-        // Computed for convenience only — not persisted. The real `endTime` is
-        // set (and authoritative) when the attempt is submitted.
-        const computedEndTime = new Date(attempt.startTime.getTime() + exam.duration * 60 * 1000);
-
         res.status(201).json({
             success: true,
+            serverTime: now.toISOString(),
             attempt: {
                 _id: attempt._id.toString(),
                 id: attempt._id.toString(),
                 examId: exam._id.toString(),
                 studentId: studentId.toString(),
                 startTime: attempt.startTime,
-                endTime: computedEndTime,
+                endTime: expectedEndTime,
+                expectedEndTime: expectedEndTime,
                 status: attempt.status,
                 currentAnswers: {},
                 exam: {
@@ -185,7 +244,19 @@ export const startExamAttempt = async (req, res) => {
                     totalMarks: exam.totalMarks,
                     passingMarks: exam.passingMarks,
                     totalQuestions: questionsForStudent.length,
-                    questions: questionsForStudent
+                    questions: questionsForStudent,
+                    descriptiveQuestions: (exam.descriptiveQuestions || []).map(q => ({
+                        id: q._id.toString(),
+                        type: 'descriptive',
+                        title: q.title,
+                        description: q.description,
+                        instructions: q.instructions,
+                        maxMarks: q.maxMarks,
+                        wordLimit: q.wordLimit,
+                        minWords: q.minWords,
+                        difficulty: q.difficulty,
+                        category: q.category
+                    }))
                 },
                 student: {
                     id: studentId.toString(),
@@ -249,14 +320,27 @@ export const submitExamAttempt = async (req, res) => {
             });
         }
 
-        // Check if time expired
+        // Fetch exam for scoring (single query)
         const exam = await Exam.findById(attempt.examId)
             .populate('questions')
-            .populate('codingQuestions');
-        const timeLimitMs = exam.duration * 60 * 1000;
-        const elapsedTime = Date.now() - attempt.startTime.getTime();
+            .populate('codingQuestions')
+            .populate({ path: 'descriptiveQuestions', select: '_id' });
 
-        if (elapsedTime > timeLimitMs + 60000) { // 1 minute grace period
+        if (!exam) {
+            return res.status(404).json({ success: false, error: 'Exam not found' });
+        }
+
+        const hasDescriptiveQuestions = (exam.descriptiveQuestions?.length || 0) > 0;
+
+        // Use attempt.expectedEndTime as the AUTHORITATIVE deadline.
+        // This already factors in exam.endDateTimeUTC vs startTime + duration.
+        // Fall back to startTime + duration only if expectedEndTime was never set.
+        const deadline = attempt.expectedEndTime
+            ? attempt.expectedEndTime
+            : new Date(attempt.startTime.getTime() + exam.duration * 60 * 1000);
+        const GRACE_PERIOD_MS = 60 * 1000; // 1 minute grace
+
+        if (Date.now() > deadline.getTime() + GRACE_PERIOD_MS) {
             attempt.status = 'abandoned';
             await attempt.save();
             return res.status(410).json({
@@ -264,6 +348,9 @@ export const submitExamAttempt = async (req, res) => {
                 error: 'Attempt time expired'
             });
         }
+
+        // For the elapsedTime calculation used for timeSpent
+        const elapsedTime = Date.now() - attempt.startTime.getTime();
 
         // Calculate score
         let score = 0;
@@ -322,14 +409,21 @@ export const submitExamAttempt = async (req, res) => {
         const percentage = (score / exam.totalMarks) * 100;
         const passed = score >= exam.passingMarks;
 
-        // Update attempt
+        // Determine subjective status
+        const subjectiveStatus = hasDescriptiveQuestions ? 'pending_evaluation' : 'not_applicable';
+
+        // Update attempt — score EXCLUDES subjective marks (awarded later by teacher)
         attempt.answers = answersMap;
         attempt.score = Math.round(score * 100) / 100; // Round to 2 decimals
-        attempt.percentage = Math.round(percentage * 100) / 100;
-        attempt.passed = passed;
+        attempt.percentage = exam.totalMarks > 0
+            ? Math.round((score / exam.totalMarks) * 100 * 100) / 100
+            : 0;
+        attempt.passed = !hasDescriptiveQuestions && score >= exam.passingMarks;
         attempt.endTime = new Date();
         attempt.timeSpent = timeSpent || Math.floor(elapsedTime / 1000);
         attempt.status = 'completed';
+        attempt.subjectiveStatus = subjectiveStatus;
+        attempt.subjectiveScore = 0;
 
         await attempt.save();
 
@@ -356,12 +450,15 @@ export const submitExamAttempt = async (req, res) => {
             message: 'Exam submitted successfully',
             result: {
                 attemptId: attempt._id.toString(),
+                mcqScore: Math.round((score - (attempt.score - (attempt.score))) * 100) / 100,
+                codingScore: 0, // Individual coding scores are per-submission
+                subjectiveStatus,
                 score: attempt.score,
                 totalMarks: exam.totalMarks,
                 percentage: attempt.percentage,
                 passed: attempt.passed,
                 correctAnswers,
-                totalQuestions: exam.questions.length + exam.codingQuestions.length,
+                totalQuestions: exam.questions.length + exam.codingQuestions.length + (exam.descriptiveQuestions?.length || 0),
                 timeSpent: attempt.timeSpent,
                 detailedResults
             }
@@ -474,6 +571,24 @@ export const getAttemptById = async (req, res) => {
                 endTime: attempt.endTime,
                 timeSpent: attempt.timeSpent,
                 status: attempt.status,
+                subjectiveStatus: attempt.subjectiveStatus || 'not_applicable',
+                subjectiveScore: attempt.subjectiveScore || 0,
+                detailed_results: detailedResults
+            },
+            // Result format used by getResult API call
+            result: {
+                attemptId: attempt._id.toString(),
+                examTitle: attempt.examId.title,
+                score: attempt.score,
+                totalMarks: attempt.examId.totalMarks,
+                percentage: attempt.percentage,
+                passed: attempt.passed,
+                correctAnswers: detailedResults.filter(r => r.isCorrect).length,
+                totalQuestions: detailedResults.length,
+                timeSpent: attempt.timeSpent,
+                submittedAt: attempt.endTime,
+                subjectiveStatus: attempt.subjectiveStatus || 'not_applicable',
+                subjectiveScore: attempt.subjectiveScore || 0,
                 detailed_results: detailedResults
             }
         });
@@ -521,10 +636,12 @@ export const saveAnswers = async (req, res) => {
             });
         }
 
+        // If the attempt is already completed/submitted, return 200 silently.
+        // This prevents spurious server errors from sendBeacon firing after submit.
         if (attempt.status !== 'in_progress') {
-            return res.status(409).json({
-                success: false,
-                error: 'Attempt is not in progress'
+            return res.status(200).json({
+                success: true,
+                data: { savedAt: new Date().toISOString(), message: 'Attempt already completed — answers not overwritten' }
             });
         }
 
@@ -583,10 +700,17 @@ export const heartbeat = async (req, res) => {
         attempt.lastActivity = new Date();
         await attempt.save();
 
-        const exam = await Exam.findById(attempt.examId).select('duration');
-        const timeLimitMs = (exam?.duration || 0) * 60 * 1000;
-        const elapsedMs = Date.now() - attempt.startTime.getTime();
-        const timeRemaining = Math.max(0, Math.floor((timeLimitMs - elapsedMs) / 1000));
+        // Use attempt.expectedEndTime as the authoritative deadline for time remaining.
+        // This is consistent with what the frontend timer uses.
+        let timeRemaining = 0;
+        if (attempt.expectedEndTime) {
+            timeRemaining = Math.max(0, Math.floor((attempt.expectedEndTime.getTime() - Date.now()) / 1000));
+        } else {
+            const exam = await Exam.findById(attempt.examId).select('duration');
+            const timeLimitMs = (exam?.duration || 0) * 60 * 1000;
+            const elapsedMs = Date.now() - attempt.startTime.getTime();
+            timeRemaining = Math.max(0, Math.floor((timeLimitMs - elapsedMs) / 1000));
+        }
 
         res.status(200).json({
             success: true,
@@ -763,27 +887,30 @@ export const getMyAttempts = async (req, res) => {
             .populate('examId', 'title description duration totalMarks passingMarks')
             .sort({ createdAt: -1 });
 
-        const formattedAttempts = attempts.map(a => ({
-            id: a._id.toString(),
-            examId: a.examId._id.toString(),
-            exam: {
-                id: a.examId._id.toString(),
-                title: a.examId.title,
-                description: a.examId.description,
-                duration: a.examId.duration,
-                totalMarks: a.examId.totalMarks,
-                passingMarks: a.examId.passingMarks
-            },
-            score: a.score,
-            percentage: a.percentage,
-            passed: a.passed,
-            status: a.status,
-            startTime: a.startTime ? a.startTime.toISOString() : null,
-            endTime: a.endTime ? a.endTime.toISOString() : null,
-            timeSpent: a.timeSpent,
-            submittedAt: a.endTime ? a.endTime.toISOString() : null,
-            createdAt: a.createdAt ? a.createdAt.toISOString() : null
-        }));
+        // Guard against orphaned attempts where the exam document was deleted
+        const formattedAttempts = attempts
+            .filter(a => a.examId && typeof a.examId === 'object' && a.examId._id)
+            .map(a => ({
+                id: a._id.toString(),
+                examId: a.examId._id.toString(),
+                exam: {
+                    id: a.examId._id.toString(),
+                    title: a.examId.title || 'Exam Deleted',
+                    description: a.examId.description || '',
+                    duration: a.examId.duration || 0,
+                    totalMarks: a.examId.totalMarks || 0,
+                    passingMarks: a.examId.passingMarks || 0
+                },
+                score: a.score,
+                percentage: a.percentage,
+                passed: a.passed,
+                status: a.status,
+                startTime: a.startTime ? a.startTime.toISOString() : null,
+                endTime: a.endTime ? a.endTime.toISOString() : null,
+                timeSpent: a.timeSpent,
+                submittedAt: a.endTime ? a.endTime.toISOString() : null,
+                createdAt: a.createdAt ? a.createdAt.toISOString() : null
+            }));
 
         res.status(200).json({
             success: true,

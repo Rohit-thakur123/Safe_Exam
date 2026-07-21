@@ -2,7 +2,7 @@
 // Phase 1: Persistent stage/section/question across page refreshes via StorageService
 // Phase 2: Violation reporting wired to useTabVisibility
 // Phase 3: Navigation confirmation dialogs before leaving active sections
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useExamSession, AlreadySubmittedError } from '../hooks/useExamSession';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -10,7 +10,6 @@ import { useTimer } from '../hooks/useTimer';
 import { useHeartbeat } from '../hooks/useHeartbeat';
 import { useTabVisibility } from '../hooks/useTabVisibility';
 import { StorageService } from '../services/storageService';
-import { reportViolation } from '../services/violationService';
 
 import ExamDashboard from '../components/exam/ExamDashboard';
 import { ExamHeader } from '../components/exam/ExamHeader';
@@ -21,9 +20,10 @@ import { SubmitButton } from '../components/exam/SubmitButton';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Button } from '../components/ui/Button';
 import CodingTest from './CodingTest';
-import type { CodingQuestion, McqStatus, CodingStatus } from '../types/exam.types';
+import SubjectiveTest from '../components/exam/SubjectiveTest';
+import type { CodingQuestion, SubjectiveQuestion, McqStatus, CodingStatus, SubjectiveStatus } from '../types/exam.types';
 
-type Stage = 'dashboard' | 'mcq' | 'coding';
+type Stage = 'dashboard' | 'mcq' | 'coding' | 'subjective';
 
 export const ExamPage = () => {
   const { examId, sessionToken } = useParams<{
@@ -38,6 +38,7 @@ export const ExamPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndexRaw] = useState(0);
   const [mcqStatus, setMcqStatusRaw] = useState<McqStatus>('not_started');
   const [codingStatus, setCodingStatusRaw] = useState<CodingStatus>('locked');
+  const [subjectiveStatus, setSubjectiveStatusRaw] = useState<SubjectiveStatus>('locked');
   const [sectionsInitialized, setSectionsInitialized] = useState(false);
 
   // Phase 3: Confirmation dialogs
@@ -73,19 +74,36 @@ export const ExamPage = () => {
 
   const setMcqStatus = useCallback((s: McqStatus) => {
     setMcqStatusRaw(s);
-    setCodingStatusRaw((prevCoding) => {
-      if (examId) StorageService.saveSectionStatuses(examId, { mcqStatus: s, codingStatus: prevCoding });
-      return prevCoding;
-    });
-  }, [examId]);
+    if (examId) {
+      StorageService.saveSectionStatuses(examId, {
+        mcqStatus: s,
+        codingStatus: codingStatus,
+        subjectiveStatus: subjectiveStatus,
+      });
+    }
+  }, [examId, codingStatus, subjectiveStatus]);
 
   const setCodingStatus = useCallback((s: CodingStatus) => {
     setCodingStatusRaw(s);
-    setMcqStatusRaw((prevMcq) => {
-      if (examId) StorageService.saveSectionStatuses(examId, { mcqStatus: prevMcq, codingStatus: s });
-      return prevMcq;
-    });
-  }, [examId]);
+    if (examId) {
+      StorageService.saveSectionStatuses(examId, {
+        mcqStatus: mcqStatus,
+        codingStatus: s,
+        subjectiveStatus: subjectiveStatus,
+      });
+    }
+  }, [examId, mcqStatus, subjectiveStatus]);
+
+  const setSubjectiveStatus = useCallback((s: SubjectiveStatus) => {
+    setSubjectiveStatusRaw(s);
+    if (examId) {
+      StorageService.saveSectionStatuses(examId, {
+        mcqStatus: mcqStatus,
+        codingStatus: codingStatus,
+        subjectiveStatus: s,
+      });
+    }
+  }, [examId, mcqStatus, codingStatus]);
 
   // --- Initialize exam ---
   useEffect(() => {
@@ -103,25 +121,60 @@ export const ExamPage = () => {
     }
   }, [examId, sessionToken, initializeExam, navigate]);
 
-  // --- Phase 1: Restore stage from storage after session loads ---
+  // --- Phase 1: Restore stage from storage OR initialize from scratch after session loads ---
+  // IMPORTANT: Both restore and initialization are merged into a single effect to eliminate
+  // a race condition where sectionsInitialized could be overwritten by both effects firing.
   useEffect(() => {
-    if (!examSession || !examId) return;
+    if (!examSession || !examId || sectionsInitialized) return;
 
+    // Try to restore from localStorage first (handles refresh/reconnect)
     const savedStage = StorageService.loadExamStage(examId) as Stage | null;
     const savedIndex = StorageService.loadCurrentQuestion(examId);
     const savedStatuses = StorageService.loadSectionStatuses(examId);
 
-    if (savedStage) setStageRaw(savedStage);
-    if (savedIndex) setCurrentQuestionIndexRaw(savedIndex);
+    const hasMcq = examSession.exam.questions.filter(q => q.type !== 'coding' && q.type !== 'descriptive').length > 0;
+    const hasCoding = examSession.exam.questions.filter(q => q.type === 'coding').length > 0;
+    const hasSubjective = (examSession.exam.descriptiveQuestions || []).length > 0;
+
     if (savedStatuses) {
-      setMcqStatusRaw(savedStatuses.mcqStatus as McqStatus);
-      setCodingStatusRaw(savedStatuses.codingStatus as CodingStatus);
-      setSectionsInitialized(true);
+      // Restore everything from localStorage
+      const restoredMcq = savedStatuses.mcqStatus as McqStatus;
+      const restoredCoding = savedStatuses.codingStatus as CodingStatus;
+      const restoredSubjective = (savedStatuses.subjectiveStatus as SubjectiveStatus) || 'locked';
+      setMcqStatusRaw(restoredMcq);
+      setCodingStatusRaw(restoredCoding);
+      setSubjectiveStatusRaw(restoredSubjective);
+      // Validate restored stage against actual exam content
+      if (savedStage) {
+        const stageValid =
+          savedStage === 'dashboard' ||
+          (savedStage === 'mcq' && hasMcq) ||
+          (savedStage === 'coding' && hasCoding) ||
+          (savedStage === 'subjective' && hasSubjective);
+        setStageRaw(stageValid ? savedStage : 'dashboard');
+      }
+      if (savedIndex) setCurrentQuestionIndexRaw(savedIndex);
+    } else {
+      // No saved state — compute initial statuses from exam content
+      const initMcq: McqStatus = hasMcq ? 'not_started' : 'completed';
+      const initCoding: CodingStatus = hasCoding ? (hasMcq ? 'locked' : 'not_started') : 'completed';
+      const initSubjective: SubjectiveStatus = hasSubjective ? (hasMcq || hasCoding ? 'locked' : 'not_started') : 'completed';
+      setMcqStatusRaw(initMcq);
+      setCodingStatusRaw(initCoding);
+      setSubjectiveStatusRaw(initSubjective);
+      // Persist initial statuses
+      StorageService.saveSectionStatuses(examId, {
+        mcqStatus: initMcq,
+        codingStatus: initCoding,
+        subjectiveStatus: initSubjective,
+      });
     }
-  }, [examSession, examId]);
+
+    setSectionsInitialized(true);
+  }, [examSession, examId, sectionsInitialized]);
 
   const mcqQuestions = useMemo(
-    () => (examSession ? examSession.exam.questions.filter((q) => q.type !== 'coding') : []),
+    () => (examSession ? examSession.exam.questions.filter((q) => q.type !== 'coding' && q.type !== 'descriptive') : []),
     [examSession]
   );
   const codingQuestions = useMemo(
@@ -131,27 +184,16 @@ export const ExamPage = () => {
       : []),
     [examSession]
   );
+  const subjectiveQuestions = useMemo(
+    () =>
+    (examSession
+      ? ((examSession.exam.descriptiveQuestions || []) as SubjectiveQuestion[])
+      : []),
+    [examSession]
+  );
 
-  useEffect(() => {
-    if (!examSession || sectionsInitialized) return;
-
-    if (mcqQuestions.length === 0) {
-      setMcqStatusRaw('completed');
-      setCodingStatusRaw(codingQuestions.length > 0 ? 'not_started' : 'completed');
-    } else {
-      setMcqStatusRaw('not_started');
-      setCodingStatusRaw(codingQuestions.length > 0 ? 'locked' : 'completed');
-    }
-    setSectionsInitialized(true);
-
-    // Persist initial statuses
-    if (examId) {
-      StorageService.saveSectionStatuses(examId, {
-        mcqStatus: mcqQuestions.length === 0 ? 'completed' : 'not_started',
-        codingStatus: codingQuestions.length > 0 ? (mcqQuestions.length === 0 ? 'not_started' : 'locked') : 'completed',
-      });
-    }
-  }, [examSession, sectionsInitialized, mcqQuestions.length, codingQuestions.length, examId]);
+  // This effect is intentionally left empty — section initialization is now fully
+  // handled in the merged restore effect above.
 
   // Auto-save MCQ answers
   const { saving, lastSaved, error: autoSaveError } = useAutoSave({
@@ -160,11 +202,15 @@ export const ExamPage = () => {
     enabled: !!examSession
   });
 
+  const submittingRef = useRef(false);
+
   // Timer with auto-submit
   const { timeRemaining, formatTime, isWarning } = useTimer({
     endTime: examSession?.attempt.endTime || null,
+    serverTime: examSession?.serverTime,
     onTimeUp: async () => {
-      if (examSession) {
+      if (examSession && !submittingRef.current) {
+        submittingRef.current = true;
         try {
           const result = await submitExam();
           // Phase 9: Clear storage on submission
@@ -172,6 +218,7 @@ export const ExamPage = () => {
           navigate(`/exam/submit-success?autoSubmit=true&score=${result.score}&percentage=${result.percentage}`);
         } catch (error) {
           console.error('Auto-submit failed:', error);
+          submittingRef.current = false;
           navigate('/exam/error?message=Failed%20to%20submit%20exam');
         }
       }
@@ -181,13 +228,16 @@ export const ExamPage = () => {
   useHeartbeat(examSession?.attempt.id || null);
 
   const handleCheatingAutoSubmit = async () => {
-    if (!examSession) return;
+    // Guard: if a submit is already in progress (timer or previous tab switch), do not fire again.
+    if (!examSession || submittingRef.current) return;
+    submittingRef.current = true;
     try {
       const result = await submitExam();
       if (examId) StorageService.clearExamData(examId);
       navigate(`/exam/submit-success?autoSubmit=true&reason=tab_switch_violation&score=${result.score}&percentage=${result.percentage}`);
     } catch (err) {
       console.error('Auto-submit (tab-switch violation) failed:', err);
+      submittingRef.current = false;
       navigate('/exam/error?message=Exam%20auto-submitted%20due%20to%20tab%20switch%20violations');
     }
   };
@@ -297,6 +347,7 @@ export const ExamPage = () => {
   if (stage === 'dashboard') {
     const mcqMarks = mcqQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
     const codingMarks = codingQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
+    const subjectiveMarks = subjectiveQuestions.reduce((sum, q) => sum + (q.maxMarks || 0), 0);
 
     return (
       <>
@@ -319,6 +370,11 @@ export const ExamPage = () => {
             itemCountLabel: `${codingQuestions.length} Problem${codingQuestions.length === 1 ? '' : 's'}`,
             marks: codingMarks
           }}
+          subjectiveStatus={subjectiveQuestions.length > 0 ? subjectiveStatus : undefined}
+          subjectiveMeta={subjectiveQuestions.length > 0 ? {
+            itemCountLabel: `${subjectiveQuestions.length} Question${subjectiveQuestions.length === 1 ? '' : 's'}`,
+            marks: subjectiveMarks
+          } : undefined}
           onStartMcq={() => {
             setMcqStatus('in_progress');
             setStage('mcq');
@@ -331,6 +387,12 @@ export const ExamPage = () => {
           }}
           onContinueCoding={() => setStage('coding')}
           onReviewCoding={() => setStage('coding')}
+          onStartSubjective={() => {
+            setSubjectiveStatus('in_progress');
+            setStage('subjective');
+          }}
+          onContinueSubjective={() => setStage('subjective')}
+          onReviewSubjective={() => setStage('subjective')}
           onSubmitExam={handleFinalSubmit}
         />
       </>
@@ -349,6 +411,28 @@ export const ExamPage = () => {
           examId={examSession.attempt.examId}
           onFinish={() => {
             setCodingStatus('completed');
+            if (subjectiveQuestions.length > 0 && subjectiveStatus === 'locked') {
+              setSubjectiveStatus('not_started');
+            }
+            requestStageChange('dashboard');
+          }}
+        />
+      </>
+    );
+  }
+
+  // ---- Stage: Subjective ------------------------------------------------------
+  if (stage === 'subjective') {
+    return (
+      <>
+        {tabWarningBanner}
+        {leaveConfirmModal}
+        <SubjectiveTest
+          questions={subjectiveQuestions}
+          answers={examSession.currentAnswers}
+          onAnswerChange={updateAnswer}
+          onFinish={() => {
+            setSubjectiveStatus('completed');
             requestStageChange('dashboard');
           }}
         />
@@ -443,8 +527,10 @@ export const ExamPage = () => {
               <SubmitButton
                 onSubmit={async () => {
                   setMcqStatus('completed');
-                  if (codingStatus === 'locked') {
+                  if (codingQuestions.length > 0 && codingStatus === 'locked') {
                     setCodingStatus('not_started');
+                  } else if (subjectiveQuestions.length > 0 && subjectiveStatus === 'locked') {
+                    setSubjectiveStatus('not_started');
                   }
                   requestStageChange('dashboard');
                 }}

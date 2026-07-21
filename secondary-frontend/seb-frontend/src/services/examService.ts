@@ -41,6 +41,7 @@ export const startExamSession = async (
     ).toISOString();
 
     return {
+      serverTime: response.data.serverTime,
       attempt: {
         id: attemptData.id,
         examId: attemptData.examId,

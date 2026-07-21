@@ -5,8 +5,8 @@
 // not a parallel choice.
 // =====================================================================================
 
-import React, { useMemo } from "react";
-import { ListChecks, Code2 } from "lucide-react";
+import React from "react";
+import { ListChecks, Code2, BookOpen } from "lucide-react";
 import TopBar from "./ExamHeader";
 import SectionCard from "./AssessmentCard";
 import SubmitFooter from "./SubmitFooter";
@@ -23,22 +23,24 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
   mcqMeta,
   codingStatus,
   codingMeta,
+  subjectiveStatus,
+  subjectiveMeta,
   onStartMcq,
   onContinueMcq,
   onReviewMcq,
   onStartCoding,
   onContinueCoding,
   onReviewCoding,
+  onStartSubjective,
+  onContinueSubjective,
+  onReviewSubjective,
   onSubmitExam,
 }) => {
   const mcqCompleted = mcqStatus === "completed";
   const codingCompleted = codingStatus === "completed";
-  const bothCompleted = mcqCompleted && codingCompleted;
-
-  const connectorColorClass = useMemo(
-    () => (mcqCompleted ? "bg-emerald-500/40" : "bg-white/10"),
-    [mcqCompleted]
-  );
+  const hasSubjective = Boolean(subjectiveMeta && subjectiveStatus);
+  const subjectiveCompleted = !hasSubjective || subjectiveStatus === "completed";
+  const allCompleted = mcqCompleted && codingCompleted && subjectiveCompleted;
 
   const handleMcqAction = () => {
     if (mcqStatus === "not_started") onStartMcq();
@@ -50,15 +52,24 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
     if (codingStatus === "not_started") onStartCoding();
     else if (codingStatus === "in_progress") onContinueCoding();
     else if (codingStatus === "completed") onReviewCoding();
-    // "locked" renders no button, so this is never called in that state
+  };
+
+  const handleSubjectiveAction = () => {
+    if (!onStartSubjective || !onContinueSubjective || !onReviewSubjective) return;
+    if (subjectiveStatus === "not_started") onStartSubjective();
+    else if (subjectiveStatus === "in_progress") onContinueSubjective();
+    else if (subjectiveStatus === "completed") onReviewSubjective();
   };
 
   const handleTimeExpired = () => {
-    // The dashboard owns the global clock. When it hits zero, whatever the
-    // candidate was doing should already have been auto-submitted by the
-    // section screens; this is the final safety net that locks the exam here.
     onSubmitExam();
   };
+
+  let sectionCounter = 1;
+  const mcqStep = sectionCounter++;
+  const codingStep = sectionCounter++;
+  const subjectiveStep = hasSubjective ? sectionCounter++ : 0;
+  const totalSections = hasSubjective ? 3 : 2;
 
   return (
     <div className="min-h-screen w-full bg-[#0a0a0d] text-slate-100">
@@ -66,7 +77,7 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
         companyName={companyName}
         examTitle={examTitle}
         candidateName={candidateName}
-        initialSecondsRemaining={timeRemainingSeconds}
+        timeRemainingSeconds={timeRemainingSeconds}
         onTimeExpired={handleTimeExpired}
       />
 
@@ -76,12 +87,12 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
             {examTitle}
           </p>
           <p className="text-[13px] text-slate-500">
-            2 sections · {totalMarks} marks total · Candidate ID #{candidateId}
+            {totalSections} sections · {totalMarks} marks total · Candidate ID #{candidateId}
           </p>
         </div>
 
         <SectionCard
-          stepNumber={1}
+          stepNumber={mcqStep}
           icon={<ListChecks size={20} />}
           title="MCQ Assessment"
           itemCountLabel={mcqMeta.itemCountLabel}
@@ -90,10 +101,10 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
           onPrimaryAction={handleMcqAction}
         />
 
-        <div className={`ml-[38px] h-7 w-0.5 ${connectorColorClass}`} />
+        <div className={`ml-[38px] h-7 w-0.5 ${mcqCompleted ? "bg-emerald-500/40" : "bg-white/10"}`} />
 
         <SectionCard
-          stepNumber={2}
+          stepNumber={codingStep}
           icon={<Code2 size={20} />}
           title="Coding Assessment"
           itemCountLabel={codingMeta.itemCountLabel}
@@ -103,8 +114,25 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
           onPrimaryAction={handleCodingAction}
         />
 
+        {hasSubjective && (
+          <>
+            <div className={`ml-[38px] h-7 w-0.5 ${codingCompleted ? "bg-emerald-500/40" : "bg-white/10"}`} />
+
+            <SectionCard
+              stepNumber={subjectiveStep}
+              icon={<BookOpen size={20} />}
+              title="Subjective Assessment"
+              itemCountLabel={subjectiveMeta!.itemCountLabel}
+              marks={subjectiveMeta!.marks}
+              status={subjectiveStatus!}
+              lockedHelperText="Unlocks after Coding section is submitted."
+              onPrimaryAction={handleSubjectiveAction}
+            />
+          </>
+        )}
+
         <SubmitFooter
-          isReady={bothCompleted}
+          isReady={allCompleted}
           mcqCompleted={mcqCompleted}
           codingCompleted={codingCompleted}
           onConfirmSubmit={onSubmitExam}

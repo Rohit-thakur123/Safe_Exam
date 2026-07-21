@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Shield, BarChart3, Plus, ListChecks, FileText, Eye, Code2, LogOut, Menu, X, User
+  Shield, BarChart3, Plus, ListChecks, FileText, Eye, Code2, BookOpen, LogOut, Menu, X, User
 } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { to: '/teacher/exams', label: 'Assessments', icon: Eye },
   { to: '/teacher/mcq', label: 'MCQ Library', icon: ListChecks },
   { to: '/teacher/coding-questions', label: 'Coding Challenges', icon: Code2 },
+  { to: '/teacher/subjective-questions', label: 'Subjective', icon: BookOpen },
   { to: '/teacher/create-question', label: 'New Question', icon: Plus },
   { to: '/teacher/create-exam', label: 'New Exam', icon: FileText },
 ];

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { TeacherNavbar } from '../../components/TeacherNavbar';
 import { Button } from '../../components/ui/Button';
-import { codingQuestionAPI, questionAPI, examAPI } from '../../services/api';
+import { codingQuestionAPI, questionAPI, subjectiveQuestionAPI, examAPI } from '../../services/api';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import type { CodingQuestion, Question } from '../../types';
+import type { CodingQuestion, Question, SubjectiveQuestion } from '../../types';
 import Toast from '../../components/ui/Toast';
 import type { ToastMessage } from '../../components/ui/Toast';
 
@@ -18,6 +18,7 @@ const CreateExam: React.FC = () => {
 
   const [availableQuestions, setAvailableQuestions] = useState<Question[]>([]);
   const [availableCodingQuestions, setAvailableCodingQuestions] = useState<CodingQuestion[]>([]);
+  const [availableSubjectiveQuestions, setAvailableSubjectiveQuestions] = useState<SubjectiveQuestion[]>([]);
   const [availableStudents, setAvailableStudents] = useState<Array<{ id: string; name: string; email: string }>>([]);
 
   // Form State
@@ -26,6 +27,7 @@ const CreateExam: React.FC = () => {
   const [description, setDescription] = useState('');
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [selectedCodingQuestions, setSelectedCodingQuestions] = useState<string[]>([]);
+  const [selectedSubjectiveQuestions, setSelectedSubjectiveQuestions] = useState<string[]>([]);
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [duration, setDuration] = useState<number>(60);
   const [totalMarks, setTotalMarks] = useState<number>(100);
@@ -34,11 +36,18 @@ const CreateExam: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const [allowLateEntry, setAllowLateEntry] = useState(false);
+  const [lateEntryWindowMinutes, setLateEntryWindowMinutes] = useState(15);
+  const [autoSubmit, setAutoSubmit] = useState(true);
+  const [resultPublishDate, setResultPublishDate] = useState('');
+  const [resultPublishTime, setResultPublishTime] = useState('');
   const [sendEmailNotification, setSendEmailNotification] = useState(true);
 
   useEffect(() => {
     fetchQuestions();
     fetchCodingQuestions();
+    fetchSubjectiveQuestions();
     fetchStudents();
     if (examId) {
       fetchExam(examId);
@@ -70,6 +79,15 @@ const CreateExam: React.FC = () => {
     }
   };
 
+  const fetchSubjectiveQuestions = async () => {
+    try {
+      const result = await subjectiveQuestionAPI.getAll({ limit: 100 });
+      setAvailableSubjectiveQuestions(result.questions);
+    } catch {
+      console.error('Failed to fetch subjective questions');
+    }
+  };
+
   const fetchStudents = async () => {
     try {
       const response = await examAPI.getStudents();
@@ -87,11 +105,15 @@ const CreateExam: React.FC = () => {
       setDescription(exam.description || '');
       setSelectedQuestions(
         ((exam.questions || []) as unknown as Array<Question & { type?: string }>)
-          .filter(question => question.type !== 'coding')
+          .filter(question => question.type !== 'coding' && question.type !== 'descriptive')
           .map(question => question._id || question.id || String(question))
       );
       setSelectedCodingQuestions(
         ((exam.codingQuestions || []) as CodingQuestion[])
+          .map(question => question._id || question.id || String(question))
+      );
+      setSelectedSubjectiveQuestions(
+        ((exam.descriptiveQuestions || []) as SubjectiveQuestion[])
           .map(question => question._id || question.id || String(question))
       );
       setSelectedStudents((exam.assignedCandidates || []).map(student =>
@@ -104,6 +126,12 @@ const CreateExam: React.FC = () => {
       setEndDate(formatDateInput(exam.endDate));
       setStartTime(exam.startTime || '');
       setEndTime(exam.endTime || '');
+      setTimezone(exam.timezone || 'Asia/Kolkata');
+      setAllowLateEntry(Boolean(exam.allowLateEntry));
+      setLateEntryWindowMinutes(exam.lateEntryWindowMinutes || 15);
+      setAutoSubmit(exam.autoSubmit !== false);
+      setResultPublishDate(formatDateInput(exam.resultPublishDate));
+      setResultPublishTime(exam.resultPublishTime || '');
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setToast({
@@ -121,7 +149,11 @@ const CreateExam: React.FC = () => {
   };
 
   const toggleCodingSelection = (id: string) => {
-    setSelectedCodingQuestions(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+    setSelectedCodingQuestions(prev => prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]);
+  };
+
+  const toggleSubjectiveSelection = (id: string) => {
+    setSelectedSubjectiveQuestions(prev => prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]);
   };
 
   const toggleStudentSelection = (id: string) => {
@@ -135,8 +167,8 @@ const CreateExam: React.FC = () => {
       setActiveStep(1);
       return;
     }
-    if (selectedQuestions.length === 0 && selectedCodingQuestions.length === 0) {
-      setToast({ id: Date.now().toString(), type: 'warning', message: 'Please select at least one question or coding challenge' });
+    if (selectedQuestions.length === 0 && selectedCodingQuestions.length === 0 && selectedSubjectiveQuestions.length === 0) {
+      setToast({ id: Date.now().toString(), type: 'warning', message: 'Please select at least one question, coding challenge, or subjective question' });
       setActiveStep(2);
       return;
     }
@@ -153,6 +185,7 @@ const CreateExam: React.FC = () => {
         description: description.trim() || undefined,
         questions: selectedQuestions,
         codingQuestions: selectedCodingQuestions,
+        descriptiveQuestions: selectedSubjectiveQuestions,
         duration,
         totalMarks,
         passingMarks,
@@ -160,6 +193,12 @@ const CreateExam: React.FC = () => {
         endDate: endDate || undefined,
         startTime: startTime || undefined,
         endTime: endTime || undefined,
+        timezone,
+        allowLateEntry,
+        lateEntryWindowMinutes,
+        autoSubmit,
+        resultPublishDate: resultPublishDate || undefined,
+        resultPublishTime: resultPublishTime || undefined,
         assignedStudents: selectedStudents.length > 0 ? selectedStudents : undefined,
         sendEmailNotification: selectedStudents.length > 0 ? sendEmailNotification : false,
       };
@@ -289,24 +328,134 @@ const CreateExam: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              {/* Professional Scheduling & Timezone Configuration */}
+              <div className="border-t border-gray-100 pt-4 space-y-4">
+                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Exam Schedule & Timezone Settings</h3>
+                
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-                  />
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Timezone *</label>
+                  <select
+                    value={timezone}
+                    onChange={e => setTimezone(e.target.value)}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 bg-white"
+                  >
+                    <option value="Asia/Kolkata">India Standard Time (IST - UTC+05:30)</option>
+                    <option value="UTC">Coordinated Universal Time (UTC)</option>
+                    <option value="America/New_York">Eastern Time (EST/EDT - UTC-05:00/04:00)</option>
+                    <option value="America/Chicago">Central Time (CST/CDT - UTC-06:00/05:00)</option>
+                    <option value="America/Los_Angeles">Pacific Time (PST/PDT - UTC-08:00/07:00)</option>
+                    <option value="Europe/London">Greenwich Mean Time (GMT/BST - UTC+00:00/01:00)</option>
+                    <option value="Asia/Dubai">Gulf Standard Time (GST - UTC+04:00)</option>
+                    <option value="Asia/Singapore">Singapore Standard Time (SST - UTC+08:00)</option>
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Start Time (24h format)</label>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={e => setStartTime(e.target.value)}
+                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">End Time (24h format)</label>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={e => setEndTime(e.target.value)}
+                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <input
+                      type="checkbox"
+                      id="allowLateEntry"
+                      checked={allowLateEntry}
+                      onChange={e => setAllowLateEntry(e.target.checked)}
+                      className="h-4 w-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500"
+                    />
+                    <label htmlFor="allowLateEntry" className="text-xs font-bold text-gray-700 cursor-pointer">
+                      Allow Late Entry
+                    </label>
+                  </div>
+
+                  {allowLateEntry && (
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Late Entry Window (Minutes)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={lateEntryWindowMinutes}
+                        onChange={e => setLateEntryWindowMinutes(Number(e.target.value))}
+                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <input
+                      type="checkbox"
+                      id="autoSubmit"
+                      checked={autoSubmit}
+                      onChange={e => setAutoSubmit(e.target.checked)}
+                      className="h-4 w-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500"
+                    />
+                    <label htmlFor="autoSubmit" className="text-xs font-bold text-gray-700 cursor-pointer">
+                      Auto-Submit when Timer Expires
+                    </label>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-3">
+                  <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2">Result Publication Release (Optional)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Publish Date</label>
+                      <input
+                        type="date"
+                        value={resultPublishDate}
+                        onChange={e => setResultPublishDate(e.target.value)}
+                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">Publish Time</label>
+                      <input
+                        type="time"
+                        value={resultPublishTime}
+                        onChange={e => setResultPublishTime(e.target.value)}
+                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -384,6 +533,44 @@ const CreateExam: React.FC = () => {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+
+              {/* Subjective Questions Selection */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-gray-900">Select Subjective Questions</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Selected {selectedSubjectiveQuestions.length} subjective question(s)</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                  {availableSubjectiveQuestions.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-3 text-center">No subjective questions found in library. Create them under Subjective Questions first.</p>
+                  ) : (
+                    availableSubjectiveQuestions.map((sq) => {
+                      const sqId = sq._id || sq.id || '';
+                      const isSelected = selectedSubjectiveQuestions.includes(sqId);
+                      return (
+                        <div
+                          key={sqId}
+                          onClick={() => toggleSubjectiveSelection(sqId)}
+                          className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${
+                            isSelected
+                              ? 'border-purple-300 bg-purple-50/70 text-purple-900 font-medium'
+                              : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                          }`}
+                        >
+                          <div className="pr-4">
+                            <p className="font-bold text-gray-900 mb-0.5">{sq.title}</p>
+                            <span className="text-[11px] text-gray-500 font-medium">Max Marks: {sq.maxMarks || 10} · Difficulty: {sq.difficulty || 'Medium'}</span>
+                          </div>
+                          {isSelected && <CheckCircle2 size={18} className="text-purple-600 flex-shrink-0" />}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 

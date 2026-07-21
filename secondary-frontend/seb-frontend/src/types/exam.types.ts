@@ -14,7 +14,7 @@
 // SECTION 1 — Backend-aligned core types (from exam.types.ts)
 // =====================================================================================
 
-export type QuestionType = "mcq" | "text" | "file" | "coding";
+export type QuestionType = "mcq" | "text" | "file" | "coding" | "descriptive";
 export type Difficulty = "easy" | "medium" | "hard";
 
 export interface SampleTestCase {
@@ -48,6 +48,19 @@ export interface Question {
   hiddenTestCases?: number;
 }
 
+export interface SubjectiveQuestion {
+  id: string;
+  type: "descriptive";
+  title: string;
+  description: string;
+  instructions?: string;
+  maxMarks: number;
+  wordLimit?: number;
+  minWords?: number;
+  difficulty?: Difficulty;
+  category?: string;
+}
+
 export interface CodingQuestion extends Question {
   title: string;
   description: string;
@@ -75,6 +88,7 @@ export interface Exam {
   passingMarks: number;
   totalQuestions: number;
   questions: Question[];
+  descriptiveQuestions?: SubjectiveQuestion[];
 }
 
 export interface Student {
@@ -94,6 +108,7 @@ export interface ExamAttempt {
 }
 
 export interface ExamSession {
+  serverTime?: string;
   attempt: ExamAttempt;
   exam: Exam;
   student: Student;
@@ -115,6 +130,8 @@ export interface ExamResult {
   submittedAt: string;
   evaluatedAt: string;
   feedback: string;
+  subjectiveStatus?: 'not_applicable' | 'pending_evaluation' | 'evaluated';
+  subjectiveScore?: number;
   breakdown: {
     easy: { correct: number; total: number };
     medium: { correct: number; total: number };
@@ -228,7 +245,8 @@ export interface CodingAssessmentProps {
 
 export type McqStatus = "not_started" | "in_progress" | "completed";
 export type CodingStatus = "locked" | "not_started" | "in_progress" | "completed";
-export type SectionStatus = McqStatus | CodingStatus;
+export type SubjectiveStatus = "locked" | "not_started" | "in_progress" | "completed";
+export type SectionStatus = McqStatus | CodingStatus | SubjectiveStatus;
 
 export interface SectionMeta {
   /** e.g. "20 questions" or "3 problems" */
@@ -249,6 +267,8 @@ export interface ExamDashboardProps {
   mcqMeta: SectionMeta;
   codingStatus: CodingStatus;
   codingMeta: SectionMeta;
+  subjectiveStatus?: SubjectiveStatus;
+  subjectiveMeta?: SectionMeta;
 
   onStartMcq: () => void;
   onContinueMcq: () => void;
@@ -257,6 +277,10 @@ export interface ExamDashboardProps {
   onStartCoding: () => void;
   onContinueCoding: () => void;
   onReviewCoding: () => void;
+
+  onStartSubjective?: () => void;
+  onContinueSubjective?: () => void;
+  onReviewSubjective?: () => void;
 
   /** Called only after the candidate confirms in the submit dialog */
   onSubmitExam: () => void;

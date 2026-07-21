@@ -21,7 +21,7 @@ interface TopBarProps {
   candidateName: string;
   /** Seconds remaining — read directly from useTimer, NOT ticked locally */
   timeRemainingSeconds: number;
-  onTimeExpired: () => void;
+  onTimeExpired?: () => void;
 }
 
 export const ExamHeader: React.FC<ExamHeaderProps> = ({
@@ -101,12 +101,9 @@ const TopBar: React.FC<TopBarProps> = ({
   timeRemainingSeconds,
   onTimeExpired,
 }) => {
-  // Trigger onTimeExpired when the prop reaches zero
-  React.useEffect(() => {
-    if (timeRemainingSeconds <= 0) {
-      onTimeExpired();
-    }
-  }, [timeRemainingSeconds, onTimeExpired]);
+// Phase 7: TopBar no longer runs its own useEffect or timer.
+// It displays timeRemainingSeconds directly from the prop (which is updated by useTimer).
+// Timer expiration & auto-submit is managed authoritatively by useTimer in ExamPage.tsx.
 
   const isCritical = timeRemainingSeconds <= 300; // last 5 minutes
 
