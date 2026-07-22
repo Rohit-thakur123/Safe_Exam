@@ -427,6 +427,48 @@ export const submitExamAttempt = async (req, res) => {
 
         await attempt.save();
 
+        // ── Save subjective answers to DescriptiveAnswer collection ──────────
+        // The SEB frontend stores ALL answers (MCQ + subjective) in attempt.answers.
+        // The grading page reads from DescriptiveAnswer — so we extract and save them here.
+        if (hasDescriptiveQuestions && exam.descriptiveQuestions?.length > 0) {
+            try {
+                const DescriptiveAnswer = (await import('../models/descriptive/descriptiveAnswer.js')).default;
+                const upsertOps = exam.descriptiveQuestions.map(dq => {
+                    const questionId = dq._id.toString();
+                    const answerText = answersMap.get(questionId) || '';
+                    const wordCount = answerText.trim()
+                        ? answerText.trim().split(/\s+/).filter(Boolean).length
+                        : 0;
+                    return {
+                        updateOne: {
+                            filter: {
+                                student: attempt.studentId,
+                                exam: attempt.examId,
+                                question: dq._id,
+                            },
+                            update: {
+                                $set: {
+                                    answer: answerText,
+                                    wordCount,
+                                    status: 'submitted',
+                                    isSubmitted: true,
+                                    submittedAt: new Date(),
+                                    attemptId: attempt._id,
+                                },
+                            },
+                            upsert: true,
+                        },
+                    };
+                });
+                await DescriptiveAnswer.bulkWrite(upsertOps);
+                console.log(`✅ Saved ${exam.descriptiveQuestions.length} descriptive answer(s) for student ${attempt.studentId}`);
+            } catch (descErr) {
+                // Non-fatal — log but don't fail the submission
+                console.error('⚠️  Failed to save descriptive answers:', descErr.message);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         // Update student's examAttempts array
         const User = (await import('../models/User/user.js')).default;
         await User.findOneAndUpdate(

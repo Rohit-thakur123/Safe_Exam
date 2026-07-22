@@ -1,76 +1,78 @@
 import nodemailer from "nodemailer";
 
-// Lazy transporter initialization
-let transporter = null;
-
-// Function to get or create transporter
-function getTransporter() {
-  if (!transporter) {
-    // Validate required environment variables
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('SMTP credentials not configured. Please set SMTP_USER and SMTP_PASS in .env file');
-    }
-
-    // Gmail App Passwords are displayed with spaces (e.g. "mbpm hixt tini qddf")
-    // but must be sent WITHOUT spaces — strip them here to be safe.
-    const smtpPass = process.env.SMTP_PASS.replace(/\s+/g, '');
-
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT) || 465,
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: smtpPass,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
-
-    // Test connection
-    transporter.verify(function (error, success) {
-      if (error) {
-        console.error('❌ SMTP connection error:', error.message);
-        console.log('⚠️ Email notifications will not work. Please check your SMTP settings.');
-        console.log('💡 Make sure you are using a Gmail App Password (16 chars, no spaces).');
-        console.log('💡 Enable 2FA on your Google account first, then generate an App Password at:');
-        console.log('   https://myaccount.google.com/apppasswords');
-      } else {
-        console.log('✅ SMTP server is ready to send emails');
-      }
-    });
+/**
+ * Creates a fresh transporter each time — avoids stale cached connections
+ * when .env is updated and server restarts.
+ */
+function createTransporter() {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('SMTP_USER or SMTP_PASS not set in Backend/.env');
   }
 
-  return transporter;
+  // Gmail App Passwords are displayed with spaces — strip them before use
+  const smtpPass = process.env.SMTP_PASS.replace(/\s+/g, '');
+  const port = parseInt(process.env.SMTP_PORT) || 465;
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port,
+    secure: port === 465,   // true for 465 (SSL), false for 587 (STARTTLS)
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: smtpPass,
+    },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
+}
+
+// Verify SMTP on server startup — logs clearly to nodemon terminal
+export async function verifySmtp() {
+  try {
+    const t = createTransporter();
+    await t.verify();
+    console.log(`✅ SMTP ready — sending from: ${process.env.SMTP_USER}`);
+  } catch (err) {
+    console.error('\n❌ ─── SMTP STARTUP CHECK FAILED ──────────────────────────');
+    console.error(`   ${err.message}`);
+    console.error('   ► Fix: regenerate App Password at');
+    console.error('          https://myaccount.google.com/apppasswords');
+    console.error('   ► Then update SMTP_PASS in Backend/.env and RESTART server');
+    console.error('──────────────────────────────────────────────────────────\n');
+  }
 }
 
 async function sendMail(to, subject, htmlBody, textBody = null) {
+  const from = process.env.SMTP_FROM || `"SecureExam" <${process.env.SMTP_USER}>`;
+
+  console.log(`\n📤 Sending email`);
+  console.log(`   From   : ${from}`);
+  console.log(`   To     : ${to}`);
+  console.log(`   Subject: ${subject}`);
+
+  const transporter = createTransporter();
+
+  const mailOptions = { from, to, subject, html: htmlBody };
+  if (textBody) mailOptions.text = textBody;
+
   try {
-    // Get transporter instance (creates it if needed)
-    const emailTransporter = getTransporter();
-
-    const mailOptions = {
-      from: process.env.SMTP_FROM || `"Exam System" <${process.env.SMTP_USER}>`,
-      to,
-      subject,
-      html: htmlBody,
-    };
-
-    // Add plain text version if provided
-    if (textBody) {
-      mailOptions.text = textBody;
-    }
-
-    const info = await emailTransporter.sendMail(mailOptions);
-    console.log("✅ Email sent successfully to:", to);
-    console.log("   Message ID:", info.messageId);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ Delivered to ${to} | ID: ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error("❌ Error sending email to:", to);
-    console.error("   Error:", error.message);
-    throw new Error("Error sending email: " + error.message);
+    console.error(`❌ Delivery FAILED to ${to}: ${error.message}`);
+
+    if (error.message.includes('Invalid login') || error.message.includes('Username and Password')) {
+      console.error('   ► Gmail App Password is wrong or expired.');
+      console.error('   ► Generate a new one: https://myaccount.google.com/apppasswords');
+      console.error('   ► Update SMTP_PASS in Backend/.env, then restart the server.\n');
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      console.error('   ► Cannot reach Gmail SMTP. Check firewall / internet.\n');
+    }
+
+    throw new Error(`Email delivery failed to ${to}: ${error.message}`);
   }
 }
 

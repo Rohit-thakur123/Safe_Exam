@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run sebfrontend\" \"npm run sebapi\" \"npm run compilerservice \"",
-    "backend": "cd Backend && node --watch src/index.js",
+    "backend": "cd Backend && npx nodemon --watch src --watch .env --ext js,mjs,cjs,json,env src/index.js",
     "frontend": "cd frontend && npm run dev",
     "sebfrontend": "cd secondary-frontend/seb-frontend && npm run dev -- --port 5174",
     "sebapi": "cd api-server && node --watch src/index.js",

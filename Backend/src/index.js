@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { apiLimiter } from './middlewares/rateLimit.middleware.js';
+import { verifySmtp } from './services/sendMail.js';
 
 
 import path from "path";
@@ -108,4 +109,6 @@ app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`CORS enabled for: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    // Verify SMTP connection on startup so you see any email issues immediately
+    verifySmtp();
 });

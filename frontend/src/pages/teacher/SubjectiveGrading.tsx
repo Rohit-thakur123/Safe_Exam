@@ -166,7 +166,7 @@ const SubjectiveGrading: React.FC = () => {
         {/* Top Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <Link to="/teacher/results" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
+            <Link to={`/teacher/exams/${examId}/results`} className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
               <ArrowLeft size={14} className="mr-1" /> Back to Exam Results
             </Link>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
