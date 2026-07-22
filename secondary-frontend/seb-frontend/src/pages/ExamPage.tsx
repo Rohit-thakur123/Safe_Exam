@@ -33,6 +33,16 @@ export const ExamPage = () => {
 
   const navigate = useNavigate();
 
+  const enterFullscreen = async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (err) {
+    console.error("Unable to enter fullscreen", err);
+  }
+};
+
   // Section completion state (persisted)
   const [stage, setStageRaw] = useState<Stage>('dashboard');
   const [currentQuestionIndex, setCurrentQuestionIndexRaw] = useState(0);
@@ -47,7 +57,7 @@ export const ExamPage = () => {
   // Phase 2: Tab violation tracking
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showTabWarning, setShowTabWarning] = useState(false);
-  const MAX_TAB_SWITCHES = 3;
+  const MAX_TAB_SWITCHES = 1;
 
   const {
     examSession,
@@ -107,19 +117,38 @@ export const ExamPage = () => {
 
   // --- Initialize exam ---
   useEffect(() => {
-    if (examId && sessionToken) {
+  if (examId && sessionToken) {
+
+    const startExam = async () => {
+      const ok = window.confirm(
+        "The exam will now start in Full Screen mode.\n\nLeaving Full Screen will automatically submit your exam."
+      );
+
+      if (!ok) {
+        navigate("/dashboard");
+        return;
+      }
+
+      await enterFullscreen();
+
       initializeExam(examId, sessionToken).catch((err) => {
-        // Phase 9: If the exam was already submitted, redirect to success page
         if (err instanceof AlreadySubmittedError) {
-          // Clean up any lingering local data
           StorageService.clearExamData(examId);
-          navigate('/exam/submit-success?reason=already_submitted');
+          navigate("/exam/submit-success?reason=already_submitted");
           return;
         }
-        navigate(`/exam/error?message=${encodeURIComponent(err.message)}&code=LOAD_FAILED`);
+
+        navigate(
+          `/exam/error?message=${encodeURIComponent(
+            err.message
+          )}&code=LOAD_FAILED`
+        );
       });
-    }
-  }, [examId, sessionToken, initializeExam, navigate]);
+    };
+
+    startExam();
+  }
+}, [examId, sessionToken, initializeExam, navigate]);
 
   // --- Phase 1: Restore stage from storage OR initialize from scratch after session loads ---
   // IMPORTANT: Both restore and initialization are merged into a single effect to eliminate
@@ -226,6 +255,27 @@ export const ExamPage = () => {
   });
 
   useHeartbeat(examSession?.attempt.id || null);
+
+  useEffect(() => {
+  const handleFullscreenExit = () => {
+    if (!document.fullscreenElement) {
+      alert("Fullscreen exited. Exam will be submitted.");
+
+      handleCheatingAutoSubmit();
+    }
+  };
+
+  document.addEventListener(
+    "fullscreenchange",
+    handleFullscreenExit
+  );
+
+  return () =>
+    document.removeEventListener(
+      "fullscreenchange",
+      handleFullscreenExit
+    );
+}, []);
 
   const handleCheatingAutoSubmit = async () => {
     // Guard: if a submit is already in progress (timer or previous tab switch), do not fire again.
