@@ -2,8 +2,9 @@ import ExamAttempt from '../models/exam/examAttempt.js';
 import Exam from '../models/exam/exam.js';
 import Question from '../models/exam/question.js';
 import CodingQuestion from '../models/exam/codingQuestion.js';
+import DescriptiveQuestion from '../models/descriptive/descriptiveQuestion.js';
 import mongoose from 'mongoose';
-import { buildStudentExamQuestions } from '../utils/examQuestionUtils.js';
+import { buildStudentExamQuestions, resolveMcqMark, resolveOverrideMark } from '../utils/examQuestionUtils.js';
 import Submission from '../models/exam/submissions.js';
 
 // Start exam attempt (CRITICAL - TAKE EXAM)
@@ -324,7 +325,7 @@ export const submitExamAttempt = async (req, res) => {
         const exam = await Exam.findById(attempt.examId)
             .populate('questions')
             .populate('codingQuestions')
-            .populate({ path: 'descriptiveQuestions', select: '_id' });
+            .populate({ path: 'descriptiveQuestions', select: '_id maxMarks' });
 
         if (!exam) {
             return res.status(404).json({ success: false, error: 'Exam not found' });
@@ -355,9 +356,26 @@ export const submitExamAttempt = async (req, res) => {
         // Calculate score
         let score = 0;
         let correctAnswers = 0;
-        const codingMarks = exam.codingQuestions.reduce((total, question) => total + question.marks, 0);
-        const mcqMarksPool = Math.max(0, exam.totalMarks - codingMarks);
-        const marksPerQuestion = exam.questions.length > 0 ? mcqMarksPool / exam.questions.length : 0;
+        const codingMarks = exam.codingQuestions.reduce(
+            (total, question) => total + resolveOverrideMark(exam, question._id, question.marks), 0
+        );
+        // Subjective/descriptive marks are awarded later by the teacher, but their share of
+        // totalMarks must still be reserved here — otherwise MCQ questions get over-credited
+        // with marks that actually belong to the (not-yet-graded) subjective section.
+        const descriptiveMarks = exam.descriptiveQuestions.reduce(
+            (total, question) => total + resolveOverrideMark(exam, question._id, question.maxMarks), 0
+        );
+        // Marks pool remaining for MCQ questions that don't have a teacher-assigned custom mark
+        const customMcqTotal = exam.questions.reduce((sum, question) => {
+            const raw = exam.questionMarks?.get ? exam.questionMarks.get(question._id.toString()) : exam.questionMarks?.[question._id.toString()];
+            return sum + (raw !== undefined && raw !== null && raw !== '' ? Number(raw) : 0);
+        }, 0);
+        const uncustomizedCount = exam.questions.filter(question => {
+            const raw = exam.questionMarks?.get ? exam.questionMarks.get(question._id.toString()) : exam.questionMarks?.[question._id.toString()];
+            return raw === undefined || raw === null || raw === '';
+        }).length;
+        const mcqMarksPool = Math.max(0, exam.totalMarks - codingMarks - descriptiveMarks - customMcqTotal);
+        const marksPerQuestion = uncustomizedCount > 0 ? mcqMarksPool / uncustomizedCount : 0;
         const detailedResults = [];
 
         // Convert answers object to Map
@@ -367,9 +385,10 @@ export const submitExamAttempt = async (req, res) => {
             const questionId = question._id.toString();
             const selectedAnswer = answersMap.get(questionId);
             const isCorrect = selectedAnswer === question.answer;
+            const questionMarks = resolveMcqMark(exam, questionId, marksPerQuestion);
 
             if (isCorrect) {
-                score += marksPerQuestion;
+                score += questionMarks;
                 correctAnswers++;
             }
 
@@ -380,7 +399,7 @@ export const submitExamAttempt = async (req, res) => {
                 correctAnswer: question.answer,
                 isCorrect,
                 explanation: question.explanation || '',
-                marks: isCorrect ? marksPerQuestion : 0
+                marks: isCorrect ? questionMarks : 0
             });
         }
 
@@ -555,14 +574,31 @@ export const getAttemptById = async (req, res) => {
             const questions = await Question.find({ _id: { $in: exam.questions } });
             const answersObj = Object.fromEntries(attempt.answers);
             const codingQuestions = await CodingQuestion.find({ _id: { $in: exam.codingQuestions } });
-            const codingMarks = codingQuestions.reduce((total, question) => total + question.marks, 0);
-            const mcqMarksPool = Math.max(0, attempt.totalMarks - codingMarks);
+            const codingMarks = codingQuestions.reduce(
+                (total, question) => total + resolveOverrideMark(exam, question._id, question.marks), 0
+            );
+            const descriptiveDocs = await DescriptiveQuestion.find({ _id: { $in: exam.descriptiveQuestions } }).select('maxMarks');
+            const descriptiveMarks = descriptiveDocs.reduce(
+                (total, question) => total + resolveOverrideMark(exam, question._id, question.maxMarks), 0
+            );
+            const customMcqTotal = questions.reduce((sum, q) => {
+                const id = q._id.toString();
+                const raw = exam.questionMarks?.get ? exam.questionMarks.get(id) : exam.questionMarks?.[id];
+                return sum + (raw !== undefined && raw !== null && raw !== '' ? Number(raw) : 0);
+            }, 0);
+            const uncustomizedCount = questions.filter(q => {
+                const id = q._id.toString();
+                const raw = exam.questionMarks?.get ? exam.questionMarks.get(id) : exam.questionMarks?.[id];
+                return raw === undefined || raw === null || raw === '';
+            }).length;
+            const mcqMarksPool = Math.max(0, attempt.totalMarks - codingMarks - descriptiveMarks - customMcqTotal);
 
             detailedResults = questions.map(q => {
                 const questionId = q._id.toString();
                 const selectedAnswer = answersObj[questionId];
                 const isCorrect = selectedAnswer === q.answer;
-                const marksPerQuestion = questions.length > 0 ? mcqMarksPool / questions.length : 0;
+                const marksPerQuestion = uncustomizedCount > 0 ? mcqMarksPool / uncustomizedCount : 0;
+                const questionMarks = resolveMcqMark(exam, questionId, marksPerQuestion);
 
                 return {
                     questionId,
@@ -571,7 +607,7 @@ export const getAttemptById = async (req, res) => {
                     correctAnswer: q.answer,
                     isCorrect,
                     explanation: q.explanation || '',
-                    marks: isCorrect ? marksPerQuestion : 0
+                    marks: isCorrect ? questionMarks : 0
                 };
             });
 

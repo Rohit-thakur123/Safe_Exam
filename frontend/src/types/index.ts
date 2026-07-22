@@ -91,6 +91,9 @@ export interface Exam {
   questions: string[]; // Array of Question IDs
   codingQuestions?: string[] | CodingQuestion[];
   descriptiveQuestions?: string[] | SubjectiveQuestion[];
+  /** Optional teacher-assigned marks per MCQ question, keyed by question ID. Questions
+   *  without an entry fall back to an even split of the remaining MCQ marks pool. */
+  questionMarks?: Record<string, number>;
   duration: number; // in minutes
   totalMarks: number;
   passingMarks: number;

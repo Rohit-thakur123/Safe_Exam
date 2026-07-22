@@ -26,7 +26,8 @@ export const createExam = async (req, res) => {
             duration, totalMarks, passingMarks, startDate, endDate, startTime, endTime,
             timezone = 'UTC', allowLateEntry = false, lateEntryWindowMinutes = 15,
             autoSubmit = true, resultPublishDate, resultPublishTime,
-            allowRetakes, shuffleQuestions, assignedStudents, sendEmailNotification
+            allowRetakes, shuffleQuestions, assignedStudents, sendEmailNotification,
+            questionMarks
         } = req.body;
 
         if (!Array.isArray(questions) || !Array.isArray(codingQuestions) || !Array.isArray(descriptiveQuestions)) {
@@ -89,6 +90,52 @@ export const createExam = async (req, res) => {
             return res.status(400).json({ success: false, error: 'One or more descriptive questions are invalid or inactive' });
         }
 
+        // Validate teacher-assigned per-question marks, if provided. This can include
+        // MCQ questions (not every MCQ needs an entry — questions without one fall back
+        // to an even split of whatever marks pool remains) as well as coding/descriptive
+        // questions (overriding their question-bank default marks/maxMarks for this exam).
+        // Any entry that IS provided must reference a selected question and must be a
+        // positive number, and the declared totalMarks must add up.
+        let normalizedQuestionMarks;
+        if (questionMarks !== undefined && questionMarks !== null) {
+            if (typeof questionMarks !== 'object' || Array.isArray(questionMarks)) {
+                return res.status(400).json({ success: false, error: 'questionMarks must be an object mapping question ID to marks' });
+            }
+            const allQuestionIds = new Set([
+                ...questions.map(String),
+                ...codingQuestions.map(String),
+                ...descriptiveQuestions.map(String)
+            ]);
+            for (const [qId, marksValue] of Object.entries(questionMarks)) {
+                if (!allQuestionIds.has(qId)) {
+                    return res.status(400).json({ success: false, error: 'questionMarks references a question that is not part of this exam' });
+                }
+                const numericMarks = Number(marksValue);
+                if (!Number.isFinite(numericMarks) || numericMarks <= 0) {
+                    return res.status(400).json({ success: false, error: `Marks assigned to question ${qId} must be a positive number` });
+                }
+            }
+            normalizedQuestionMarks = questionMarks;
+
+            const getMark = (id, fallback) => {
+                const raw = normalizedQuestionMarks[id];
+                return raw !== undefined ? Number(raw) : (fallback || 0);
+            };
+            const codingSum = validCodingQuestions.reduce((sum, q) => sum + getMark(q._id.toString(), q.marks), 0);
+            const descriptiveSum = validDescriptiveQuestions.reduce((sum, q) => sum + getMark(q._id.toString(), q.maxMarks), 0);
+            const customMcqSum = questions.reduce((sum, qId) => {
+                const raw = normalizedQuestionMarks[qId.toString()];
+                return sum + (raw !== undefined ? Number(raw) : 0);
+            }, 0);
+            const minimumPossibleTotal = Math.round((codingSum + descriptiveSum + customMcqSum) * 100) / 100;
+            if (Number(totalMarks) < minimumPossibleTotal - 0.01) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Total marks (${totalMarks}) cannot be less than the sum of assigned question marks (${minimumPossibleTotal})`
+                });
+            }
+        }
+
         // Validate assigned students if provided
         let validatedStudents = [];
         let studentObjects = [];
@@ -116,6 +163,7 @@ export const createExam = async (req, res) => {
             questions,
             codingQuestions,
             descriptiveQuestions,
+            questionMarks: normalizedQuestionMarks || {},
             duration,
             totalMarks,
             passingMarks,
@@ -207,10 +255,18 @@ export const getAllExams = async (req, res) => {
             ];
         }
 
-        const exams = await Exam.find(filter)
+        let examsQuery = Exam.find(filter)
             .populate('createdBy', 'name email')
-            .select('-assignedCandidates')
             .sort({ createdAt: -1 });
+
+        // Students shouldn't see who else is assigned to an exam (privacy) — but
+        // teachers/admins need this field to display "N Candidates Assigned" in
+        // their exam management list, so only strip it for students.
+        if (req.user.role === 'student') {
+            examsQuery = examsQuery.select('-assignedCandidates');
+        }
+
+        const exams = await examsQuery;
 
         // Transform to JSON (will use model's toJSON transform automatically)
         const examsData = exams.map(exam => {
@@ -426,6 +482,7 @@ export const updateExam = async (req, res) => {
             'questions',
             'codingQuestions',
             'descriptiveQuestions',
+            'questionMarks',
             'duration',
             'totalMarks',
             'passingMarks',
@@ -461,6 +518,21 @@ export const updateExam = async (req, res) => {
             const nextIds = nextValues.map(value => value.toString()).sort();
             return currentIds.length === nextIds.length && currentIds.every((value, index) => value === nextIds[index]);
         };
+        const questionMarksMatch = (currentMap, nextObj) => {
+            if (nextObj === undefined || nextObj === null || typeof nextObj !== 'object') return false;
+            const currentObj = {};
+            if (currentMap) {
+                if (typeof currentMap.forEach === 'function') {
+                    currentMap.forEach((value, key) => { currentObj[key] = Number(value); });
+                } else {
+                    Object.entries(currentMap).forEach(([key, value]) => { currentObj[key] = Number(value); });
+                }
+            }
+            const currentKeys = Object.keys(currentObj).sort();
+            const nextKeys = Object.keys(nextObj).sort();
+            if (currentKeys.length !== nextKeys.length) return false;
+            return currentKeys.every((key, index) => key === nextKeys[index] && currentObj[key] === Number(nextObj[key]));
+        };
 
         for (const field of allowedFields) {
             if (Object.prototype.hasOwnProperty.call(req.body, field)) {
@@ -469,7 +541,8 @@ export const updateExam = async (req, res) => {
                         (field === 'questions' && idsMatch(exam.questions, req.body.questions)) ||
                         (field === 'codingQuestions' && idsMatch(exam.codingQuestions, req.body.codingQuestions)) ||
                         (field === 'totalMarks' && Number(req.body.totalMarks) === Number(exam.totalMarks)) ||
-                        (field === 'passingMarks' && Number(req.body.passingMarks) === Number(exam.passingMarks));
+                        (field === 'passingMarks' && Number(req.body.passingMarks) === Number(exam.passingMarks)) ||
+                        (field === 'questionMarks' && questionMarksMatch(exam.questionMarks, req.body.questionMarks));
 
                     if (isUnchangedProtectedField) {
                         continue;
@@ -577,6 +650,67 @@ export const updateExam = async (req, res) => {
             const nextDescriptiveQuestions = updateData.descriptiveQuestions ?? exam.descriptiveQuestions;
             if (nextQuestions.length === 0 && nextCodingQuestions.length === 0 && nextDescriptiveQuestions.length === 0) {
                 return res.status(400).json({ success: false, error: 'Please select at least one question' });
+            }
+
+            if (updateData.questionMarks !== undefined) {
+                const qm = updateData.questionMarks;
+                if (qm !== null && (typeof qm !== 'object' || Array.isArray(qm))) {
+                    return res.status(400).json({ success: false, error: 'questionMarks must be an object mapping question ID to marks' });
+                }
+                const entries = qm ? Object.entries(qm) : [];
+                const allIdSet = new Set([
+                    ...nextQuestions.map(String),
+                    ...nextCodingQuestions.map(String),
+                    ...nextDescriptiveQuestions.map(String)
+                ]);
+                for (const [qId, marksValue] of entries) {
+                    if (!allIdSet.has(qId)) {
+                        return res.status(400).json({ success: false, error: 'questionMarks references a question that is not part of this exam' });
+                    }
+                    const numericMarks = Number(marksValue);
+                    if (!Number.isFinite(numericMarks) || numericMarks <= 0) {
+                        return res.status(400).json({ success: false, error: `Marks assigned to question ${qId} must be a positive number` });
+                    }
+                }
+
+                const overridesMap = Object.fromEntries(entries);
+                const getMark = (id, fallback) => {
+                    const raw = overridesMap[id];
+                    return raw !== undefined ? Number(raw) : (fallback || 0);
+                };
+                const codingDocsForSum = await CodingQuestion.find({ _id: { $in: nextCodingQuestions } });
+                const descriptiveDocsForSum = await DescriptiveQuestion.find({ _id: { $in: nextDescriptiveQuestions } });
+                const codingSum = codingDocsForSum.reduce((sum, q) => sum + getMark(q._id.toString(), q.marks), 0);
+                const descriptiveSum = descriptiveDocsForSum.reduce((sum, q) => sum + getMark(q._id.toString(), q.maxMarks), 0);
+                const customMcqSum = nextQuestions.reduce((sum, qId) => {
+                    const raw = overridesMap[qId.toString()];
+                    return sum + (raw !== undefined ? Number(raw) : 0);
+                }, 0);
+                const minimumPossibleTotal = Math.round((codingSum + descriptiveSum + customMcqSum) * 100) / 100;
+                if (Number(nextTotalMarks) < minimumPossibleTotal - 0.01) {
+                    return res.status(400).json({
+                        success: false,
+                        error: `Total marks (${nextTotalMarks}) cannot be less than the sum of assigned question marks (${minimumPossibleTotal})`
+                    });
+                }
+            }
+        }
+
+        if (Object.prototype.hasOwnProperty.call(updateData, 'assignedCandidates')) {
+            const nextAssigned = updateData.assignedCandidates;
+            if (nextAssigned && nextAssigned.length > 0) {
+                const User = (await import('../models/User/user.js')).default;
+                const validStudents = await User.find({
+                    _id: { $in: nextAssigned },
+                    role: 'student',
+                    isActive: true
+                });
+                if (validStudents.length !== nextAssigned.length) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'One or more student IDs are invalid or not active students'
+                    });
+                }
             }
         }
 
@@ -909,6 +1043,7 @@ export const duplicateExam = async (req, res) => {
             questions: original.questions,
             codingQuestions: original.codingQuestions,
             descriptiveQuestions: original.descriptiveQuestions,
+            questionMarks: original.questionMarks,
             duration: original.duration,
             totalMarks: original.totalMarks,
             passingMarks: original.passingMarks,

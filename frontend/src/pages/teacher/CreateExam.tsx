@@ -28,6 +28,9 @@ const CreateExam: React.FC = () => {
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
   const [selectedCodingQuestions, setSelectedCodingQuestions] = useState<string[]>([]);
   const [selectedSubjectiveQuestions, setSelectedSubjectiveQuestions] = useState<string[]>([]);
+  // Marks the teacher wants to assign to each MCQ question (keyed by question ID).
+  // Any selected MCQ without an entry here falls back to an even split at save time.
+  const [questionMarks, setQuestionMarks] = useState<Record<string, number>>({});
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [duration, setDuration] = useState<number>(60);
   const [totalMarks, setTotalMarks] = useState<number>(100);
@@ -116,6 +119,7 @@ const CreateExam: React.FC = () => {
         ((exam.descriptiveQuestions || []) as SubjectiveQuestion[])
           .map(question => question._id || question.id || String(question))
       );
+      setQuestionMarks(exam.questionMarks || {});
       setSelectedStudents((exam.assignedCandidates || []).map(student =>
         typeof student === 'string' ? student : student._id || student.id || ''
       ).filter(Boolean));
@@ -145,15 +149,72 @@ const CreateExam: React.FC = () => {
   };
 
   const toggleQuestionSelection = (id: string) => {
-    setSelectedQuestions(prev => prev.includes(id) ? prev.filter(q => q !== id) : [...prev, id]);
+    setSelectedQuestions(prev => {
+      const isSelected = prev.includes(id);
+      if (isSelected) {
+        setQuestionMarks(marks => {
+          const next = { ...marks };
+          delete next[id];
+          return next;
+        });
+        return prev.filter(q => q !== id);
+      }
+      setQuestionMarks(marks => (marks[id] ? marks : { ...marks, [id]: 1 }));
+      return [...prev, id];
+    });
   };
 
+  const setMarksForQuestion = (id: string, marks: number) => {
+    setQuestionMarks(prev => ({ ...prev, [id]: marks }));
+  };
+
+  // Live estimate of the exam's total marks based on what's currently assigned/selected,
+  // so the teacher can see it while filling in per-question marks.
+  const computedTotalMarks = React.useMemo(() => {
+    const mcqSum = selectedQuestions.reduce((sum, id) => sum + (Number(questionMarks[id]) || 0), 0);
+    const codingSum = selectedCodingQuestions.reduce((sum, id) => {
+      const q = availableCodingQuestions.find(cq => (cq._id || cq.id) === id);
+      const override = questionMarks[id];
+      return sum + (override !== undefined ? Number(override) : (q?.marks || 0));
+    }, 0);
+    const subjectiveSum = selectedSubjectiveQuestions.reduce((sum, id) => {
+      const q = availableSubjectiveQuestions.find(sq => (sq._id || sq.id) === id);
+      const override = questionMarks[id];
+      return sum + (override !== undefined ? Number(override) : (q?.maxMarks || 0));
+    }, 0);
+    return mcqSum + codingSum + subjectiveSum;
+  }, [selectedQuestions, questionMarks, selectedCodingQuestions, availableCodingQuestions, selectedSubjectiveQuestions, availableSubjectiveQuestions]);
+
   const toggleCodingSelection = (id: string) => {
-    setSelectedCodingQuestions(prev => prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]);
+    setSelectedCodingQuestions(prev => {
+      if (prev.includes(id)) {
+        setQuestionMarks(marks => {
+          const next = { ...marks };
+          delete next[id];
+          return next;
+        });
+        return prev.filter(qId => qId !== id);
+      }
+      const q = availableCodingQuestions.find(cq => (cq._id || cq.id) === id);
+      setQuestionMarks(marks => (marks[id] !== undefined ? marks : { ...marks, [id]: q?.marks || 10 }));
+      return [...prev, id];
+    });
   };
 
   const toggleSubjectiveSelection = (id: string) => {
-    setSelectedSubjectiveQuestions(prev => prev.includes(id) ? prev.filter(qId => qId !== id) : [...prev, id]);
+    setSelectedSubjectiveQuestions(prev => {
+      if (prev.includes(id)) {
+        setQuestionMarks(marks => {
+          const next = { ...marks };
+          delete next[id];
+          return next;
+        });
+        return prev.filter(qId => qId !== id);
+      }
+      const q = availableSubjectiveQuestions.find(sq => (sq._id || sq.id) === id);
+      setQuestionMarks(marks => (marks[id] !== undefined ? marks : { ...marks, [id]: q?.maxMarks || 10 }));
+      return [...prev, id];
+    });
   };
 
   const toggleStudentSelection = (id: string) => {
@@ -185,6 +246,20 @@ const CreateExam: React.FC = () => {
       setActiveStep(1);
       return;
     }
+    if ([...selectedQuestions, ...selectedCodingQuestions, ...selectedSubjectiveQuestions].some(id => !questionMarks[id] || Number(questionMarks[id]) <= 0)) {
+      setToast({ id: Date.now().toString(), type: 'warning', message: 'Please assign a positive mark value to every selected question' });
+      setActiveStep(2);
+      return;
+    }
+    if (Number(totalMarks) < computedTotalMarks - 0.01) {
+      setToast({
+        id: Date.now().toString(),
+        type: 'warning',
+        message: `Total marks (${totalMarks}) can't be less than the sum of assigned question marks (${computedTotalMarks})`
+      });
+      setActiveStep(1);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -194,6 +269,10 @@ const CreateExam: React.FC = () => {
         questions: selectedQuestions,
         codingQuestions: selectedCodingQuestions,
         descriptiveQuestions: selectedSubjectiveQuestions,
+        questionMarks: [...selectedQuestions, ...selectedCodingQuestions, ...selectedSubjectiveQuestions].reduce((acc, id) => {
+          acc[id] = Number(questionMarks[id]);
+          return acc;
+        }, {} as Record<string, number>),
         duration,
         totalMarks,
         passingMarks,
@@ -323,6 +402,20 @@ const CreateExam: React.FC = () => {
                     onChange={e => setTotalMarks(Number(e.target.value))}
                     className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                   />
+                  {computedTotalMarks > 0 && (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      Sum of assigned question marks so far: <span className="font-semibold text-violet-600">{computedTotalMarks}</span>
+                      {Number(totalMarks) !== computedTotalMarks && (
+                        <button
+                          type="button"
+                          onClick={() => setTotalMarks(computedTotalMarks)}
+                          className="ml-2 text-violet-600 font-semibold underline hover:text-violet-800"
+                        >
+                          Use this
+                        </button>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1">Passing Marks *</label>
@@ -493,21 +586,43 @@ const CreateExam: React.FC = () => {
                     return (
                       <div
                         key={qId}
-                        onClick={() => toggleQuestionSelection(qId)}
-                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                        className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-xs ${isSelected
                           ? 'border-violet-300 bg-violet-50/70 text-violet-900 font-medium'
                           : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
                           }`}
                       >
-                        <div className="pr-4">
+                        <div className="pr-4 cursor-pointer flex-1" onClick={() => toggleQuestionSelection(qId)}>
                           <p className="font-bold text-gray-900 mb-0.5">{q.question}</p>
                           <span className="text-[11px] text-gray-500">Difficulty: {q.difficulty || 'Medium'}</span>
                         </div>
-                        {isSelected && <CheckCircle2 size={18} className="text-violet-600 flex-shrink-0" />}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {isSelected && (
+                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                              <label htmlFor={`marks-${qId}`} className="text-[11px] font-semibold text-violet-700">Marks</label>
+                              <input
+                                id={`marks-${qId}`}
+                                type="number"
+                                min={0.5}
+                                step={0.5}
+                                value={questionMarks[qId] ?? 1}
+                                onChange={e => setMarksForQuestion(qId, Number(e.target.value))}
+                                className="w-16 px-2 py-1 text-xs border border-violet-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                              />
+                            </div>
+                          )}
+                          <div className="cursor-pointer" onClick={() => toggleQuestionSelection(qId)}>
+                            {isSelected && <CheckCircle2 size={18} className="text-violet-600 flex-shrink-0" />}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
+                {selectedQuestions.length > 0 && (
+                  <p className="text-[11px] text-gray-500 mt-3">
+                    Assign however many marks each MCQ is worth — they don't need to be equal.
+                  </p>
+                )}
               </div>
 
               {/* Coding Challenges Selection */}
@@ -526,17 +641,34 @@ const CreateExam: React.FC = () => {
                     return (
                       <div
                         key={cqId}
-                        onClick={() => toggleCodingSelection(cqId)}
-                        className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                        className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-xs ${isSelected
                           ? 'border-indigo-300 bg-indigo-50/70 text-indigo-900 font-medium'
                           : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
                           }`}
                       >
-                        <div className="pr-4">
+                        <div className="pr-4 cursor-pointer flex-1" onClick={() => toggleCodingSelection(cqId)}>
                           <p className="font-bold text-gray-900 mb-0.5">{cq.title}</p>
-                          <span className="text-[11px] text-gray-500 font-medium">Marks: {cq.marks || 100} · Difficulty: {cq.difficulty || 'Medium'}</span>
+                          <span className="text-[11px] text-gray-500 font-medium">Default marks: {cq.marks || 100} · Difficulty: {cq.difficulty || 'Medium'}</span>
                         </div>
-                        {isSelected && <CheckCircle2 size={18} className="text-indigo-600 flex-shrink-0" />}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {isSelected && (
+                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                              <label htmlFor={`marks-${cqId}`} className="text-[11px] font-semibold text-indigo-700">Marks</label>
+                              <input
+                                id={`marks-${cqId}`}
+                                type="number"
+                                min={0.5}
+                                step={0.5}
+                                value={questionMarks[cqId] ?? (cq.marks || 10)}
+                                onChange={e => setMarksForQuestion(cqId, Number(e.target.value))}
+                                className="w-16 px-2 py-1 text-xs border border-indigo-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                              />
+                            </div>
+                          )}
+                          <div className="cursor-pointer" onClick={() => toggleCodingSelection(cqId)}>
+                            {isSelected && <CheckCircle2 size={18} className="text-indigo-600 flex-shrink-0" />}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -562,17 +694,34 @@ const CreateExam: React.FC = () => {
                       return (
                         <div
                           key={sqId}
-                          onClick={() => toggleSubjectiveSelection(sqId)}
-                          className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
+                          className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-xs ${isSelected
                             ? 'border-purple-300 bg-purple-50/70 text-purple-900 font-medium'
                             : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
                             }`}
                         >
-                          <div className="pr-4">
+                          <div className="pr-4 cursor-pointer flex-1" onClick={() => toggleSubjectiveSelection(sqId)}>
                             <p className="font-bold text-gray-900 mb-0.5">{sq.title}</p>
-                            <span className="text-[11px] text-gray-500 font-medium">Max Marks: {sq.maxMarks || 10} · Difficulty: {sq.difficulty || 'Medium'}</span>
+                            <span className="text-[11px] text-gray-500 font-medium">Default max marks: {sq.maxMarks || 10} · Difficulty: {sq.difficulty || 'Medium'}</span>
                           </div>
-                          {isSelected && <CheckCircle2 size={18} className="text-purple-600 flex-shrink-0" />}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {isSelected && (
+                              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                <label htmlFor={`marks-${sqId}`} className="text-[11px] font-semibold text-purple-700">Marks</label>
+                                <input
+                                  id={`marks-${sqId}`}
+                                  type="number"
+                                  min={0.5}
+                                  step={0.5}
+                                  value={questionMarks[sqId] ?? (sq.maxMarks || 10)}
+                                  onChange={e => setMarksForQuestion(sqId, Number(e.target.value))}
+                                  className="w-16 px-2 py-1 text-xs border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+                                />
+                              </div>
+                            )}
+                            <div className="cursor-pointer" onClick={() => toggleSubjectiveSelection(sqId)}>
+                              {isSelected && <CheckCircle2 size={18} className="text-purple-600 flex-shrink-0" />}
+                            </div>
+                          </div>
                         </div>
                       );
                     })

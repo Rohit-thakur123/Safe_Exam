@@ -6,6 +6,14 @@ const ExamSchema = new mongoose.Schema({
     questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
     codingQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CodingQuestion' }],
     descriptiveQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DescriptiveQuestion' }],
+    // Optional per-MCQ-question marks chosen by the teacher while creating/editing the exam.
+    // Keyed by Question ID (string) -> marks (Number). When a question has no entry here,
+    // its marks fall back to an even split of the remaining MCQ marks pool.
+    questionMarks: {
+        type: Map,
+        of: Number,
+        default: {}
+    },
     duration: { type: Number, required: true }, // in minutes
     totalMarks: { type: Number, required: true },
     passingMarks: { type: Number, required: true },
@@ -70,6 +78,11 @@ ExamSchema.set('toJSON', {
         if (ret.startDateTimeUTC) ret.startDateTimeUTC = ret.startDateTimeUTC.toISOString();
         if (ret.endDateTimeUTC) ret.endDateTimeUTC = ret.endDateTimeUTC.toISOString();
         if (ret.resultPublishDateTimeUTC) ret.resultPublishDateTimeUTC = ret.resultPublishDateTimeUTC.toISOString();
+        if (ret.questionMarks instanceof Map) {
+            const obj = {};
+            ret.questionMarks.forEach((value, key) => { obj[key] = value; });
+            ret.questionMarks = obj;
+        }
         delete ret.__v;
         return ret;
     }

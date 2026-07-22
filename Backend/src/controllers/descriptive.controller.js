@@ -292,7 +292,15 @@ export const evaluateAnswer = async (req, res) => {
 
     if (!answer) return res.status(404).json({ success: false, error: "Answer not found" });
 
-    const maxMarks = answer.question?.maxMarks || 0;
+    // A teacher may have assigned this question a custom mark for this specific exam
+    // (exam.questionMarks) that differs from the question bank's default maxMarks.
+    const examForMarks = await Exam.findById(answer.exam).select("questionMarks");
+    const overrideRaw = examForMarks?.questionMarks?.get
+      ? examForMarks.questionMarks.get(answer.question?._id?.toString())
+      : examForMarks?.questionMarks?.[answer.question?._id?.toString()];
+    const maxMarks = (overrideRaw !== undefined && overrideRaw !== null && overrideRaw !== '')
+      ? Number(overrideRaw)
+      : (answer.question?.maxMarks || 0);
     if (Number(marksAwarded) < 0 || Number(marksAwarded) > maxMarks) {
       return res.status(400).json({
         success: false,

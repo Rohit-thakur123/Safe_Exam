@@ -354,9 +354,9 @@ export const ExamResults: React.FC = () => {
                         const mcqEarned = Math.max(0, (selectedCandidate?.score || 0) - codingEarned - subjectiveEarned);
 
                         const rows = [
-                          { label: 'MCQ', earned: mcqEarned, total: mcqTotal, color: 'violet' },
-                          { label: 'Coding', earned: codingEarned, total: codingTotal, color: 'indigo' },
-                          { label: 'Subjective', earned: subjectiveEarned, total: subjectiveTotal, color: 'purple' },
+                          { label: 'MCQ',        earned: mcqEarned,        total: mcqTotal,        bar: '#7c3aed', text: '#5b21b6' },
+                          { label: 'Coding',     earned: codingEarned,     total: codingTotal,     bar: '#4f46e5', text: '#3730a3' },
+                          { label: 'Subjective', earned: subjectiveEarned, total: subjectiveTotal, bar: '#9333ea', text: '#7e22ce' },
                         ].filter(r => r.total > 0);
 
                         return rows.map(row => (
@@ -364,11 +364,11 @@ export const ExamResults: React.FC = () => {
                             <span className="text-xs font-semibold text-gray-500 w-20">{row.label}</span>
                             <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
                               <div
-                                className={`h-2 rounded-full bg-${row.color}-500`}
+                                // className={`h-2 rounded-full bg-${row.bar}-500`}
                                 style={{ width: row.total > 0 ? `${Math.min(100,(row.earned/row.total)*100)}%` : '0%' }}
                               />
                             </div>
-                            <span className={`text-xs font-bold w-16 text-right text-${row.color}-700`}>
+                            <span className={`text-xs font-bold w-16 text-right`} style={{ color: row.text }}>
                               {row.earned} / {row.total}
                             </span>
                           </div>

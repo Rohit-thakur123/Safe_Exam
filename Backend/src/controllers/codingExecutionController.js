@@ -5,6 +5,7 @@ import Exam from '../models/exam/exam.js';
 import ExamAttempt from '../models/exam/examAttempt.js';
 import Submission from '../models/exam/submissions.js';
 import { executeTestCases, isCompilerUnavailable } from '../services/compilerIntegrationService.js';
+import { resolveOverrideMark } from '../utils/examQuestionUtils.js';
 
 const getExecutionContext = async (req) => {
     const { codingQuestionId } = req.params;
@@ -130,7 +131,10 @@ export const submitCodingQuestion = async (req, res, next) => {
         const passedTestCases = results.filter(result => result.passed).length;
         const failedTestCases = results.length - passedTestCases;
         const percentage = results.length ? (passedTestCases / results.length) * 100 : 0;
-        const score = Number(((percentage / 100) * context.question.marks).toFixed(2));
+        // Use the teacher's per-exam override mark if one was assigned, otherwise the
+        // coding question's own fixed marks value.
+        const questionMarks = resolveOverrideMark(context.exam, context.question._id, context.question.marks);
+        const score = Number(((percentage / 100) * questionMarks).toFixed(2));
         const executionTime = results.reduce((total, result) => total + result.executionTimeMs, 0);
         const memoryUsage = Math.max(0, ...results.map(result => result.memoryUsageBytes));
 
@@ -146,7 +150,7 @@ export const submitCodingQuestion = async (req, res, next) => {
             passedTestCases,
             failedTestCases,
             score,
-            totalMarks: context.question.marks,
+            totalMarks: questionMarks,
             percentage: Number(percentage.toFixed(2)),
             passed: failedTestCases === 0
         });
@@ -160,7 +164,7 @@ export const submitCodingQuestion = async (req, res, next) => {
                 totalTestCases: results.length,
                 percentage: submission.percentage,
                 score,
-                totalMarks: context.question.marks,
+                totalMarks: questionMarks,
                 executionTime,
                 memoryUsage
             }

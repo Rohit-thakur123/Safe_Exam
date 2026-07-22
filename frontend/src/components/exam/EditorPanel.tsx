@@ -4,6 +4,7 @@
 // =====================================================================================
 
 import React, { useCallback, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Editor from "@monaco-editor/react";
 import type { OnMount } from "@monaco-editor/react";
 import type { editor as MonacoEditorNS } from "monaco-editor";
@@ -138,10 +139,10 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
     }
   };
 
-  return (
+  const panelBody = (
     <div
       className={`flex flex-col h-full min-h-0 rounded-2xl border border-white/10 bg-[#0d0d13] shadow-xl overflow-hidden ${
-        isFullscreen ? "fixed inset-4 z-50" : "relative"
+        isFullscreen ? "w-full h-full" : "relative"
       }`}
     >
       {/* Sticky toolbar */}
@@ -299,6 +300,21 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
       </div>
     </div>
   );
+
+  if (isFullscreen) {
+    // Rendered through a portal directly under <body>. Without this, an ancestor
+    // with `overflow-hidden` (e.g. the grid cell this panel normally sits in) can
+    // clip the fixed-position fullscreen panel, making the toolbar buttons
+    // (Run/Submit/Fullscreen/etc.) invisible even though the editor still shows.
+    return createPortal(
+      <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm p-4">
+        {panelBody}
+      </div>,
+      document.body
+    );
+  }
+
+  return panelBody;
 };
 
 export default EditorPanel;
