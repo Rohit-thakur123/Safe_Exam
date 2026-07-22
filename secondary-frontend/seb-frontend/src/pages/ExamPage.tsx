@@ -464,7 +464,8 @@ export const ExamPage = () => {
             if (subjectiveQuestions.length > 0 && subjectiveStatus === 'locked') {
               setSubjectiveStatus('not_started');
             }
-            requestStageChange('dashboard');
+            // Use setStage directly — CodingTest already showed its own confirmation modal
+            setStage('dashboard');
           }}
         />
       </>
@@ -483,7 +484,8 @@ export const ExamPage = () => {
           onAnswerChange={updateAnswer}
           onFinish={() => {
             setSubjectiveStatus('completed');
-            requestStageChange('dashboard');
+            // Use setStage directly — SubjectiveTest handles its own confirmation
+            setStage('dashboard');
           }}
         />
       </>

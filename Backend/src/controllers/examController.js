@@ -16,6 +16,11 @@ import { combineDateAndTimeToUTC } from '../utils/timeUtils.js';
 // Create new exam
 export const createExam = async (req, res) => {
     try {
+        // EMAIL DEBUG
+        console.log('\n🔍 createExam called');
+        console.log('   assignedStudents     :', JSON.stringify(req.body.assignedStudents));
+        console.log('   sendEmailNotification:', req.body.sendEmailNotification, '| type:', typeof req.body.sendEmailNotification);
+
         const {
             title, description, questions = [], codingQuestions = [], descriptiveQuestions = [],
             duration, totalMarks, passingMarks, startDate, endDate, startTime, endTime,
@@ -137,6 +142,10 @@ export const createExam = async (req, res) => {
         await exam.save();
 
         // Send email notifications to assigned students (if requested)
+        console.log('\n📧 Email check:');
+        console.log('   sendEmailNotification:', sendEmailNotification, '(!== false:', sendEmailNotification !== false, ')');
+        console.log('   studentObjects.length:', studentObjects.length);
+        console.log('   studentObjects emails:', studentObjects.map(s => s.email));
         let emailResults = null;
         if (sendEmailNotification !== false && studentObjects.length > 0) {
             const examDetails = {

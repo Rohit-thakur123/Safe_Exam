@@ -335,6 +335,49 @@ export const ExamResults: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Marks Breakdown */}
+                {exam && (
+                  <div className="mb-6 border-t border-gray-100 pt-4">
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <BarChart3 size={14} className="text-violet-500" /> Marks Breakdown
+                    </h4>
+                    <div className="space-y-2">
+                      {/* MCQ */}
+                      {(() => {
+                        const codingTotal = (exam.codingQuestions || []).reduce((s: number, q: any) => s + (q.marks || 0), 0);
+                        const subjectiveTotal = (exam.descriptiveQuestions || []).reduce((s: number, q: any) => s + (q.maxMarks || 0), 0);
+                        const mcqTotal = (exam.totalMarks || 0) - codingTotal - subjectiveTotal;
+
+                        const codingSubs = candidateSubmissions;
+                        const codingEarned = codingSubs.reduce((s, sub) => s + (sub.score || 0), 0);
+                        const subjectiveEarned = selectedCandidate?.subjectiveScore || 0;
+                        const mcqEarned = Math.max(0, (selectedCandidate?.score || 0) - codingEarned - subjectiveEarned);
+
+                        const rows = [
+                          { label: 'MCQ', earned: mcqEarned, total: mcqTotal, color: 'violet' },
+                          { label: 'Coding', earned: codingEarned, total: codingTotal, color: 'indigo' },
+                          { label: 'Subjective', earned: subjectiveEarned, total: subjectiveTotal, color: 'purple' },
+                        ].filter(r => r.total > 0);
+
+                        return rows.map(row => (
+                          <div key={row.label} className="flex items-center gap-3">
+                            <span className="text-xs font-semibold text-gray-500 w-20">{row.label}</span>
+                            <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={`h-2 rounded-full bg-${row.color}-500`}
+                                style={{ width: row.total > 0 ? `${Math.min(100,(row.earned/row.total)*100)}%` : '0%' }}
+                              />
+                            </div>
+                            <span className={`text-xs font-bold w-16 text-right text-${row.color}-700`}>
+                              {row.earned} / {row.total}
+                            </span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                )}
+
                 {/* Anti-Cheat Violations */}
                 <div className="mb-6 border-t border-gray-100 pt-4">
                   <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">

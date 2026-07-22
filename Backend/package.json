@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "dev": "nodemon src/index.js",
+    "dev": "nodemon --watch src --watch .env --ext js,mjs,cjs,json,env src/index.js",
     "start": "node src/index.js",
     "seed": "node seed.js",
     "test": "echo \"Error: no test specified\" && exit 1"

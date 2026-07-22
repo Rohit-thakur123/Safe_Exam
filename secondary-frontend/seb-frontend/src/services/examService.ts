@@ -78,6 +78,19 @@ export const startExamSession = async (
           timeLimit: q.timeLimit,
           memoryLimit: q.memoryLimit,
           visibleTestCases: q.visibleTestCases || []
+        })),
+        // Fix: descriptiveQuestions was never mapped — subjective section never appeared on dashboard
+        descriptiveQuestions: (attemptData.exam.descriptiveQuestions || []).map((q: any) => ({
+          id: q.id,
+          type: 'descriptive',
+          title: q.title,
+          description: q.description,
+          instructions: q.instructions || '',
+          maxMarks: q.maxMarks,
+          wordLimit: q.wordLimit || null,
+          minWords: q.minWords || null,
+          difficulty: q.difficulty,
+          category: q.category
         }))
       },
       student: {

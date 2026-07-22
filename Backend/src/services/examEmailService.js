@@ -10,6 +10,13 @@ import { generateExamLink } from '../utils/examLinkUtils.js';
  * @param {String} frontendBaseUrl - Base URL of the frontend application
  */
 export const sendExamAssignmentEmail = async (student, examDetails, teacher, frontendBaseUrl) => {
+    console.log(`\n📬 Preparing exam email for student:`);
+    console.log(`   Name   : ${student.name || '⚠️ MISSING NAME'}`);
+    console.log(`   Email  : ${student.email || '⚠️ MISSING EMAIL'}`);
+    console.log(`   ID     : ${student._id}`);
+    console.log(`   Exam   : ${examDetails.title} (ID: ${examDetails._id})`);
+    console.log(`   Base URL: ${frontendBaseUrl}`);
+
     try {
         // Generate unique exam link for this student
         const examLink = generateExamLink(
@@ -18,6 +25,7 @@ export const sendExamAssignmentEmail = async (student, examDetails, teacher, fro
             examDetails.duration,
             frontendBaseUrl
         );
+        console.log(`   Link   : ${examLink}`);
 
         const subject = `📝 New Exam Assigned: ${examDetails.title}`;
 
