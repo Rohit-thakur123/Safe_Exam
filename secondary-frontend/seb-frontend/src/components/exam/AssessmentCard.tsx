@@ -59,6 +59,18 @@ const SectionCard: React.FC<SectionCardProps> = ({
 }) => {
   const isLocked = status === "locked";
   const isCompleted = status === "completed";
+  
+  const handleStart = async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (err) {
+    console.error("Fullscreen failed:", err);
+  }
+
+  onPrimaryAction();
+};
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-6 py-5">
@@ -93,7 +105,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
         ) : isCompleted ? (
           <button
             type="button"
-            onClick={onPrimaryAction}
+            onClick={handleStart}
             className="rounded-lg border border-white/15 px-3.5 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-white/[0.06]"
           >
             {primaryButtonLabel[status]} {title.split(" ")[0]}
@@ -101,7 +113,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
         ) : (
           <button
             type="button"
-            onClick={onPrimaryAction}
+            onClick={handleStart}
             className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-violet-500"
           >
             {primaryButtonLabel[status]} {title.split(" ")[0]}
