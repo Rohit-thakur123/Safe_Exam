@@ -4,6 +4,8 @@ const ExamSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String },
     questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
+    // Teacher-assigned marks per question: { questionId: marks }
+    questionMarks: { type: Map, of: Number, default: new Map() },
     codingQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CodingQuestion' }],
     descriptiveQuestions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DescriptiveQuestion' }],
     // Optional per-MCQ-question marks chosen by the teacher while creating/editing the exam.

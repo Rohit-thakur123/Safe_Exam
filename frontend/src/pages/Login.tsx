@@ -1,35 +1,27 @@
 import React, { useState, useEffect } from 'react';
-// import { useNavigate, Link } from 'react-router-dom';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { AlertCircle } from 'lucide-react';
+import { Shield, Eye, EyeOff, ArrowRight, BookOpen, Code2, Users } from 'lucide-react';
+import { MeshBackground } from '../components/ui/DarkLayout';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'teacher' | 'student'>('student');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sessionError, setSessionError] = useState<{code: string; message: string} | null>(null);
+  const [sessionError, setSessionError] = useState<{ code: string; message: string } | null>(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check for session errors on component mount
   useEffect(() => {
-    const storedError = localStorage.getItem('sessionError');
-    if (storedError) {
-      try {
-        const errorData = JSON.parse(storedError);
-        setSessionError(errorData);
-        localStorage.removeItem('sessionError'); // Clear it after reading
-      } catch (e) {
-        console.error('Error parsing session error:', e);
-      }
+    const stored = localStorage.getItem('sessionError');
+    if (stored) {
+      try { setSessionError(JSON.parse(stored)); localStorage.removeItem('sessionError'); }
+      catch {}
     }
   }, []);
 
@@ -37,157 +29,139 @@ const Login: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
     try {
-      // await login(email, password, role);
-      // navigate(role === 'teacher' ? '/teacher' : '/student');
       await login(email, password, role);
-
       const redirectTo = location.state?.redirectTo;
-
-      if (redirectTo) {
-
-        navigate(redirectTo);
-
-      } else {
-
-        navigate(
-          role === 'teacher'
-            ? '/teacher'
-            : '/student'
-        );
-
-      }
+      if (redirectTo) { navigate(redirectTo); }
+      else { navigate(role === 'teacher' ? '/teacher' : '/student'); }
     } catch {
-      setError('Login failed. Please try again.');
+      setError('Invalid credentials. Please check your email and password.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            SecureExam Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
-          </p>
+    <div className="min-h-screen mesh-bg relative flex items-center justify-center px-4">
+      <MeshBackground />
+
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl mb-4"
+            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 0 40px rgba(139,92,246,0.4)' }}>
+            <Shield size={24} className="text-white" />
+          </div>
+          <h1 className="text-2xl font-black text-white">SecureExam</h1>
+          <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>Enterprise Assessment Platform</p>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {/* Session Error Alert */}
-              {sessionError && (
-                <div className="rounded-md bg-yellow-50 border border-yellow-200 p-4">
-                  <div className="flex items-start">
-                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium text-yellow-800">
-                        {sessionError.code === 'SESSION_EXPIRED' ? 'Session Expired' : 'Account Accessed Elsewhere'}
-                      </h3>
-                      <p className="mt-1 text-sm text-yellow-700">
-                        {sessionError.message}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSessionError(null)}
-                      className="ml-3 text-yellow-600 hover:text-yellow-800"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
+
+        {/* Card */}
+        <div className="rounded-2xl p-8" style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(24px)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        }}>
+          <h2 className="text-xl font-bold text-white mb-1">Welcome back</h2>
+          <p className="text-sm mb-8" style={{ color: 'rgba(240,240,245,0.45)' }}>Sign in to your account to continue</p>
+
+          {/* Session error */}
+          {sessionError && (
+            <div className="mb-5 p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>
+              {sessionError.message || 'Session expired. Please sign in again.'}
+            </div>
+          )}
+
+          {/* Role tabs */}
+          <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+            {(['student', 'teacher'] as const).map(r => (
+              <button key={r} type="button" onClick={() => setRole(r)}
+                className="py-2.5 px-4 rounded-lg text-sm font-bold capitalize transition-all duration-200"
+                style={{
+                  background: role === r ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'transparent',
+                  color: role === r ? '#fff' : 'rgba(240,240,245,0.45)',
+                  boxShadow: role === r ? '0 4px 20px rgba(139,92,246,0.3)' : 'none',
+                }}>
+                {r === 'student' ? '👨‍🎓 Student' : '👨‍🏫 Instructor'}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>Email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                required
+                className="input-dark"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="input-dark pr-12"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: 'rgba(240,240,245,0.3)' }}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 mt-2"
+              style={{
+                background: isLoading ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                boxShadow: isLoading ? 'none' : '0 4px 24px rgba(139,92,246,0.35)',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+              }}>
+              {isLoading ? (
+                <><div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Signing in...</>
+              ) : (
+                <>Sign in <ArrowRight size={15} /></>
               )}
+            </button>
+          </form>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
-                </label>
-                <div className="mt-1">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
+          <div className="mt-6 text-center">
+            <span className="text-sm" style={{ color: 'rgba(240,240,245,0.4)' }}>Don't have an account? </span>
+            <Link to="/register" className="text-sm font-semibold" style={{ color: '#a78bfa' }}>Create one</Link>
+          </div>
+        </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <div className="mt-1">
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                  Role
-                </label>
-                <div className="mt-1">
-                  <select
-                    id="role"
-                    name="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as 'teacher' | 'student')}
-                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                  >
-                    <option value="student">Student</option>
-                    <option value="teacher">Teacher</option>
-                  </select>
-                </div>
-              </div>
-
-              {error && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="text-sm text-red-700">{error}</div>
-                </div>
-              )}
-
-              <div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Signing in...' : 'Sign in'}
-                </Button>
-              </div>
-
-              <div className="text-center">
-                <p className="text-sm text-gray-600">
-                  Don't have an account?{' '}
-                  <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-                    Register here
-                  </Link>
-                </p>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        {/* Footer badges */}
+        <div className="flex items-center justify-center gap-6 mt-8">
+          {[
+            { icon: Shield, label: 'SOC2 Compliant' },
+            { icon: Users, label: 'Enterprise Ready' },
+            { icon: Code2, label: 'SEB Secured' },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(240,240,245,0.25)' }}>
+              <Icon size={12} />
+              {label}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

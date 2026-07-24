@@ -162,6 +162,9 @@ export const createExam = async (req, res) => {
             description,
             questions,
             codingQuestions,
+            questionMarks: questionMarks
+                ? new Map(Object.entries(questionMarks).map(([k, v]) => [k, Number(v)]))
+                : new Map(),
             descriptiveQuestions,
             questionMarks: normalizedQuestionMarks || {},
             duration,
@@ -536,6 +539,12 @@ export const updateExam = async (req, res) => {
 
         for (const field of allowedFields) {
             if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+                if (field === 'questionMarks' && req.body[field]) {
+                    exam[field] = new Map(
+                        Object.entries(req.body[field]).map(([k, v]) => [k, Number(v)])
+                    );
+                    continue;
+                }
                 if (attemptExists && !safeFieldsWithAttempts.includes(field)) {
                     const isUnchangedProtectedField =
                         (field === 'questions' && idsMatch(exam.questions, req.body.questions)) ||
@@ -1059,5 +1068,39 @@ export const duplicateExam = async (req, res) => {
     } catch (error) {
         console.error('Duplicate exam error:', error);
         res.status(500).json({ success: false, error: error.message || 'Server error duplicating exam' });
+    }
+};
+
+export const getAnalytics = async (req, res) => {
+    try {
+        const DescriptiveAnswer = (await import('../models/descriptive/descriptiveAnswer.js')).default;
+
+        const [exams, mcqCount, codingCount, subjectiveCount, pendingEval, evaluated] = await Promise.all([
+            Exam.find({ createdBy: req.user._id }),
+            (await import('../models/exam/question.js')).default.countDocuments({ createdBy: req.user._id }),
+            (await import('../models/exam/codingQuestion.js')).default.countDocuments({ createdBy: req.user._id }),
+            (await import('../models/descriptive/descriptiveQuestion.js')).default.countDocuments({ createdBy: req.user._id }),
+            DescriptiveAnswer.countDocuments({ status: 'submitted', isGraded: false }),
+            DescriptiveAnswer.countDocuments({ status: 'submitted', isGraded: true }),
+        ]);
+
+        const activeExams = exams.filter(e => e.status === 'active').length;
+
+        res.status(200).json({
+            success: true,
+            analytics: {
+                totalExams: exams.length,
+                activeExams,
+                totalMcqs: mcqCount,
+                totalCoding: codingCount,
+                subjectiveQuestionsCount: subjectiveCount,
+                pendingEvaluationCount: pendingEval,
+                evaluatedCount: evaluated,
+                manualReviewQueueCount: pendingEval,
+            }
+        });
+    } catch (error) {
+        console.error('Analytics error:', error);
+        res.status(500).json({ success: false, error: error.message });
     }
 };

@@ -1,25 +1,310 @@
+// import React, { useEffect, useMemo, useState } from 'react';
+// import { Link } from 'react-router-dom';
+// import { useAuth } from '../../context/AuthContext';
+// import { TeacherNavbar } from '../../components/TeacherNavbar';
+// import { Button } from '../../components/ui/Button';
+// import { categoryAPI, questionAPI } from '../../services/api';
+// import { BookOpen, ChevronDown, ChevronRight, Plus, Search, Trash2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+// import type { Category, Question } from '../../types';
+// import Toast from '../../components/ui/Toast';
+// import type { ToastMessage } from '../../components/ui/Toast';
+
+// const categoryNameFor = (question: Question) => {
+//   const populatedCategory = question.categoryId as Category | undefined;
+//   return populatedCategory && typeof populatedCategory === 'object'
+//     ? populatedCategory.name
+//     : question.category || 'General';
+// };
+
+// const difficultyBadge = (difficulty?: string) => {
+//   if (difficulty === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+//   if (difficulty === 'hard') return 'bg-rose-50 text-rose-700 border-rose-200';
+//   return 'bg-amber-50 text-amber-700 border-amber-200';
+// };
+
+// const ManageMCQ: React.FC = () => {
+//   const { user } = useAuth();
+//   const [questions, setQuestions] = useState<Question[]>([]);
+//   const [categories, setCategories] = useState<Category[]>([]);
+//   const [activeCategory, setActiveCategory] = useState('All');
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+//   const [deleteQuestion, setDeleteQuestion] = useState<Question | null>(null);
+//   const [loading, setLoading] = useState(true);
+//   const [toast, setToast] = useState<ToastMessage | null>(null);
+
+//   useEffect(() => {
+//     fetchData();
+//   }, [user]);
+
+//   const fetchData = async () => {
+//     if (!user) return;
+//     try {
+//       setLoading(true);
+//       const [questionData, categoryData] = await Promise.all([
+//         questionAPI.getAll(),
+//         categoryAPI.getAll().catch(() => [])
+//       ]);
+//       const myQuestions = (Array.isArray(questionData) ? questionData : []).filter(
+//         q => String(q.createdBy) === String(user.id)
+//       );
+//       setQuestions(myQuestions);
+//       setCategories(categoryData);
+//     } catch (err: any) {
+//       setToast({
+//         id: Date.now().toString(),
+//         type: 'error',
+//         message: err.message || 'Failed to load MCQ questions'
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const filteredQuestions = useMemo(() => {
+//     return questions.filter(q => {
+//       const matchesCategory = activeCategory === 'All' || categoryNameFor(q) === activeCategory;
+//       const matchesSearch = !searchQuery || (q.question && q.question.toLowerCase().includes(searchQuery.toLowerCase())) ||
+//         (q.options && q.options.some(o => o.toLowerCase().includes(searchQuery.toLowerCase())));
+//       return matchesCategory && matchesSearch;
+//     });
+//   }, [questions, activeCategory, searchQuery]);
+
+//   const groupedQuestions = useMemo(() => {
+//     return filteredQuestions.reduce<Record<string, Question[]>>((groups, question) => {
+//       const name = categoryNameFor(question);
+//       groups[name] = groups[name] || [];
+//       groups[name].push(question);
+//       return groups;
+//     }, {});
+//   }, [filteredQuestions]);
+
+//   const categoryFilters = useMemo(() => {
+//     const names = new Set<string>(categories.map(category => category.name));
+//     questions.forEach(question => names.add(categoryNameFor(question)));
+//     return ['All', ...Array.from(names).sort()];
+//   }, [categories, questions]);
+
+//   const handleDelete = async () => {
+//     if (!deleteQuestion) return;
+//     const id = deleteQuestion._id || deleteQuestion.id;
+//     if (!id) return;
+
+//     try {
+//       await questionAPI.delete(id);
+//       setQuestions(prev => prev.filter(q => (q._id || q.id) !== id));
+//       setToast({
+//         id: Date.now().toString(),
+//         type: 'success',
+//         message: 'Question deleted successfully'
+//       });
+//     } catch (err: any) {
+//       setToast({
+//         id: Date.now().toString(),
+//         type: 'error',
+//         message: err.response?.data?.error || 'Failed to delete question'
+//       });
+//     } finally {
+//       setDeleteQuestion(null);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gray-50/60 font-sans">
+//       <TeacherNavbar />
+//       <Toast toast={toast} onClose={() => setToast(null)} />
+
+//       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+//         {/* Header */}
+//         <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+//           <div>
+//             <Link to="/teacher" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
+//               <ArrowLeft size={14} className="mr-1" /> Back to Dashboard
+//             </Link>
+//             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">MCQ Question Bank</h1>
+//             <p className="text-sm text-gray-500 mt-1">Manage multiple-choice questions, categories, and marks allocation</p>
+//           </div>
+//           <Link
+//             to="/teacher/create-question"
+//             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-semibold text-white hover:from-violet-500 hover:to-indigo-500 transition-all shadow-sm"
+//           >
+//             <Plus size={16} /> Create MCQ
+//           </Link>
+//         </div>
+
+//         {/* Filter Toolbar */}
+//         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
+//           <div className="relative w-full md:w-80">
+//             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+//             <input
+//               type="text"
+//               placeholder="Search MCQs by text or options..."
+//               value={searchQuery}
+//               onChange={e => setSearchQuery(e.target.value)}
+//               className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+//             />
+//           </div>
+
+//           <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+//             {categoryFilters.map(category => (
+//               <button
+//                 key={category}
+//                 onClick={() => setActiveCategory(category)}
+//                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+//                   activeCategory === category
+//                     ? 'bg-violet-600 text-white shadow-xs'
+//                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'
+//                 }`}
+//               >
+//                 {category}
+//               </button>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* Content */}
+//         {loading ? (
+//           <div className="text-center py-12">
+//             <p className="text-sm text-gray-500">Loading question library...</p>
+//           </div>
+//         ) : filteredQuestions.length === 0 ? (
+//           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
+//             <BookOpen className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+//             <h3 className="text-base font-semibold text-gray-900">No MCQ questions found</h3>
+//             <p className="text-xs text-gray-500 mt-1">Try adjusting your search query or create a new question.</p>
+//             <Link
+//               to="/teacher/create-question"
+//               className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
+//             >
+//               <Plus size={14} /> Create MCQ Question
+//             </Link>
+//           </div>
+//         ) : (
+//           <div className="space-y-6">
+//             {Object.entries(groupedQuestions).map(([category, items]) => {
+//               const isCollapsed = collapsed[category];
+//               return (
+//                 <div key={category} className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+//                   <div
+//                     onClick={() => setCollapsed(prev => ({ ...prev, [category]: !prev[category] }))}
+//                     className="flex items-center justify-between px-6 py-4 bg-gray-50/70 border-b border-gray-100 cursor-pointer hover:bg-gray-100/50 transition-colors"
+//                   >
+//                     <div className="flex items-center gap-3">
+//                       {isCollapsed ? <ChevronRight size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+//                       <h3 className="text-sm font-bold text-gray-900">{category}</h3>
+//                       <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100">
+//                         {items.length} {items.length === 1 ? 'question' : 'questions'}
+//                       </span>
+//                     </div>
+//                   </div>
+
+//                   {!isCollapsed && (
+//                     <div className="divide-y divide-gray-100">
+//                       {items.map((q, idx) => (
+//                         <div key={q._id || q.id || idx} className="p-6 hover:bg-violet-50/20 transition-colors">
+//                           <div className="flex items-start justify-between gap-4">
+//                             <div className="flex-1">
+//                               <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+//                                 <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${difficultyBadge(q.difficulty)} uppercase tracking-wider`}>
+//                                   {q.difficulty || 'Medium'}
+//                                 </span>
+//                                 <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+//                                   🎯 1 Mark
+//                                 </span>
+//                               </div>
+//                               <h4 className="text-sm font-semibold text-gray-900 leading-snug mb-3">{q.question}</h4>
+
+//                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl mb-3">
+//                                 {q.options.map((opt, oIdx) => {
+//                                   const isCorrect = String(opt) === String(q.answer) || String(oIdx) === String(q.answer);
+//                                   return (
+//                                     <div
+//                                       key={oIdx}
+//                                       className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+//                                         isCorrect
+//                                           ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900 font-medium'
+//                                           : 'border-gray-100 bg-gray-50/50 text-gray-700'
+//                                       }`}
+//                                     >
+//                                       <span>{opt}</span>
+//                                       {isCorrect && <CheckCircle2 size={14} className="text-emerald-600 flex-shrink-0" />}
+//                                     </div>
+//                                   );
+//                                 })}
+//                               </div>
+
+//                               {q.explanation && (
+//                                 <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+//                                   💡 <span className="font-semibold">Explanation:</span> {q.explanation}
+//                                 </p>
+//                               )}
+//                             </div>
+
+//                             <div className="flex items-center gap-2">
+//                               <button
+//                                 onClick={() => setDeleteQuestion(q)}
+//                                 className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+//                                 title="Delete Question"
+//                               >
+//                                 <Trash2 size={16} />
+//                               </button>
+//                             </div>
+//                           </div>
+//                         </div>
+//                       ))}
+//                     </div>
+//                   )}
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         )}
+
+//         {/* Delete Confirmation Modal */}
+//         {deleteQuestion && (
+//           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+//             <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+//               <h3 className="text-base font-bold text-gray-900">Delete MCQ Question?</h3>
+//               <p className="text-sm text-gray-500 mt-2">
+//                 Are you sure you want to delete this question? This action cannot be undone.
+//               </p>
+//               <div className="mt-6 flex justify-end gap-3">
+//                 <Button variant="outline" onClick={() => setDeleteQuestion(null)}>Cancel</Button>
+//                 <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+//       </main>
+//     </div>
+//   );
+// };
+
+// export default ManageMCQ;
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { TeacherNavbar } from '../../components/TeacherNavbar';
-import { Button } from '../../components/ui/Button';
+import { TeacherLayout } from '../../components/ui/DarkLayout';
 import { categoryAPI, questionAPI } from '../../services/api';
-import { BookOpen, ChevronDown, ChevronRight, Plus, Search, Trash2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import {
+  BookOpen, ChevronDown, ChevronRight, Plus, Search,
+  Trash2, CheckCircle2, X, Filter, ListChecks, Edit
+} from 'lucide-react';
 import type { Category, Question } from '../../types';
 import Toast from '../../components/ui/Toast';
 import type { ToastMessage } from '../../components/ui/Toast';
 
-const categoryNameFor = (question: Question) => {
-  const populatedCategory = question.categoryId as Category | undefined;
-  return populatedCategory && typeof populatedCategory === 'object'
-    ? populatedCategory.name
-    : question.category || 'General';
+const categoryNameFor = (q: Question) => {
+  const cat = q.categoryId as Category | undefined;
+  return cat && typeof cat === 'object' ? cat.name : q.category || 'General';
 };
 
-const difficultyBadge = (difficulty?: string) => {
-  if (difficulty === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (difficulty === 'hard') return 'bg-rose-50 text-rose-700 border-rose-200';
-  return 'bg-amber-50 text-amber-700 border-amber-200';
+const difficultyStyle = (d?: string) => {
+  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
+  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
+  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
 };
 
 const ManageMCQ: React.FC = () => {
@@ -33,9 +318,7 @@ const ManageMCQ: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [user]);
+  useEffect(() => { fetchData(); }, [user]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -51,37 +334,28 @@ const ManageMCQ: React.FC = () => {
       setQuestions(myQuestions);
       setCategories(categoryData);
     } catch (err: any) {
-      setToast({
-        id: Date.now().toString(),
-        type: 'error',
-        message: err.message || 'Failed to load MCQ questions'
-      });
-    } finally {
-      setLoading(false);
-    }
+      setToast({ id: Date.now().toString(), type: 'error', message: err.message || 'Failed to load questions' });
+    } finally { setLoading(false); }
   };
 
-  const filteredQuestions = useMemo(() => {
-    return questions.filter(q => {
-      const matchesCategory = activeCategory === 'All' || categoryNameFor(q) === activeCategory;
-      const matchesSearch = !searchQuery || (q.question && q.question.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (q.options && q.options.some(o => o.toLowerCase().includes(searchQuery.toLowerCase())));
-      return matchesCategory && matchesSearch;
-    });
-  }, [questions, activeCategory, searchQuery]);
+  const filteredQuestions = useMemo(() => questions.filter(q => {
+    const matchesCat = activeCategory === 'All' || categoryNameFor(q) === activeCategory;
+    const matchesSearch = !searchQuery ||
+      (q.question && q.question.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (q.options && q.options.some(o => o.toLowerCase().includes(searchQuery.toLowerCase())));
+    return matchesCat && matchesSearch;
+  }), [questions, activeCategory, searchQuery]);
 
-  const groupedQuestions = useMemo(() => {
-    return filteredQuestions.reduce<Record<string, Question[]>>((groups, question) => {
-      const name = categoryNameFor(question);
-      groups[name] = groups[name] || [];
-      groups[name].push(question);
-      return groups;
-    }, {});
-  }, [filteredQuestions]);
+  const groupedQuestions = useMemo(() => filteredQuestions.reduce<Record<string, Question[]>>((acc, q) => {
+    const name = categoryNameFor(q);
+    acc[name] = acc[name] || [];
+    acc[name].push(q);
+    return acc;
+  }, {}), [filteredQuestions]);
 
   const categoryFilters = useMemo(() => {
-    const names = new Set<string>(categories.map(category => category.name));
-    questions.forEach(question => names.add(categoryNameFor(question)));
+    const names = new Set<string>(categories.map(c => c.name));
+    questions.forEach(q => names.add(categoryNameFor(q)));
     return ['All', ...Array.from(names).sort()];
   }, [categories, questions]);
 
@@ -89,74 +363,76 @@ const ManageMCQ: React.FC = () => {
     if (!deleteQuestion) return;
     const id = deleteQuestion._id || deleteQuestion.id;
     if (!id) return;
-
     try {
       await questionAPI.delete(id);
       setQuestions(prev => prev.filter(q => (q._id || q.id) !== id));
-      setToast({
-        id: Date.now().toString(),
-        type: 'success',
-        message: 'Question deleted successfully'
-      });
+      setToast({ id: Date.now().toString(), type: 'success', message: 'Question deleted' });
     } catch (err: any) {
-      setToast({
-        id: Date.now().toString(),
-        type: 'error',
-        message: err.response?.data?.error || 'Failed to delete question'
-      });
-    } finally {
-      setDeleteQuestion(null);
-    }
+      setToast({ id: Date.now().toString(), type: 'error', message: err.response?.data?.error || 'Delete failed' });
+    } finally { setDeleteQuestion(null); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/60 font-sans">
+    <TeacherLayout>
       <TeacherNavbar />
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Delete Confirm Modal */}
+      {deleteQuestion && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 mx-auto" style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.2)' }}>
+              <Trash2 size={20} style={{ color: '#fb7185' }} />
+            </div>
+            <h3 className="text-base font-bold text-white text-center mb-2">Delete Question?</h3>
+            <p className="text-sm text-center mb-6 line-clamp-2" style={{ color: 'rgba(240,240,245,0.5)' }}>"{deleteQuestion.question}"</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteQuestion(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancel</button>
+              <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <Link to="/teacher" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
-              <ArrowLeft size={14} className="mr-1" /> Back to Dashboard
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">MCQ Question Bank</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage multiple-choice questions, categories, and marks allocation</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #06b6d4, #6366f1)' }} />
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#06b6d4' }}>Question Bank</span>
+            </div>
+            <h1 className="text-2xl font-black text-white">MCQ Library</h1>
+            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
+              {loading ? '...' : `${questions.length} questions across ${categoryFilters.length - 1} categories`}
+            </p>
           </div>
           <Link
             to="/teacher/create-question"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-semibold text-white hover:from-violet-500 hover:to-indigo-500 transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
+            style={{ background: 'linear-gradient(135deg, #06b6d4, #6366f1)', boxShadow: '0 4px 24px rgba(6,182,212,0.25)' }}
           >
-            <Plus size={16} /> Create MCQ
+            <Plus size={15} /> Add Question
           </Link>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-xs flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search MCQs by text or options..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-            />
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search questions or options..." className="input-dark pl-10" />
           </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            {categoryFilters.map(category => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  activeCategory === category
-                    ? 'bg-violet-600 text-white shadow-xs'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200/80'
-                }`}
-              >
-                {category}
+          <div className="flex gap-1.5 flex-wrap">
+            {categoryFilters.map(cat => (
+              <button key={cat} onClick={() => setActiveCategory(cat)}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
+                style={{
+                  background: activeCategory === cat ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: activeCategory === cat ? '#22d3ee' : 'rgba(240,240,245,0.45)',
+                  border: `1px solid ${activeCategory === cat ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                }}>
+                {cat} {cat !== 'All' && <span className="ml-1 opacity-60">{questions.filter(q => categoryNameFor(q) === cat).length}</span>}
               </button>
             ))}
           </div>
@@ -164,94 +440,100 @@ const ManageMCQ: React.FC = () => {
 
         {/* Content */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-gray-500">Loading question library...</p>
-          </div>
+          <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
         ) : filteredQuestions.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
-            <BookOpen className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-base font-semibold text-gray-900">No MCQ questions found</h3>
-            <p className="text-xs text-gray-500 mt-1">Try adjusting your search query or create a new question.</p>
-            <Link
-              to="/teacher/create-question"
-              className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
-            >
-              <Plus size={14} /> Create MCQ Question
-            </Link>
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)' }}>
+              <ListChecks size={32} style={{ color: 'rgba(6,182,212,0.4)' }} />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">{searchQuery ? 'No results found' : 'No MCQ questions yet'}</h3>
+            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{searchQuery ? `No matches for "${searchQuery}"` : 'Start building your question bank'}</p>
+            {!searchQuery && (
+              <Link to="/teacher/create-question" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #06b6d4, #6366f1)' }}>
+                <Plus size={15} /> Create First Question
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="space-y-6">
-            {Object.entries(groupedQuestions).map(([category, items]) => {
-              const isCollapsed = collapsed[category];
+          <div className="space-y-4">
+            {Object.entries(groupedQuestions).map(([catName, qs]) => {
+              const isCollapsed = collapsed[catName];
               return (
-                <div key={category} className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-                  <div
-                    onClick={() => setCollapsed(prev => ({ ...prev, [category]: !prev[category] }))}
-                    className="flex items-center justify-between px-6 py-4 bg-gray-50/70 border-b border-gray-100 cursor-pointer hover:bg-gray-100/50 transition-colors"
+                <div key={catName} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  {/* Category header */}
+                  <button
+                    onClick={() => setCollapsed(prev => ({ ...prev, [catName]: !prev[catName] }))}
+                    className="w-full px-5 py-4 flex items-center justify-between transition-colors"
+                    style={{ background: 'rgba(255,255,255,0.02)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
                   >
                     <div className="flex items-center gap-3">
-                      {isCollapsed ? <ChevronRight size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
-                      <h3 className="text-sm font-bold text-gray-900">{category}</h3>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-100">
-                        {items.length} {items.length === 1 ? 'question' : 'questions'}
-                      </span>
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.2)' }}>
+                        <BookOpen size={14} style={{ color: '#22d3ee' }} />
+                      </div>
+                      <span className="text-sm font-bold text-white">{catName}</span>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(6,182,212,0.12)', color: '#22d3ee' }}>{qs.length}</span>
                     </div>
-                  </div>
+                    {isCollapsed ? <ChevronRight size={16} style={{ color: 'rgba(240,240,245,0.35)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(240,240,245,0.35)' }} />}
+                  </button>
 
                   {!isCollapsed && (
-                    <div className="divide-y divide-gray-100">
-                      {items.map((q, idx) => (
-                        <div key={q._id || q.id || idx} className="p-6 hover:bg-violet-50/20 transition-colors">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-                                <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${difficultyBadge(q.difficulty)} uppercase tracking-wider`}>
-                                  {q.difficulty || 'Medium'}
-                                </span>
-                                <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
-                                  🎯 1 Mark
-                                </span>
+                    <div className="divide-y" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.04)' }}>
+                      {qs.map(q => {
+                        const qId = q._id || q.id || '';
+                        const diff = difficultyStyle(q.difficulty);
+                        return (
+                          <div key={qId} className="px-5 py-4 group transition-colors"
+                            style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2.5 mb-2.5 flex-wrap">
+                                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.border}` }}>
+                                    {q.difficulty || 'medium'}
+                                  </span>
+                                  {q.marks && (
+                                    <span className="text-[11px] font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{q.marks} marks</span>
+                                  )}
+                                </div>
+                                <p className="text-sm font-semibold text-white mb-3 leading-relaxed">{q.question}</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                  {(q.options || []).map((opt, idx) => {
+                                    const isCorrect = opt === q.answer;
+                                    return (
+                                      <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                                        style={{
+                                          background: isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
+                                          border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                                        }}>
+                                        <div className="h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+                                          style={{ background: isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', color: isCorrect ? '#34d399' : 'rgba(240,240,245,0.35)' }}>
+                                          {String.fromCharCode(65 + idx)}
+                                        </div>
+                                        <span className="text-xs" style={{ color: isCorrect ? '#34d399' : 'rgba(240,240,245,0.55)' }}>{opt}</span>
+                                        {isCorrect && <CheckCircle2 size={12} className="ml-auto flex-shrink-0" style={{ color: '#34d399' }} />}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                              <h4 className="text-sm font-semibold text-gray-900 leading-snug mb-3">{q.question}</h4>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-2xl mb-3">
-                                {q.options.map((opt, oIdx) => {
-                                  const isCorrect = String(opt) === String(q.answer) || String(oIdx) === String(q.answer);
-                                  return (
-                                    <div
-                                      key={oIdx}
-                                      className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
-                                        isCorrect
-                                          ? 'border-emerald-200 bg-emerald-50/70 text-emerald-900 font-medium'
-                                          : 'border-gray-100 bg-gray-50/50 text-gray-700'
-                                      }`}
-                                    >
-                                      <span>{opt}</span>
-                                      {isCorrect && <CheckCircle2 size={14} className="text-emerald-600 flex-shrink-0" />}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {q.explanation && (
-                                <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                                  💡 <span className="font-semibold">Explanation:</span> {q.explanation}
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setDeleteQuestion(q)}
-                                className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                                title="Delete Question"
+                                className="p-2 rounded-lg flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+                                style={{ color: 'rgba(240,240,245,0.3)' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.1)'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={15} />
                               </button>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -259,24 +541,8 @@ const ManageMCQ: React.FC = () => {
             })}
           </div>
         )}
-
-        {/* Delete Confirmation Modal */}
-        {deleteQuestion && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-              <h3 className="text-base font-bold text-gray-900">Delete MCQ Question?</h3>
-              <p className="text-sm text-gray-500 mt-2">
-                Are you sure you want to delete this question? This action cannot be undone.
-              </p>
-              <div className="mt-6 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setDeleteQuestion(null)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDelete}>Delete</Button>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
-    </div>
+    </TeacherLayout>
   );
 };
 

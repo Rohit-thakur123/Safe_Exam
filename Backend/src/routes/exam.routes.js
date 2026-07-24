@@ -10,7 +10,8 @@ import {
     assignStudentsToExam,
     getAssignedStudents,
     getAllStudents,
-    duplicateExam
+    duplicateExam,
+    getAnalytics
 } from '../controllers/examController.js';
 import { authenticateToken, authorizeRole } from '../middlewares/auth.middleware.js';
 
@@ -20,6 +21,7 @@ const router = express.Router();
 // These would be swallowed by /:id or /:examId if registered after them.
 
 // Teacher-only static routes
+router.get('/analytics', authenticateToken, authorizeRole(['teacher']), getAnalytics);
 router.get('/students/all', authenticateToken, authorizeRole(['teacher']), getAllStudents);
 router.get('/teacher/:teacherId', authenticateToken, authorizeRole(['teacher']), getExamsByTeacher);
 

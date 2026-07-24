@@ -1,445 +1,417 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { TeacherNavbar } from '../../components/TeacherNavbar';
-import { Button } from '../../components/ui/Button';
+import { TeacherLayout } from '../../components/ui/DarkLayout';
 import { examAPI, examAttemptAPI, codingExecutionAPI } from '../../services/api';
 import {
-  ArrowLeft, BarChart3, AlertTriangle, Shield, Download,
-  Search, Eye, Code2
+  ArrowLeft, BarChart3, Shield, Download, Search, Eye, Code2,
+  X, CheckCircle2, XCircle, Clock, Users, TrendingUp, Target,
+  AlertTriangle, BookOpen
 } from 'lucide-react';
 import Toast from '../../components/ui/Toast';
 import type { ToastMessage } from '../../components/ui/Toast';
 
 interface CandidateAttempt {
-  id: string;
-  status: string;
+  id: string; status: string;
   subjectiveStatus?: 'not_applicable' | 'pending_evaluation' | 'evaluated';
   subjectiveScore?: number;
-  student: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  score: number;
-  totalMarks: number;
-  percentage: number;
-  passed: boolean;
-  submittedAt: string;
-  startTime?: string;
-  timeSpent: number;
-  violationSummary: {
-    tabSwitches: number;
-    windowBlurs: number;
-    copyAttempts: number;
-    pasteAttempts: number;
-    devToolsAttempts: number;
-    totalViolations: number;
-  };
+  student: { id: string; name: string; email: string; };
+  score: number; totalMarks: number; percentage: number; passed: boolean;
+  submittedAt: string; startTime?: string; timeSpent: number;
+  violationSummary: { tabSwitches: number; windowBlurs: number; copyAttempts: number; pasteAttempts: number; devToolsAttempts: number; totalViolations: number; };
   violations?: Array<{ type: string; timestamp: string; details?: string }>;
 }
 
-interface CodingSubmission {
-  _id: string;
-  studentId?: { name: string; email: string };
-  codingQuestionId?: { title: string; difficulty?: string; points?: number };
-  language: string;
-  sourceCode: string;
-  executionTime: number;
-  memoryUsage: number;
-  passedTestCases: number;
-  failedTestCases: number;
-  score: number;
-  totalMarks: number;
-  submittedAt: string;
-}
-
-export const ExamResults: React.FC = () => {
-  const { examId = '' } = useParams<{ examId: string }>();
-
+const ExamResults: React.FC = () => {
+  const { examId } = useParams<{ examId: string }>();
   const [exam, setExam] = useState<any>(null);
   const [attempts, setAttempts] = useState<CandidateAttempt[]>([]);
-  const [codingSubmissions, setCodingSubmissions] = useState<CodingSubmission[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [codingSubmissions, setCodingSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateAttempt | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  useEffect(() => {
-    if (examId) {
-      fetchData();
-    }
-  }, [examId]);
+  useEffect(() => { if (examId) fetchData(); }, [examId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [examData, attemptsRes, submissionsRes] = await Promise.all([
-        examAPI.getById(examId).catch(() => null),
-        examAttemptAPI.getByExam(examId).catch(() => ({ attempts: [], statistics: null })),
-        codingExecutionAPI.getExamSubmissions(examId).catch(() => [])
+        examAPI.getById(examId!).catch(() => null),
+        examAttemptAPI.getByExam(examId!).catch(() => ({ attempts: [], statistics: null })),
+        codingExecutionAPI.getExamSubmissions(examId!).catch(() => [])
       ]);
-
       setExam(examData);
       setAttempts(attemptsRes.attempts || []);
       setStats(attemptsRes.statistics || null);
       setCodingSubmissions(submissionsRes || []);
     } catch (err: any) {
-      setToast({
-        id: Date.now().toString(),
-        type: 'error',
-        message: err.message || 'Failed to load exam results'
-      });
-    } finally {
-      setLoading(false);
-    }
+      setToast({ id: Date.now().toString(), type: 'error', message: err.message || 'Failed to load results' });
+    } finally { setLoading(false); }
   };
 
-  const filteredAttempts = useMemo(() => {
-    return attempts.filter(a => {
-      const query = searchQuery.toLowerCase();
-      return !query || a.student.name.toLowerCase().includes(query) || a.student.email.toLowerCase().includes(query);
-    });
-  }, [attempts, searchQuery]);
+  const filteredAttempts = useMemo(() => attempts.filter(a => {
+    const q = searchQuery.toLowerCase();
+    return !q || a.student.name.toLowerCase().includes(q) || a.student.email.toLowerCase().includes(q);
+  }), [attempts, searchQuery]);
 
   const candidateSubmissions = useMemo(() => {
     if (!selectedCandidate) return [];
-    return codingSubmissions.filter(sub => {
-      return sub.studentId?.email === selectedCandidate.student.email ||
-        (sub.studentId as any)?._id === selectedCandidate.student.id;
-    });
+    return codingSubmissions.filter(sub =>
+      sub.studentId?.email === selectedCandidate.student.email ||
+      (sub.studentId as any)?._id === selectedCandidate.student.id
+    );
   }, [selectedCandidate, codingSubmissions]);
 
   const exportToCSV = () => {
-    if (attempts.length === 0) return;
-    const headers = ['Candidate Name', 'Candidate Email', 'Status', 'Score', 'Total Marks', 'Percentage', 'Passed', 'Violations', 'Submitted Date'];
+    if (!attempts.length) return;
+    const headers = ['Name', 'Email', 'Status', 'Score', 'Total', 'Percentage', 'Result', 'Violations', 'Submitted'];
     const rows = attempts.map(a => [
-      `"${a.student.name}"`,
-      `"${a.student.email}"`,
-      a.status,
-      a.score,
-      a.totalMarks,
-      `${a.percentage}%`,
-      a.passed ? 'PASSED' : 'FAILED',
-      a.violationSummary?.totalViolations || 0,
-      `"${new Date(a.submittedAt).toLocaleString()}"`
+      `"${a.student.name}"`, `"${a.student.email}"`, a.status,
+      a.score, a.totalMarks, `${a.percentage}%`, a.passed ? 'PASSED' : 'FAILED',
+      a.violationSummary?.totalViolations || 0, `"${new Date(a.submittedAt).toLocaleString()}"`
     ]);
-
-    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${exam?.title || 'exam'}_results_report.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    setToast({
-      id: Date.now().toString(),
-      type: 'success',
-      message: 'Results report exported to CSV'
-    });
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `${exam?.title || 'exam'}_results.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setToast({ id: Date.now().toString(), type: 'success', message: 'CSV exported' });
   };
 
+  const passedCount = attempts.filter(a => a.passed && a.status === 'completed').length;
+  const completedCount = attempts.filter(a => a.status === 'completed').length;
+  const passRate = completedCount > 0 ? Math.round((passedCount / completedCount) * 100) : 0;
+
   return (
-    <div className="min-h-screen bg-gray-50/60 font-sans">
+    <TeacherLayout>
       <TeacherNavbar />
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <Link to="/teacher/exams" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
-              <ArrowLeft size={14} className="mr-1" /> Back to Assessments
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              {exam?.title || 'Assessment Results & Analytics'}
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Candidate scorecards, MCQ responses, coding challenge executions, and anti-cheat audit logs
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link to={`/teacher/exams/${examId}/grade-subjective`}>
-              <Button className="bg-gradient-to-r from-violet-600 to-purple-600">
-                <BarChart3 size={14} className="mr-1.5" /> Grade Subjective Questions
-              </Button>
-            </Link>
-            <Button onClick={exportToCSV} disabled={attempts.length === 0} variant="outline">
-              <Download size={14} className="mr-1.5" /> Export Report (CSV)
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
-            <p className="text-xs font-semibold text-gray-500">Total Candidates Attempted</p>
-            <p className="text-3xl font-extrabold text-gray-900 mt-1">{stats?.totalAttempts || attempts.length}</p>
-            <p className="text-xs text-gray-400 mt-1">{stats?.completedAttempts || 0} completed attempts</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
-            <p className="text-xs font-semibold text-gray-500">Average Candidate Score</p>
-            <p className="text-3xl font-extrabold text-violet-600 mt-1">{stats?.averageScore || 0}</p>
-            <p className="text-xs text-gray-400 mt-1">Out of {exam?.totalMarks || 100} marks</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
-            <p className="text-xs font-semibold text-gray-500">Pass Rate</p>
-            <p className="text-3xl font-extrabold text-emerald-600 mt-1">{stats?.passRate || 0}%</p>
-            <p className="text-xs text-gray-400 mt-1">Passing threshold: {exam?.passingMarks || 40}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-xs">
-            <p className="text-xs font-semibold text-gray-500">Highest Score</p>
-            <p className="text-3xl font-extrabold text-indigo-600 mt-1">{stats?.highestScore || 0}</p>
-            <p className="text-xs text-gray-400 mt-1">Lowest: {stats?.lowestScore || 0}</p>
-          </div>
-        </div>
-
-        {/* Search Toolbar */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-xs flex justify-between items-center">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search candidate by name or email..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-            />
-          </div>
-          <span className="text-xs text-gray-500 font-medium">{filteredAttempts.length} candidates</span>
-        </div>
-
-        {/* Candidate Attempts Table */}
-        {loading ? (
-          <div className="text-center py-12 text-sm text-gray-500">Loading candidate scorecards...</div>
-        ) : filteredAttempts.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
-            <BarChart3 className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-base font-semibold text-gray-900">No attempts submitted yet</h3>
-            <p className="text-xs text-gray-500 mt-1">When students complete this exam, their scorecards will appear here.</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-gray-50/70 border-b border-gray-100 text-gray-500 font-bold uppercase tracking-wider">
-                  <tr>
-                    <th className="px-6 py-3.5">Candidate</th>
-                    <th className="px-6 py-3.5">Status</th>
-                    <th className="px-6 py-3.5">Score</th>
-                    <th className="px-6 py-3.5">Percentage</th>
-                    <th className="px-6 py-3.5">Violations</th>
-                    <th className="px-6 py-3.5">Submitted Date</th>
-                    <th className="px-6 py-3.5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredAttempts.map((attempt) => {
-                    const isCompleted = attempt.status === 'completed';
-                    const violationsCount = attempt.violationSummary?.totalViolations || 0;
-                    return (
-                      <tr key={attempt.id} className="hover:bg-violet-50/20 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-xs">
-                              {attempt.student.name.slice(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-bold text-gray-900 text-xs">{attempt.student.name}</p>
-                              <p className="text-[11px] text-gray-500">{attempt.student.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex flex-col gap-1">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold w-fit ${
-                              isCompleted ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}>
-                              {isCompleted ? 'Completed' : 'In Progress'}
-                            </span>
-                            {attempt.subjectiveStatus === 'pending_evaluation' && (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 w-fit">
-                                Subjective Pending
-                              </span>
-                            )}
-                            {attempt.subjectiveStatus === 'evaluated' && (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 w-fit">
-                                Subjective Graded (+{attempt.subjectiveScore || 0})
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-gray-900 text-xs">
-                          {attempt.score} / {attempt.totalMarks}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`font-bold ${attempt.passed ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {attempt.percentage}% ({attempt.passed ? 'PASSED' : 'FAILED'})
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {violationsCount > 0 ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                              <AlertTriangle size={12} /> {violationsCount} Flagged
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 font-medium text-[11px]">0 Violations</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-gray-500">
-                          {new Date(attempt.submittedAt).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => setSelectedCandidate(attempt)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
-                          >
-                            <Eye size={13} /> View Detail
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <div className="mb-8">
+          <Link to="/teacher/exams" className="inline-flex items-center gap-1.5 text-xs font-semibold mb-4 transition-colors"
+            style={{ color: 'rgba(240,240,245,0.45)' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#a78bfa'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.45)'}>
+            <ArrowLeft size={14} /> Back to Assessments
+          </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-1.5">
+                <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1)' }} />
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8b5cf6' }}>Results & Analytics</span>
+              </div>
+              <h1 className="text-2xl font-black text-white">{loading ? 'Loading...' : exam?.title || 'Exam Results'}</h1>
+              <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                {attempts.length} candidates · {completedCount} completed · {passRate}% pass rate
+              </p>
             </div>
+            <div className="flex gap-2.5 flex-wrap">
+              {exam && (
+                <Link to={`/teacher/exams/${examId}/grade-subjective`}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}>
+                  <BookOpen size={14} /> Grade Subjective
+                </Link>
+              )}
+              <button onClick={exportToCSV} disabled={!attempts.length}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(240,240,245,0.7)' }}>
+                <Download size={14} /> Export CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        {!loading && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: 'Total Candidates', value: attempts.length, icon: Users, accent: '#8b5cf6', glow: 'rgba(139,92,246,0.12)' },
+              { label: 'Avg Score', value: stats ? `${Math.round(stats.averageScore)}%` : '—', icon: BarChart3, accent: '#06b6d4', glow: 'rgba(6,182,212,0.12)' },
+              { label: 'Pass Rate', value: `${passRate}%`, icon: TrendingUp, accent: '#10b981', glow: 'rgba(16,185,129,0.12)' },
+              { label: 'Highest Score', value: stats ? `${Math.round(stats.highestScore)}` : '—', icon: Target, accent: '#6366f1', glow: 'rgba(99,102,241,0.12)' },
+            ].map(({ label, value, icon: Icon, accent, glow }) => (
+              <div key={label} className="rounded-2xl p-5 relative overflow-hidden group transition-all duration-300"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${accent}40`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 30px ${glow}`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: `${accent}18`, border: `1px solid ${accent}28` }}>
+                    <Icon size={16} style={{ color: accent }} />
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-white tabular-nums">{value}</div>
+                <div className="text-xs mt-1 font-medium" style={{ color: 'rgba(240,240,245,0.45)' }}>{label}</div>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Candidate Detail Drawer */}
-        {selectedCandidate && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex justify-end z-50">
-            <div className="bg-white max-w-2xl w-full h-full shadow-2xl overflow-y-auto p-6 flex flex-col justify-between">
+        {/* Search */}
+        <div className="relative mb-5">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search candidates by name or email..." className="input-dark pl-10" />
+        </div>
+
+        {/* Candidates table */}
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          {/* Table header */}
+          <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-bold uppercase tracking-wider"
+            style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.35)' }}>
+            <div className="col-span-4">Candidate</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-2">Score</div>
+            <div className="col-span-2">Result</div>
+            <div className="col-span-1">Violations</div>
+            <div className="col-span-1 text-right">Detail</div>
+          </div>
+
+          {loading ? (
+            <div className="p-4 space-y-3">
+              {[1,2,3,4].map(i => <div key={i} className="h-14 rounded-xl skeleton" />)}
+            </div>
+          ) : filteredAttempts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Users size={32} className="mb-3" style={{ color: 'rgba(240,240,245,0.15)' }} />
+              <p className="text-sm font-semibold text-white mb-1">No candidates found</p>
+              <p className="text-xs" style={{ color: 'rgba(240,240,245,0.35)' }}>
+                {searchQuery ? `No results for "${searchQuery}"` : 'No candidates have attempted this exam yet'}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+              {filteredAttempts.map(attempt => (
+                <div key={attempt.id}
+                  className="grid grid-cols-12 items-center px-5 py-4 transition-colors group cursor-pointer"
+                  style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                  onClick={() => setSelectedCandidate(attempt)}
+                >
+                  {/* Candidate */}
+                  <div className="col-span-4 flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
+                      {attempt.student.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-white truncate">{attempt.student.name}</div>
+                      <div className="text-xs truncate" style={{ color: 'rgba(240,240,245,0.4)' }}>{attempt.student.email}</div>
+                    </div>
+                  </div>
+                  {/* Status */}
+                  <div className="col-span-2">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                      style={{
+                        background: attempt.status === 'completed' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                        color: attempt.status === 'completed' ? '#34d399' : '#fbbf24',
+                        border: `1px solid ${attempt.status === 'completed' ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                      }}>
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: attempt.status === 'completed' ? '#34d399' : '#fbbf24' }} />
+                      {attempt.status === 'completed' ? 'Completed' : 'In Progress'}
+                    </span>
+                    {attempt.subjectiveStatus === 'pending_evaluation' && (
+                      <span className="mt-1 inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
+                        Grading Pending
+                      </span>
+                    )}
+                  </div>
+                  {/* Score */}
+                  <div className="col-span-2">
+                    <span className="text-sm font-bold text-white">{attempt.score}</span>
+                    <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}> / {attempt.totalMarks}</span>
+                  </div>
+                  {/* Result */}
+                  <div className="col-span-2">
+                    {attempt.status === 'completed' ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold"
+                        style={{ color: attempt.passed ? '#34d399' : '#fb7185' }}>
+                        {attempt.passed ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                        {attempt.percentage}% {attempt.passed ? 'PASSED' : 'FAILED'}
+                      </span>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'rgba(240,240,245,0.35)' }}>—</span>
+                    )}
+                  </div>
+                  {/* Violations */}
+                  <div className="col-span-1">
+                    {(attempt.violationSummary?.totalViolations || 0) > 0 ? (
+                      <span className="text-xs font-bold" style={{ color: '#fbbf24' }}>
+                        <AlertTriangle size={12} className="inline mr-1" />
+                        {attempt.violationSummary.totalViolations}
+                      </span>
+                    ) : (
+                      <span className="text-xs" style={{ color: 'rgba(240,240,245,0.3)' }}>0</span>
+                    )}
+                  </div>
+                  {/* Detail */}
+                  <div className="col-span-1 flex justify-end">
+                    <button className="p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      style={{ background: 'rgba(139,92,246,0.12)', color: '#a78bfa' }}
+                      onClick={e => { e.stopPropagation(); setSelectedCandidate(attempt); }}>
+                      <Eye size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Candidate Detail Drawer */}
+      {selectedCandidate && (
+        <>
+          <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedCandidate(null)} />
+          <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg overflow-y-auto"
+            style={{ background: 'rgba(13,13,20,0.99)', borderLeft: '1px solid rgba(255,255,255,0.08)', boxShadow: '-20px 0 80px rgba(0,0,0,0.5)' }}>
+            {/* Drawer header */}
+            <div className="sticky top-0 z-10 px-6 py-5 flex items-start justify-between"
+              style={{ background: 'rgba(13,13,20,0.98)', borderBottom: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }}>
               <div>
-                <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
+                    {selectedCandidate.student.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                  </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">{selectedCandidate.student.name}</h3>
-                    <p className="text-xs text-gray-500">{selectedCandidate.student.email}</p>
-                  </div>
-                  <button onClick={() => setSelectedCandidate(null)} className="text-gray-400 hover:text-gray-600 font-bold text-xl">×</button>
-                </div>
-
-                {/* Score Overview */}
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="p-4 rounded-xl bg-violet-50/50 border border-violet-100">
-                    <p className="text-xs text-gray-500">Total Marks Achieved</p>
-                    <p className="text-2xl font-bold text-violet-700 mt-1">{selectedCandidate.score} / {selectedCandidate.totalMarks}</p>
-                  </div>
-                  <div className={`p-4 rounded-xl border ${selectedCandidate.passed ? 'bg-emerald-50/50 border-emerald-100 text-emerald-900' : 'bg-rose-50/50 border-rose-100 text-rose-900'}`}>
-                    <p className="text-xs opacity-75">Evaluation Result</p>
-                    <p className="text-2xl font-bold mt-1">{selectedCandidate.percentage}% ({selectedCandidate.passed ? 'PASSED' : 'FAILED'})</p>
+                    <div className="text-sm font-bold text-white">{selectedCandidate.student.name}</div>
+                    <div className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>{selectedCandidate.student.email}</div>
                   </div>
                 </div>
+              </div>
+              <button onClick={() => setSelectedCandidate(null)} className="p-2 rounded-xl transition-colors"
+                style={{ color: 'rgba(240,240,245,0.4)' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.4)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                <X size={18} />
+              </button>
+            </div>
 
-                {/* Marks Breakdown */}
-                {exam && (
-                  <div className="mb-6 border-t border-gray-100 pt-4">
-                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                      <BarChart3 size={14} className="text-violet-500" /> Marks Breakdown
+            <div className="px-6 py-6 space-y-6">
+              {/* Score overview */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl p-5" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)' }}>
+                  <div className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: 'rgba(167,139,250,0.7)' }}>Total Score</div>
+                  <div className="text-3xl font-black" style={{ color: '#a78bfa' }}>
+                    {selectedCandidate.score}<span className="text-base font-semibold opacity-60"> / {selectedCandidate.totalMarks}</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl p-5" style={{
+                  background: selectedCandidate.passed ? 'rgba(16,185,129,0.08)' : 'rgba(244,63,94,0.08)',
+                  border: `1px solid ${selectedCandidate.passed ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)'}`,
+                }}>
+                  <div className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: selectedCandidate.passed ? 'rgba(52,211,153,0.7)' : 'rgba(251,113,133,0.7)' }}>Result</div>
+                  <div className="text-3xl font-black" style={{ color: selectedCandidate.passed ? '#34d399' : '#fb7185' }}>
+                    {selectedCandidate.percentage}%
+                  </div>
+                  <div className="text-xs font-bold mt-1" style={{ color: selectedCandidate.passed ? '#34d399' : '#fb7185' }}>
+                    {selectedCandidate.passed ? '✓ PASSED' : '✗ FAILED'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Marks Breakdown */}
+              {exam && (() => {
+                const codingTotal = (exam.codingQuestions || []).reduce((s: number, q: any) => s + (q.marks || 0), 0);
+                const subjectiveTotal = (exam.descriptiveQuestions || []).reduce((s: number, q: any) => s + (q.maxMarks || 0), 0);
+                const mcqTotal = (exam.totalMarks || 0) - codingTotal - subjectiveTotal;
+                const codingEarned = candidateSubmissions.reduce((s, sub) => s + (sub.score || 0), 0);
+                const subjectiveEarned = selectedCandidate?.subjectiveScore || 0;
+                const mcqEarned = Math.max(0, (selectedCandidate?.score || 0) - codingEarned - subjectiveEarned);
+                const rows = [
+                  { label: 'MCQ', earned: mcqEarned, total: mcqTotal, bar: '#7c3aed', text: '#a78bfa' },
+                  { label: 'Coding', earned: codingEarned, total: codingTotal, bar: '#4f46e5', text: '#818cf8' },
+                  { label: 'Subjective', earned: subjectiveEarned, total: subjectiveTotal, bar: '#9333ea', text: '#c084fc' },
+                ].filter(r => r.total > 0);
+                return rows.length > 0 ? (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                      <BarChart3 size={13} style={{ color: '#8b5cf6' }} /> Marks Breakdown
                     </h4>
-                    <div className="space-y-2">
-                      {/* MCQ */}
-                      {(() => {
-                        const codingTotal = (exam.codingQuestions || []).reduce((s: number, q: any) => s + (q.marks || 0), 0);
-                        const subjectiveTotal = (exam.descriptiveQuestions || []).reduce((s: number, q: any) => s + (q.maxMarks || 0), 0);
-                        const mcqTotal = (exam.totalMarks || 0) - codingTotal - subjectiveTotal;
-
-                        const codingSubs = candidateSubmissions;
-                        const codingEarned = codingSubs.reduce((s, sub) => s + (sub.score || 0), 0);
-                        const subjectiveEarned = selectedCandidate?.subjectiveScore || 0;
-                        const mcqEarned = Math.max(0, (selectedCandidate?.score || 0) - codingEarned - subjectiveEarned);
-
-                        const rows = [
-                          { label: 'MCQ',        earned: mcqEarned,        total: mcqTotal,        bar: '#7c3aed', text: '#5b21b6' },
-                          { label: 'Coding',     earned: codingEarned,     total: codingTotal,     bar: '#4f46e5', text: '#3730a3' },
-                          { label: 'Subjective', earned: subjectiveEarned, total: subjectiveTotal, bar: '#9333ea', text: '#7e22ce' },
-                        ].filter(r => r.total > 0);
-
-                        return rows.map(row => (
-                          <div key={row.label} className="flex items-center gap-3">
-                            <span className="text-xs font-semibold text-gray-500 w-20">{row.label}</span>
-                            <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                              <div
-                                // className={`h-2 rounded-full bg-${row.bar}-500`}
-                                style={{ width: row.total > 0 ? `${Math.min(100,(row.earned/row.total)*100)}%` : '0%' }}
-                              />
-                            </div>
-                            <span className={`text-xs font-bold w-16 text-right`} style={{ color: row.text }}>
-                              {row.earned} / {row.total}
-                            </span>
+                    <div className="space-y-3">
+                      {rows.map(row => (
+                        <div key={row.label} className="flex items-center gap-3">
+                          <span className="text-xs font-semibold w-20 flex-shrink-0" style={{ color: 'rgba(240,240,245,0.5)' }}>{row.label}</span>
+                          <div className="flex-1 rounded-full h-2 overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                            <div className="h-2 rounded-full transition-all duration-700"
+                              style={{ width: row.total > 0 ? `${Math.min(100,(row.earned/row.total)*100)}%` : '0%', backgroundColor: row.bar }} />
                           </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                )}
-
-                {/* Anti-Cheat Violations */}
-                <div className="mb-6 border-t border-gray-100 pt-4">
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Shield size={14} className="text-rose-500" /> Security Violation Log
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="font-bold text-gray-900">{selectedCandidate.violationSummary?.tabSwitches || 0}</p>
-                      <p className="text-[10px] text-gray-500">Tab Switches</p>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="font-bold text-gray-900">{selectedCandidate.violationSummary?.copyAttempts || 0}</p>
-                      <p className="text-[10px] text-gray-500">Copy Attempts</p>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="font-bold text-gray-900">{selectedCandidate.violationSummary?.devToolsAttempts || 0}</p>
-                      <p className="text-[10px] text-gray-500">DevTools Locks</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Coding Submissions Code Viewer */}
-                <div className="border-t border-gray-100 pt-4">
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Code2 size={14} className="text-indigo-500" /> Coding Challenge Submissions
-                  </h4>
-
-                  {candidateSubmissions.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic">No coding challenges submitted for this candidate.</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {candidateSubmissions.map(sub => (
-                        <div key={sub._id} className="border border-gray-200 rounded-xl p-4 bg-gray-50/50 space-y-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-gray-900">{sub.codingQuestionId?.title || 'Coding Challenge'}</span>
-                            <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                              Passed {sub.passedTestCases}/{sub.passedTestCases + sub.failedTestCases} testcases
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-4 text-[11px] text-gray-500">
-                            <span>Lang: {sub.language}</span>
-                            <span>Time: {sub.executionTime} ms</span>
-                            <span>Memory: {Math.ceil(sub.memoryUsage / 1024)} KB</span>
-                          </div>
-                          <pre className="p-3 bg-gray-950 text-gray-100 text-xs rounded-xl overflow-x-auto font-mono max-h-48">
-                            {sub.sourceCode}
-                          </pre>
+                          <span className="text-xs font-bold w-16 text-right flex-shrink-0" style={{ color: row.text }}>
+                            {row.earned} / {row.total}
+                          </span>
                         </div>
                       ))}
                     </div>
-                  )}
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Security Log */}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                  <Shield size={13} style={{ color: '#fb7185' }} /> Security Violation Log
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Tab Switches', value: selectedCandidate.violationSummary?.tabSwitches || 0 },
+                    { label: 'Copy Attempts', value: selectedCandidate.violationSummary?.copyAttempts || 0 },
+                    { label: 'DevTools', value: selectedCandidate.violationSummary?.devToolsAttempts || 0 },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="rounded-xl p-3 text-center" style={{
+                      background: value > 0 ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
+                      border: `1px solid ${value > 0 ? 'rgba(244,63,94,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                    }}>
+                      <div className="text-xl font-black" style={{ color: value > 0 ? '#fb7185' : 'rgba(240,240,245,0.5)' }}>{value}</div>
+                      <div className="text-[10px] mt-0.5 font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{label}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-100 flex justify-end">
-                <Button variant="outline" onClick={() => setSelectedCandidate(null)}>Close Scorecard</Button>
-              </div>
+              {/* Coding Submissions */}
+              {candidateSubmissions.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                    <Code2 size={13} style={{ color: '#6366f1' }} /> Coding Submissions
+                  </h4>
+                  <div className="space-y-3">
+                    {candidateSubmissions.map((sub, i) => (
+                      <div key={i} className="rounded-xl p-4" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-white">{sub.questionTitle || 'Coding Problem'}</span>
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                            style={{ background: (sub.passedTestCases || 0) > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)', color: (sub.passedTestCases || 0) > 0 ? '#34d399' : '#fb7185' }}>
+                            Passed {sub.passedTestCases || 0}/{sub.totalTestCases || 0} testcases
+                          </span>
+                        </div>
+                        <div className="flex gap-4 text-xs mb-3" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                          <span>Lang: {sub.language || 'N/A'}</span>
+                          <span>Time: {sub.executionTime || '—'} ms</span>
+                          <span>Memory: {sub.memoryUsed || '—'} KB</span>
+                        </div>
+                        {sub.code && (
+                          <pre className="text-xs p-3 rounded-lg overflow-x-auto" style={{ background: 'rgba(0,0,0,0.4)', color: '#a78bfa', fontFamily: 'monospace' }}>
+                            <code>{sub.code.slice(0, 300)}{sub.code.length > 300 ? '...' : ''}</code>
+                          </pre>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </main>
-    </div>
+        </>
+      )}
+    </TeacherLayout>
   );
 };
 
