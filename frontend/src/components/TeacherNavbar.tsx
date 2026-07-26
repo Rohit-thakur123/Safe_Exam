@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import {
   Shield, BarChart3, Plus, ListChecks, FileText, Eye,
-  Code2, BookOpen, LogOut, Menu, X, ChevronDown, Bell, Settings
+  Code2, BookOpen, LogOut, Menu, X, ChevronDown, Sun, Moon
 } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -23,6 +24,7 @@ const CREATE_LINKS = [
 
 export const TeacherNavbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -49,13 +51,11 @@ export const TeacherNavbar: React.FC = () => {
       <header
         className="sticky top-0 z-50 transition-all duration-300"
         style={{
-          background: scrolled
-            ? 'rgba(10,10,15,0.95)'
-            : 'rgba(10,10,15,0.7)',
+          background: scrolled ? 'var(--nav-bg-scrolled)' : 'var(--nav-bg)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-          boxShadow: scrolled ? '0 4px 40px rgba(0,0,0,0.4)' : 'none',
+          borderBottom: '1px solid var(--border)',
+          boxShadow: scrolled ? 'var(--shadow-md)' : 'none',
         }}
       >
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -66,15 +66,15 @@ export const TeacherNavbar: React.FC = () => {
               <div
                 className="h-9 w-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
                 style={{
-                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                  boxShadow: '0 0 20px rgba(139,92,246,0.4)',
+                  background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
+                  boxShadow: '0 0 20px var(--glow-purple)',
                 }}
               >
                 <Shield size={17} className="text-white" />
               </div>
               <div>
-                <div className="text-sm font-bold text-white leading-none">SecureExam</div>
-                <div className="text-[10px] font-medium leading-none mt-1" style={{ color: '#8b5cf6' }}>
+                <div className="text-sm font-bold leading-none" style={{ color: 'var(--text-primary)' }}>SecureExam</div>
+                <div className="text-[10px] font-medium leading-none mt-1" style={{ color: 'var(--accent-purple)' }}>
                   Enterprise Console
                 </div>
               </div>
@@ -88,22 +88,11 @@ export const TeacherNavbar: React.FC = () => {
                   <Link
                     key={to}
                     to={to}
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 relative"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 relative nav-link"
+                    data-active={active}
                     style={{
-                      color: active ? '#a78bfa' : 'rgba(240,240,245,0.55)',
-                      background: active ? 'rgba(139,92,246,0.12)' : 'transparent',
-                    }}
-                    onMouseEnter={e => {
-                      if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.9)';
-                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.55)';
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
-                      }
+                      color: active ? 'var(--tint-purple-text)' : 'var(--text-secondary)',
+                      background: active ? 'color-mix(in srgb, var(--accent-purple) 12%, transparent)' : 'transparent',
                     }}
                   >
                     <Icon size={15} />
@@ -111,7 +100,7 @@ export const TeacherNavbar: React.FC = () => {
                     {active && (
                       <span
                         className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
-                        style={{ background: '#8b5cf6' }}
+                        style={{ background: 'var(--accent-purple)' }}
                       />
                     )}
                   </Link>
@@ -121,6 +110,16 @@ export const TeacherNavbar: React.FC = () => {
 
             {/* Right Actions */}
             <div className="flex items-center gap-2">
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                className="p-2 rounded-xl transition-all duration-200 icon-btn"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+
               {/* Create dropdown */}
               <div className="relative hidden sm:block">
                 <button
@@ -129,8 +128,8 @@ export const TeacherNavbar: React.FC = () => {
                   style={{
                     background: createOpen
                       ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
-                      : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                    boxShadow: '0 2px 20px rgba(139,92,246,0.3)',
+                      : 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
+                    boxShadow: '0 2px 20px var(--glow-purple)',
                   }}
                 >
                   <Plus size={15} />
@@ -144,28 +143,20 @@ export const TeacherNavbar: React.FC = () => {
                     <div
                       className="absolute right-0 top-full mt-2 w-52 rounded-2xl overflow-hidden z-50 py-2"
                       style={{
-                        background: 'rgba(15,15,23,0.98)',
-                        border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'var(--surface-elevated)',
+                        border: '1px solid var(--border)',
                         backdropFilter: 'blur(24px)',
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.1)',
+                        boxShadow: 'var(--shadow-lg)',
                       }}
                     >
                       {CREATE_LINKS.map(({ to, label, icon: Icon }) => (
                         <Link
                           key={to}
                           to={to}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors"
-                          style={{ color: 'rgba(240,240,245,0.7)' }}
-                          onMouseEnter={e => {
-                            (e.currentTarget as HTMLElement).style.color = '#fff';
-                            (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.12)';
-                          }}
-                          onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.7)';
-                            (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          }}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors dropdown-link"
+                          style={{ color: 'var(--text-secondary)' }}
                         >
-                          <Icon size={14} style={{ color: '#8b5cf6' }} />
+                          <Icon size={14} style={{ color: 'var(--accent-purple)' }} />
                           {label}
                         </Link>
                       ))}
@@ -175,19 +166,19 @@ export const TeacherNavbar: React.FC = () => {
               </div>
 
               {/* Divider */}
-              <div className="hidden sm:block h-6 w-px mx-1" style={{ background: 'rgba(255,255,255,0.08)' }} />
+              <div className="hidden sm:block h-6 w-px mx-1" style={{ background: 'var(--border)' }} />
 
               {/* User avatar */}
               <div className="hidden sm:flex items-center gap-2.5">
                 <div
                   className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                  style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
                 >
                   {initials}
                 </div>
                 <div className="hidden md:block">
-                  <div className="text-xs font-semibold text-white leading-none">{user?.name}</div>
-                  <div className="text-[10px] mt-0.5 capitalize" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                  <div className="text-xs font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>{user?.name}</div>
+                  <div className="text-[10px] mt-0.5 capitalize" style={{ color: 'var(--text-muted)' }}>
                     Instructor
                   </div>
                 </div>
@@ -196,16 +187,8 @@ export const TeacherNavbar: React.FC = () => {
               {/* Logout */}
               <button
                 onClick={logout}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200"
-                style={{ color: 'rgba(240,240,245,0.4)' }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.color = '#fb7185';
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.08)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.4)';
-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
-                }}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 logout-btn"
+                style={{ color: 'var(--text-muted)' }}
               >
                 <LogOut size={14} />
                 <span className="hidden lg:inline">Sign out</span>
@@ -215,7 +198,7 @@ export const TeacherNavbar: React.FC = () => {
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
                 className="lg:hidden p-2 rounded-xl transition-colors"
-                style={{ color: 'rgba(240,240,245,0.6)', background: 'rgba(255,255,255,0.05)' }}
+                style={{ color: 'var(--text-secondary)', background: 'var(--bg-card)' }}
               >
                 {mobileOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
@@ -227,7 +210,7 @@ export const TeacherNavbar: React.FC = () => {
         {mobileOpen && (
           <div
             className="lg:hidden border-t px-4 py-4 space-y-1"
-            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(10,10,15,0.98)' }}
+            style={{ borderColor: 'var(--border)', background: 'var(--nav-bg-scrolled)' }}
           >
             {NAV_LINKS.map(({ to, label, icon: Icon, exact }) => (
               <Link
@@ -235,33 +218,33 @@ export const TeacherNavbar: React.FC = () => {
                 to={to}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"
                 style={{
-                  color: isActive(to, exact) ? '#a78bfa' : 'rgba(240,240,245,0.6)',
-                  background: isActive(to, exact) ? 'rgba(139,92,246,0.12)' : 'transparent',
+                  color: isActive(to, exact) ? 'var(--tint-purple-text)' : 'var(--text-secondary)',
+                  background: isActive(to, exact) ? 'color-mix(in srgb, var(--accent-purple) 12%, transparent)' : 'transparent',
                 }}
               >
                 <Icon size={15} />
                 {label}
               </Link>
             ))}
-            <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
               {CREATE_LINKS.map(({ to, label, icon: Icon }) => (
                 <Link
                   key={to}
                   to={to}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"
-                  style={{ color: 'rgba(240,240,245,0.5)' }}
+                  style={{ color: 'var(--text-secondary)' }}
                 >
-                  <Icon size={14} style={{ color: '#8b5cf6' }} />
+                  <Icon size={14} style={{ color: 'var(--accent-purple)' }} />
                   {label}
                 </Link>
               ))}
             </div>
-            <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-              <span className="text-xs" style={{ color: 'rgba(240,240,245,0.3)' }}>{user?.email}</span>
+            <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{user?.email}</span>
               <button
                 onClick={logout}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-                style={{ color: '#fb7185', background: 'rgba(244,63,94,0.1)' }}
+                style={{ color: 'var(--tint-rose-text)', background: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)' }}
               >
                 <LogOut size={13} /> Sign out
               </button>

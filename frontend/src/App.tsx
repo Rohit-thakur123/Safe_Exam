@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Landing from './pages/Landing/Landing';
@@ -63,10 +64,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | '
 
 function App() {
   return (
+    <ThemeProvider>
     <Router>
       <AuthProvider>
 
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -193,6 +195,7 @@ function App() {
         </div>
       </AuthProvider >
     </Router>
+    </ThemeProvider>
 
   );
 }

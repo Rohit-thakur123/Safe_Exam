@@ -15,9 +15,9 @@ const LANGUAGES = ['Python', 'Java', 'JavaScript', 'C', 'C++'];
 
 const difficultyBadge = (diff?: string) => {
   const d = (diff || 'Medium').toLowerCase();
-  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
-  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
-  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
+  if (d === 'easy') return { bg: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' };
+  if (d === 'hard') return { bg: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', color: 'var(--tint-rose-text)', border: 'color-mix(in srgb, var(--accent-rose) 20%, transparent)' };
+  return { bg: 'color-mix(in srgb, var(--accent-amber) 10%, transparent)', color: 'var(--tint-amber-text)', border: 'color-mix(in srgb, var(--accent-amber) 20%, transparent)' };
 };
 
 const CodingQuestionsPage: React.FC = () => {
@@ -126,18 +126,18 @@ const CodingQuestionsPage: React.FC = () => {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #6366f1, #a855f7)' }} />
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6366f1' }}>Coding Challenges</span>
+              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-indigo), #a855f7)' }} />
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-indigo)' }}>Coding Challenges</span>
             </div>
-            <h1 className="text-2xl font-black text-white">Algorithms Library</h1>
-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
+            <h1 className="text-2xl font-black text-heading">Algorithms Library</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
               Manage algorithmic problems, language constraints, and testcase suites
             </p>
           </div>
           <Link
             to="/teacher/coding-questions/create"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 4px 24px rgba(99,102,241,0.25)' }}
+            style={{ background: 'linear-gradient(135deg, var(--accent-indigo), #a855f7)', boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-indigo) 25%, transparent)' }}
           >
             <Plus size={15} /> New Challenge
           </Link>
@@ -146,7 +146,7 @@ const CodingQuestionsPage: React.FC = () => {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
             <form onSubmit={handleSearchSubmit}>
               <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
                 placeholder="Search by problem title, tag, or keyword..." className="input-dark pl-10 w-full" />
@@ -157,7 +157,7 @@ const CodingQuestionsPage: React.FC = () => {
               value={difficulty}
               onChange={e => setDifficulty(e.target.value)}
               className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
             >
               <option value="" className="bg-gray-900 text-white">All Difficulties</option>
               <option value="Easy" className="bg-gray-900 text-white">Easy</option>
@@ -169,7 +169,7 @@ const CodingQuestionsPage: React.FC = () => {
               value={language}
               onChange={e => setLanguage(e.target.value)}
               className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
             >
               <option value="" className="bg-gray-900 text-white">All Languages</option>
               {LANGUAGES.map(lang => (
@@ -179,7 +179,7 @@ const CodingQuestionsPage: React.FC = () => {
             <button
               onClick={handleSearchSubmit}
               className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap"
-              style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)' }}
+              style={{ background: 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)', color: 'var(--tint-indigo-text)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)' }}
             >
               Filter
             </button>
@@ -191,14 +191,14 @@ const CodingQuestionsPage: React.FC = () => {
           <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
         ) : questions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
-              <Code2 size={32} style={{ color: 'rgba(99,102,241,0.4)' }} />
+            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 15%, transparent)' }}>
+              <Code2 size={32} style={{ color: 'color-mix(in srgb, var(--accent-indigo) 40%, transparent)' }} />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">{search ? 'No results found' : 'No coding challenges yet'}</h3>
-            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{search ? `No matches for "${search}"` : 'Get started by creating your first coding problem'}</p>
+            <h3 className="text-lg font-bold text-heading mb-2">{search ? 'No results found' : 'No coding challenges yet'}</h3>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{search ? `No matches for "${search}"` : 'Get started by creating your first coding problem'}</p>
             {!search && (
               <Link to="/teacher/coding-questions/create" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--accent-indigo), #a855f7)' }}>
                 <Plus size={15} /> Create Challenge
               </Link>
             )}
@@ -210,9 +210,9 @@ const CodingQuestionsPage: React.FC = () => {
               const diff = difficultyBadge(q.difficulty);
               return (
                 <div key={qId} className="group rounded-2xl p-5 transition-all duration-200"
-                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
-                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+                     style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-card-hover)'; }}
+                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'; }}
                 >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1">
@@ -220,22 +220,22 @@ const CodingQuestionsPage: React.FC = () => {
                         <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.border}` }}>
                           {q.difficulty || 'medium'}
                         </span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
                           🎯 {q.marks || 100} Marks
                         </span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 10%, transparent)', color: 'var(--tint-indigo-text)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 20%, transparent)' }}>
                           🧪 {q.visibleTestCaseCount || 0} Visible Testcases
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-1.5 transition-colors group-hover:text-indigo-400">
+                      <h3 className="text-base font-bold text-heading mb-1.5 transition-colors group-hover:text-indigo-400">
                         <Link to={`/teacher/coding-questions/${qId}`}>{q.title}</Link>
                       </h3>
-                      <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: 'rgba(240,240,245,0.6)' }}>{q.description}</p>
+                      <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{q.description}</p>
 
                       <div className="flex items-center gap-2 flex-wrap">
                         {(q.supportedLanguages || []).map((lang: string) => (
-                          <span key={lang} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
+                          <span key={lang} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
                             {lang}
                           </span>
                         ))}
@@ -246,9 +246,9 @@ const CodingQuestionsPage: React.FC = () => {
                       <Link
                         to={`/teacher/coding-questions/${qId}/preview`}
                         className="p-2 rounded-xl transition-all"
-                        style={{ color: 'rgba(240,240,245,0.5)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-secondary)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Preview Problem"
                       >
                         <Eye size={16} />
@@ -256,9 +256,9 @@ const CodingQuestionsPage: React.FC = () => {
                       <Link
                         to={`/teacher/coding-questions/${qId}/testcases`}
                         className="p-2 rounded-xl transition-all"
-                        style={{ color: 'rgba(240,240,245,0.5)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#818cf8'; (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.15)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-secondary)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-indigo-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Manage Testcases"
                       >
                         <Settings size={16} />
@@ -266,9 +266,9 @@ const CodingQuestionsPage: React.FC = () => {
                       <Link
                         to={`/teacher/coding-questions/edit/${qId}`}
                         className="p-2 rounded-xl transition-all"
-                        style={{ color: 'rgba(240,240,245,0.5)' }}
+                        style={{ color: 'var(--text-secondary)' }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c084fc'; (e.currentTarget as HTMLElement).style.background = 'rgba(168,85,247,0.15)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Edit Question"
                       >
                         <Pencil size={16} />
@@ -276,9 +276,9 @@ const CodingQuestionsPage: React.FC = () => {
                       <button
                         onClick={() => handleDuplicate(qId, q.title)}
                         className="p-2 rounded-xl transition-all"
-                        style={{ color: 'rgba(240,240,245,0.5)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-secondary)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Duplicate Question"
                       >
                         <Copy size={16} />
@@ -286,9 +286,9 @@ const CodingQuestionsPage: React.FC = () => {
                       <button
                         onClick={() => handleDelete(qId, q.title)}
                         className="p-2 rounded-xl transition-all"
-                        style={{ color: 'rgba(240,240,245,0.5)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.15)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-secondary)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 15%, transparent)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Delete Question"
                       >
                         <Trash2 size={16} />
@@ -301,8 +301,8 @@ const CodingQuestionsPage: React.FC = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 mt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-                <p className="text-xs" style={{ color: 'rgba(240,240,245,0.5)' }}>
+              <div className="flex items-center justify-between pt-4 mt-6 border-t" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   Showing page {page} of {totalPages} ({total} total challenges)
                 </p>
                 <div className="flex items-center gap-2">
@@ -310,7 +310,7 @@ const CodingQuestionsPage: React.FC = () => {
                     disabled={page === 1}
                     onClick={() => setPage(prev => Math.max(1, prev - 1))}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-30"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}
+                    style={{ background: 'var(--bg-card-hover)', color: 'white' }}
                   >
                     <ChevronLeft size={14} /> Prev
                   </button>
@@ -318,7 +318,7 @@ const CodingQuestionsPage: React.FC = () => {
                     disabled={page === totalPages}
                     onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-30"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}
+                    style={{ background: 'var(--bg-card-hover)', color: 'white' }}
                   >
                     Next <ChevronRight size={14} />
                   </button>

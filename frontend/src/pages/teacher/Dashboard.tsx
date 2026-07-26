@@ -89,7 +89,7 @@ const MetricCard: React.FC<{
           )}
         </div>
 
-        <div className="text-4xl font-black text-white tabular-nums tracking-tight mb-1.5">
+        <div className="text-4xl font-black text-heading tabular-nums tracking-tight mb-1.5">
           {count}
         </div>
         <div className="text-sm font-semibold" style={{ color: 'rgba(240,240,245,0.7)' }}>{label}</div>
@@ -195,20 +195,20 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center gap-3 mb-2">
                 <div
                   className="h-1.5 w-8 rounded-full"
-                  style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1)' }}
+                  style={{ background: 'linear-gradient(90deg, var(--accent-purple), var(--accent-indigo))' }}
                 />
-                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8b5cf6' }}>
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-purple)' }}>
                   Assessment Control Center
                 </span>
               </div>
-              <h1 className="text-3xl font-black text-white tracking-tight">
+              <h1 className="text-3xl font-black text-heading tracking-tight">
                 {greeting},{' '}
                 <span className="gradient-text">{firstName}</span>
               </h1>
               <p className="text-sm mt-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 {activeExams.length > 0 && (
-                  <span style={{ color: '#34d399' }}> · {activeExams.length} exam{activeExams.length > 1 ? 's' : ''} live now</span>
+                  <span style={{ color: 'var(--tint-emerald-text)' }}> · {activeExams.length} exam{activeExams.length > 1 ? 's' : ''} live now</span>
                 )}
               </p>
             </div>
@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
                 style={{
                   background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.08)',
-                  color: refreshing ? '#8b5cf6' : 'rgba(240,240,245,0.6)',
+                  color: refreshing ? 'var(--accent-purple)' : 'rgba(240,240,245,0.6)',
                 }}
               >
                 <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
@@ -231,8 +231,8 @@ const Dashboard: React.FC = () => {
                 to="/teacher/create-exam"
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200"
                 style={{
-                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-                  boxShadow: '0 4px 24px rgba(139,92,246,0.35)',
+                  background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
+                  boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-purple) 35%, transparent)',
                 }}
               >
                 <Zap size={15} />
@@ -253,8 +253,8 @@ const Dashboard: React.FC = () => {
                 label="Total Assessments"
                 value={exams.length}
                 sub={`${activeExams.length} currently active`}
-                accent="#8b5cf6"
-                glow="rgba(139,92,246,0.12)"
+                accent="var(--accent-purple)"
+                glow="color-mix(in srgb, var(--accent-purple) 12%, transparent)"
                 link="/teacher/exams"
               />
               <MetricCard
@@ -263,9 +263,9 @@ const Dashboard: React.FC = () => {
                 value={activeExams.length}
                 sub="Candidates can access now"
                 badge={activeExams.length > 0 ? 'Live' : 'Idle'}
-                badgeColor={activeExams.length > 0 ? '#34d399' : '#8b8ba0'}
-                accent="#10b981"
-                glow="rgba(16,185,129,0.12)"
+                badgeColor={activeExams.length > 0 ? 'var(--tint-emerald-text)' : 'var(--text-secondary)'}
+                accent="var(--accent-emerald)"
+                glow="color-mix(in srgb, var(--accent-emerald) 12%, transparent)"
                 link="/teacher/exams"
               />
               <MetricCard
@@ -273,8 +273,8 @@ const Dashboard: React.FC = () => {
                 label="MCQ Questions"
                 value={mcqQuestions.length}
                 sub="Multiple choice bank"
-                accent="#06b6d4"
-                glow="rgba(6,182,212,0.12)"
+                accent="var(--accent-cyan)"
+                glow="color-mix(in srgb, var(--accent-cyan) 12%, transparent)"
                 link="/teacher/mcq"
               />
               <MetricCard
@@ -282,8 +282,8 @@ const Dashboard: React.FC = () => {
                 label="Coding Challenges"
                 value={codingQuestions.length}
                 sub="Algorithm problems"
-                accent="#6366f1"
-                glow="rgba(99,102,241,0.12)"
+                accent="var(--accent-indigo)"
+                glow="color-mix(in srgb, var(--accent-indigo) 12%, transparent)"
                 link="/teacher/coding-questions"
               />
             </>
@@ -297,10 +297,10 @@ const Dashboard: React.FC = () => {
           ) : (
             <>
               {[
-                { label: 'Subjective Questions', value: subjectiveQuestions.length, sub: 'Descriptive Q&A bank', accent: '#a78bfa', icon: BookOpen, link: '/teacher/subjective-questions' },
-                { label: 'Pending Grading', value: analytics?.pendingEvaluationCount ?? 0, sub: 'Awaiting your review', accent: '#fbbf24', badge: (analytics?.pendingEvaluationCount ?? 0) > 0 ? 'Action Required' : undefined, badgeColor: '#fbbf24', icon: AlertCircle, link: '/teacher/subjective-questions' },
-                { label: 'Graded Answers', value: analytics?.evaluatedCount ?? 0, sub: 'Evaluations completed', accent: '#34d399', icon: CheckCircle2, link: '/teacher/subjective-questions' },
-                { label: 'Review Queue', value: analytics?.manualReviewQueueCount ?? 0, sub: 'In grading pipeline', accent: '#818cf8', icon: Layers, link: '/teacher/subjective-questions' },
+                { label: 'Subjective Questions', value: subjectiveQuestions.length, sub: 'Descriptive Q&A bank', accent: 'var(--tint-purple-text)', icon: BookOpen, link: '/teacher/subjective-questions' },
+                { label: 'Pending Grading', value: analytics?.pendingEvaluationCount ?? 0, sub: 'Awaiting your review', accent: 'var(--tint-amber-text)', badge: (analytics?.pendingEvaluationCount ?? 0) > 0 ? 'Action Required' : undefined, badgeColor: 'var(--tint-amber-text)', icon: AlertCircle, link: '/teacher/subjective-questions' },
+                { label: 'Graded Answers', value: analytics?.evaluatedCount ?? 0, sub: 'Evaluations completed', accent: 'var(--tint-emerald-text)', icon: CheckCircle2, link: '/teacher/subjective-questions' },
+                { label: 'Review Queue', value: analytics?.manualReviewQueueCount ?? 0, sub: 'In grading pipeline', accent: 'var(--tint-indigo-text)', icon: Layers, link: '/teacher/subjective-questions' },
               ].map((m, i) => (
                 <MetricCard key={i} icon={m.icon} label={m.label} value={m.value} sub={m.sub}
                   badge={m.badge} badgeColor={m.badgeColor} accent={m.accent}
@@ -326,13 +326,13 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div
                   className="h-2 w-2 rounded-full pulse-dot"
-                  style={{ background: '#34d399', boxShadow: '0 0 8px #34d399' }}
+                  style={{ background: 'var(--tint-emerald-text)', boxShadow: '0 0 8px var(--tint-emerald-text)' }}
                 />
-                <h2 className="text-sm font-bold text-white">Live Exam Monitor</h2>
+                <h2 className="text-sm font-bold text-heading">Live Exam Monitor</h2>
                 {!loading && (
                   <span
                     className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399' }}
+                    style={{ background: 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)', color: 'var(--tint-emerald-text)' }}
                   >
                     {activeExams.length} active
                   </span>
@@ -341,7 +341,7 @@ const Dashboard: React.FC = () => {
               <Link
                 to="/teacher/exams"
                 className="flex items-center gap-1 text-xs font-semibold transition-colors"
-                style={{ color: '#8b5cf6' }}
+                style={{ color: 'var(--accent-purple)' }}
               >
                 All assessments <ArrowUpRight size={12} />
               </Link>
@@ -356,18 +356,18 @@ const Dashboard: React.FC = () => {
                 <div className="flex flex-col items-center justify-center py-14">
                   <div
                     className="h-16 w-16 rounded-2xl flex items-center justify-center mb-4"
-                    style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}
+                    style={{ background: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
                   >
-                    <CheckCircle2 size={28} style={{ color: '#8b5cf6' }} />
+                    <CheckCircle2 size={28} style={{ color: 'var(--accent-purple)' }} />
                   </div>
-                  <h3 className="text-sm font-bold text-white mb-1">No live exams right now</h3>
+                  <h3 className="text-sm font-bold text-heading mb-1">No live exams right now</h3>
                   <p className="text-xs text-center max-w-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
                     Activate an existing assessment or create a new one to begin.
                   </p>
                   <Link
                     to="/teacher/create-exam"
                     className="mt-5 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white"
-                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                    style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
                   >
                     <Plus size={13} /> Create Assessment
                   </Link>
@@ -382,8 +382,8 @@ const Dashboard: React.FC = () => {
                         className="group flex items-center justify-between p-4 rounded-xl transition-all duration-200 cursor-pointer"
                         style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
                         onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.06)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.2)';
+                          (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 6%, transparent)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'color-mix(in srgb, var(--accent-purple) 20%, transparent)';
                         }}
                         onMouseLeave={e => {
                           (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)';
@@ -394,12 +394,12 @@ const Dashboard: React.FC = () => {
                         <div className="flex items-center gap-3.5">
                           <div
                             className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                            style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}
+                            style={{ background: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
                           >
-                            <FileText size={16} style={{ color: '#8b5cf6' }} />
+                            <FileText size={16} style={{ color: 'var(--accent-purple)' }} />
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-white">{exam.title}</div>
+                            <div className="text-sm font-bold text-heading">{exam.title}</div>
                             <div className="flex items-center gap-3 mt-1">
                               <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
                                 <Clock size={11} className="inline mr-1" />{exam.duration}m
@@ -417,7 +417,7 @@ const Dashboard: React.FC = () => {
                           to={`/teacher/exams/${id}/results`}
                           onClick={e => e.stopPropagation()}
                           className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-all"
-                          style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                          style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
                         >
                           <BarChart3 size={12} /> Analytics
                         </Link>
@@ -435,22 +435,22 @@ const Dashboard: React.FC = () => {
             <div
               className="rounded-2xl p-6 relative overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(99,102,241,0.1) 100%)',
-                border: '1px solid rgba(139,92,246,0.25)',
+                background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 15%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 100%)',
+                border: '1px solid color-mix(in srgb, var(--accent-purple) 25%, transparent)',
               }}
             >
               <div
                 className="absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl"
-                style={{ background: 'rgba(139,92,246,0.2)' }}
+                style={{ background: 'color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
               />
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">
-                  <Shield size={15} style={{ color: '#a78bfa' }} />
-                  <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#a78bfa' }}>
+                  <Shield size={15} style={{ color: 'var(--tint-purple-text)' }} />
+                  <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--tint-purple-text)' }}>
                     SEB Security
                   </span>
                 </div>
-                <h3 className="text-base font-bold text-white mb-2 leading-snug">
+                <h3 className="text-base font-bold text-heading mb-2 leading-snug">
                   Safe Exam Browser Active
                 </h3>
                 <p className="text-xs leading-relaxed mb-5" style={{ color: 'rgba(240,240,245,0.55)' }}>
@@ -459,7 +459,7 @@ const Dashboard: React.FC = () => {
                 <Link
                   to="/teacher/exams"
                   className="inline-flex items-center gap-1.5 text-xs font-bold transition-all"
-                  style={{ color: '#a78bfa' }}
+                  style={{ color: 'var(--tint-purple-text)' }}
                 >
                   Configure policies <ArrowUpRight size={12} />
                 </Link>
@@ -475,14 +475,14 @@ const Dashboard: React.FC = () => {
                 className="px-5 py-4"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
               >
-                <h3 className="text-sm font-bold text-white">Quick Access</h3>
+                <h3 className="text-sm font-bold text-heading">Quick Access</h3>
               </div>
               <div className="p-3 space-y-1">
                 {[
-                  { to: '/teacher/mcq', label: 'MCQ Library', count: mcqQuestions.length, icon: ListChecks, color: '#06b6d4' },
-                  { to: '/teacher/coding-questions', label: 'Coding Challenges', count: codingQuestions.length, icon: Code2, color: '#6366f1' },
-                  { to: '/teacher/subjective-questions', label: 'Subjective Questions', count: subjectiveQuestions.length, icon: BookOpen, color: '#a78bfa' },
-                  { to: '/teacher/exams', label: 'All Assessments', count: exams.length, icon: Eye, color: '#10b981' },
+                  { to: '/teacher/mcq', label: 'MCQ Library', count: mcqQuestions.length, icon: ListChecks, color: 'var(--accent-cyan)' },
+                  { to: '/teacher/coding-questions', label: 'Coding Challenges', count: codingQuestions.length, icon: Code2, color: 'var(--accent-indigo)' },
+                  { to: '/teacher/subjective-questions', label: 'Subjective Questions', count: subjectiveQuestions.length, icon: BookOpen, color: 'var(--tint-purple-text)' },
+                  { to: '/teacher/exams', label: 'All Assessments', count: exams.length, icon: Eye, color: 'var(--accent-emerald)' },
                 ].map(({ to, label, count, icon: Icon, color }) => (
                   <Link
                     key={to}
@@ -518,12 +518,12 @@ const Dashboard: React.FC = () => {
               className="rounded-2xl p-5"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
             >
-              <h3 className="text-sm font-bold text-white mb-3">Start Building</h3>
+              <h3 className="text-sm font-bold text-heading mb-3">Start Building</h3>
               <div className="space-y-2">
                 <Link
                   to="/teacher/create-exam"
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl text-xs font-bold text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.25)' }}
+                  style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 20px color-mix(in srgb, var(--accent-purple) 25%, transparent)' }}
                 >
                   <Zap size={13} /> Create New Assessment
                 </Link>

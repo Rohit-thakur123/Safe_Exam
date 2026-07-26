@@ -1,7 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
     
-:root {
+:root,
+[data-theme="dark"] {
   --bg-primary: #0a0a0f;
   --bg-secondary: #0f0f17;
   --bg-card: rgba(255,255,255,0.04);
@@ -15,8 +16,110 @@
   --accent-indigo: #6366f1;
   --accent-cyan: #06b6d4;
   --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
   --glow-purple: rgba(139,92,246,0.15);
   --glow-indigo: rgba(99,102,241,0.15);
+
+  /* Semantic aliases */
+  --background: var(--bg-primary);
+  --surface: var(--bg-secondary);
+  --surface-elevated: rgba(255,255,255,0.06);
+  --card: var(--bg-card);
+  --card-hover: var(--bg-card-hover);
+  --divider: var(--border);
+  --text-on-accent: #ffffff;
+  --primary: var(--accent-purple);
+  --secondary: var(--accent-indigo);
+  --success: var(--accent-emerald);
+  --warning: var(--accent-amber);
+  --danger: var(--accent-rose);
+
+  /* Badge/text-on-tint variants (need to stay readable on a translucent accent chip) */
+  --tint-purple-text: #a78bfa;
+  --tint-indigo-text: #818cf8;
+  --tint-cyan-text: #22d3ee;
+  --tint-emerald-text: #34d399;
+  --tint-amber-text: #fbbf24;
+  --tint-rose-text: #fb7185;
+
+  /* Elevation shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,0.45);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.3);
+
+  /* Mesh background orb intensities */
+  --mesh-opacity-1: 0.20;
+  --mesh-opacity-2: 0.15;
+  --mesh-opacity-3: 0.10;
+  --mesh-grid-opacity: 0.03;
+  --noise-opacity: 0.03;
+
+  --nav-bg: rgba(10,10,15,0.7);
+  --nav-bg-scrolled: rgba(10,10,15,0.95);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  /* Warm, layered neutrals — never pure white */
+  --bg-primary: #f8f7fb;
+  --bg-secondary: #f1f0f7;
+  --bg-card: rgba(255,255,255,0.72);
+  --bg-card-hover: rgba(255,255,255,0.92);
+  --border: rgba(23,20,45,0.08);
+  --border-hover: rgba(23,20,45,0.16);
+  --text-primary: #17142d;
+  --text-secondary: #5c5773;
+  --text-muted: #9490a8;
+
+  /* Accents deepened slightly for AA contrast on light surfaces */
+  --accent-purple: #7c3aed;
+  --accent-indigo: #4f46e5;
+  --accent-cyan: #0891b2;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-rose: #e11d48;
+  --glow-purple: rgba(124,58,237,0.12);
+  --glow-indigo: rgba(79,70,229,0.12);
+
+  --background: var(--bg-primary);
+  --surface: var(--bg-secondary);
+  --surface-elevated: rgba(255,255,255,0.9);
+  --card: var(--bg-card);
+  --card-hover: var(--bg-card-hover);
+  --divider: var(--border);
+  --text-on-accent: #ffffff;
+  --primary: var(--accent-purple);
+  --secondary: var(--accent-indigo);
+  --success: var(--accent-emerald);
+  --warning: var(--accent-amber);
+  --danger: var(--accent-rose);
+
+  /* On light surfaces, tint text needs to be the deep accent itself for contrast */
+  --tint-purple-text: #6d28d9;
+  --tint-indigo-text: #4338ca;
+  --tint-cyan-text: #0e7490;
+  --tint-emerald-text: #047857;
+  --tint-amber-text: #b45309;
+  --tint-rose-text: #be123c;
+
+  --shadow-sm: 0 1px 2px rgba(23,20,45,0.04), 0 1px 1px rgba(23,20,45,0.03);
+  --shadow-md: 0 6px 16px rgba(23,20,45,0.06), 0 2px 6px rgba(23,20,45,0.05);
+  --shadow-lg: 0 20px 48px rgba(23,20,45,0.10), 0 6px 16px rgba(23,20,45,0.06);
+  --shadow-card: 0 1px 2px rgba(23,20,45,0.04), 0 12px 28px -8px rgba(23,20,45,0.10);
+
+  --mesh-opacity-1: 0.10;
+  --mesh-opacity-2: 0.08;
+  --mesh-opacity-3: 0.06;
+  --mesh-grid-opacity: 0.02;
+  --noise-opacity: 0.02;
+
+  --nav-bg: rgba(248,247,251,0.75);
+  --nav-bg-scrolled: rgba(248,247,251,0.92);
+
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -44,16 +147,46 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .glass-hover:hover {
   background: var(--bg-card-hover);
   border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
 }
 
 /* Glow effects */
 .glow-purple { box-shadow: 0 0 40px var(--glow-purple); }
 .glow-indigo { box-shadow: 0 0 40px var(--glow-indigo); }
+
+.glass-glow-hover:hover {
+  box-shadow: 0 0 30px color-mix(in srgb, var(--glow-shadow-color, var(--accent-purple)) 18%, transparent);
+}
+
+.premium-btn-ghost { color: var(--text-secondary); }
+.premium-btn-ghost:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+
+.premium-btn-danger {
+  background: color-mix(in srgb, var(--accent-rose) 10%, transparent);
+  color: var(--tint-rose-text);
+  border: 1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent);
+}
+.premium-btn-danger:hover { background: color-mix(in srgb, var(--accent-rose) 20%, transparent); }
+
+/* Text that sits directly on a card/page surface (as opposed to a solid accent
+   button) must track the theme's primary text color rather than staying white. */
+.text-heading { color: var(--text-primary); }
+
+/* Navbar interactive states */
+.nav-link[data-active="false"]:hover {
+  color: var(--text-primary) !important;
+  background: var(--bg-card-hover) !important;
+}
+.icon-btn:hover { background: var(--bg-card-hover); color: var(--text-primary) !important; }
+.dropdown-link:hover { color: var(--text-primary) !important; background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
+.logout-btn:hover { color: var(--tint-rose-text) !important; background: color-mix(in srgb, var(--accent-rose) 8%, transparent); }
 
 /* Gradient text */
 .gradient-text {
@@ -74,6 +207,7 @@ body {
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: var(--noise-opacity);
   pointer-events: none;
   z-index: 0;
   border-radius: inherit;
@@ -82,10 +216,11 @@ body {
 /* Mesh gradient background */
 .mesh-bg {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139,92,246,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(99,102,241,0.10) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(6,182,212,0.05) 0%, transparent 60%),
-    #0a0a0f;
+    radial-gradient(ellipse 80% 50% at 20% 0%, color-mix(in srgb, var(--accent-purple) 12%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, color-mix(in srgb, var(--accent-cyan) 5%, transparent) 0%, transparent 60%),
+    var(--bg-primary);
+  transition: background-color 0.25s ease;
 }
 
 /* Stat counter animation */

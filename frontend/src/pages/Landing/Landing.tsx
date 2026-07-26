@@ -5,7 +5,7 @@ import './Landing.css';
 export default function Landing() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
-  const [aiMessage, setAiMessage] = useState<string>("Exam session initialized. Monitoring 847 active candidates across 12 campuses. Zero anomalies detected in the last 4 minutes.");
+  const [_aiMessage, setAiMessage] = useState<string>("Exam session initialized. Monitoring 847 active candidates across 12 campuses. Zero anomalies detected in the last 4 minutes.");
 
   useEffect(() => {
     const els = document.querySelectorAll('.reveal');

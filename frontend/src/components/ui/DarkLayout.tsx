@@ -6,43 +6,47 @@ export const MeshBackground: React.FC = () => {
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       {/* Orb 1 - purple */}
       <div
-        className="absolute rounded-full blur-3xl opacity-20 animate-pulse"
+        className="absolute rounded-full blur-3xl animate-pulse"
         style={{
           width: '600px', height: '600px',
-          background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--accent-purple) 0%, transparent 70%)',
           top: '-200px', left: '-100px',
+          opacity: 'var(--mesh-opacity-1)',
           animationDuration: '8s',
         }}
       />
       {/* Orb 2 - indigo */}
       <div
-        className="absolute rounded-full blur-3xl opacity-15"
+        className="absolute rounded-full blur-3xl"
         style={{
           width: '500px', height: '500px',
-          background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--accent-indigo) 0%, transparent 70%)',
           bottom: '-100px', right: '-100px',
+          opacity: 'var(--mesh-opacity-2)',
           animation: 'pulse 10s ease-in-out infinite alternate',
         }}
       />
       {/* Orb 3 - cyan */}
       <div
-        className="absolute rounded-full blur-3xl opacity-10"
+        className="absolute rounded-full blur-3xl"
         style={{
           width: '400px', height: '400px',
-          background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)',
+          background: 'radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%)',
           top: '40%', right: '20%',
+          opacity: 'var(--mesh-opacity-3)',
           animation: 'pulse 12s ease-in-out infinite alternate-reverse',
         }}
       />
       {/* Grid overlay */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(139,92,246,0.5) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(139,92,246,0.5) 1px, transparent 1px)
+            linear-gradient(color-mix(in srgb, var(--accent-purple) 50%, transparent) 1px, transparent 1px),
+            linear-gradient(90deg, color-mix(in srgb, var(--accent-purple) 50%, transparent) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
+          opacity: 'var(--mesh-grid-opacity)',
         }}
       />
     </div>
@@ -55,8 +59,7 @@ interface TeacherLayoutProps {
 
 export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen mesh-bg relative">
-      <MeshBackground />
+    <div className="min-h-screen relative bg-[var(--bg-primary)]">
       <div className="relative z-10">
         {children}
       </div>
@@ -73,20 +76,25 @@ interface GlassCardProps {
   onClick?: () => void;
 }
 
+const glowVarMap: Record<string, string> = {
+  purple: 'var(--accent-purple)',
+  indigo: 'var(--accent-indigo)',
+  emerald: 'var(--accent-emerald)',
+  cyan: 'var(--accent-cyan)',
+};
+
 export const GlassCard: React.FC<GlassCardProps> = ({
   children, className = '', hover = false, glow = 'none', onClick
 }) => {
-  const glowMap = {
-    purple: 'hover:shadow-[0_0_30px_rgba(139,92,246,0.15)]',
-    indigo: 'hover:shadow-[0_0_30px_rgba(99,102,241,0.15)]',
-    emerald: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]',
-    cyan: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.15)]',
-    none: '',
-  };
+  const glowStyle: React.CSSProperties =
+    glow !== 'none'
+      ? ({ ['--glow-shadow-color' as string]: glowVarMap[glow] })
+      : {};
 
   return (
     <div
-      className={`glass rounded-2xl transition-all duration-300 ${hover ? 'glass-hover cursor-pointer' : ''} ${glowMap[glow]} ${className}`}
+      className={`glass rounded-2xl transition-all duration-300 ${hover ? 'glass-hover cursor-pointer' : ''} ${glow !== 'none' ? 'glass-glow-hover' : ''} ${className}`}
+      style={glowStyle}
       onClick={onClick}
     >
       {children}
@@ -113,7 +121,7 @@ export const StatCardDark: React.FC<StatCardDarkProps> = ({
 }) => (
   <div
     className="glass glass-hover rounded-2xl p-6 cursor-pointer transition-all duration-300 group relative overflow-hidden"
-    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+    style={{ borderColor: 'var(--border)' }}
     onClick={onClick}
   >
     {/* Glow on hover */}
@@ -141,10 +149,10 @@ export const StatCardDark: React.FC<StatCardDarkProps> = ({
       </div>
 
       <div className="count-up">
-        <p className="text-3xl font-black tabular-nums tracking-tight text-white">{value}</p>
+        <p className="text-3xl font-black tabular-nums tracking-tight" style={{ color: 'var(--text-primary)' }}>{value}</p>
       </div>
-      <p className="text-sm font-semibold mt-1" style={{ color: 'rgba(240,240,245,0.7)' }}>{label}</p>
-      {subtext && <p className="text-xs mt-1" style={{ color: 'rgba(240,240,245,0.35)' }}>{subtext}</p>}
+      <p className="text-sm font-semibold mt-1" style={{ color: 'var(--text-secondary)' }}>{label}</p>
+      {subtext && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{subtext}</p>}
     </div>
   </div>
 );
@@ -164,21 +172,21 @@ interface SectionHeaderProps {
 }
 
 export const SectionHeader: React.FC<SectionHeaderProps> = ({
-  title, subtitle, action, icon: Icon, accentColor = '#8b5cf6'
+  title, subtitle, action, icon: Icon, accentColor = 'var(--accent-purple)'
 }) => (
   <div className="flex items-center justify-between mb-6">
     <div className="flex items-center gap-3">
       {Icon && (
         <div
           className="h-8 w-8 rounded-lg flex items-center justify-center"
-          style={{ background: `${accentColor}22`, border: `1px solid ${accentColor}33` }}
+          style={{ background: `color-mix(in srgb, ${accentColor} 13%, transparent)`, border: `1px solid color-mix(in srgb, ${accentColor} 20%, transparent)` }}
         >
           <Icon size={15} style={{ color: accentColor }} />
         </div>
       )}
       <div>
-        <h2 className="text-base font-bold text-white">{title}</h2>
-        {subtitle && <p className="text-xs mt-0.5" style={{ color: 'rgba(240,240,245,0.4)' }}>{subtitle}</p>}
+        <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h2>
+        {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>}
       </div>
     </div>
     {action && <div>{action}</div>}
@@ -209,16 +217,22 @@ export const PremiumButton: React.FC<PremiumButtonProps> = ({
 
   const variantMap = {
     primary: 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 shadow-lg shadow-violet-500/20',
-    secondary: 'glass glass-hover text-white border-white/10',
-    ghost: 'text-white/60 hover:text-white hover:bg-white/05',
-    danger: 'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20',
+    secondary: 'glass glass-hover',
+    ghost: 'premium-btn-ghost',
+    danger: 'premium-btn-danger',
   };
+
+  const variantStyle: React.CSSProperties =
+    variant === 'secondary'
+      ? { color: 'var(--text-primary)' }
+      : {};
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      style={variantStyle}
       className={`inline-flex items-center font-semibold rounded-xl transition-all duration-200 ${sizeMap[size]} ${variantMap[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     >
       {Icon && <Icon size={size === 'sm' ? 13 : 15} />}
@@ -233,19 +247,23 @@ interface BadgeProps {
   color?: 'purple' | 'emerald' | 'amber' | 'rose' | 'cyan' | 'indigo';
 }
 export const Badge: React.FC<BadgeProps> = ({ children, color = 'purple' }) => {
-  const colorMap = {
-    purple: { bg: 'rgba(139,92,246,0.12)', text: '#a78bfa', border: 'rgba(139,92,246,0.25)' },
-    emerald: { bg: 'rgba(16,185,129,0.12)', text: '#34d399', border: 'rgba(16,185,129,0.25)' },
-    amber: { bg: 'rgba(245,158,11,0.12)', text: '#fbbf24', border: 'rgba(245,158,11,0.25)' },
-    rose: { bg: 'rgba(244,63,94,0.12)', text: '#fb7185', border: 'rgba(244,63,94,0.25)' },
-    cyan: { bg: 'rgba(6,182,212,0.12)', text: '#22d3ee', border: 'rgba(6,182,212,0.25)' },
-    indigo: { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', border: 'rgba(99,102,241,0.25)' },
+  const colorMap: Record<string, { bgVar: string; textVar: string; borderVar: string }> = {
+    purple: { bgVar: 'var(--accent-purple)', textVar: 'var(--tint-purple-text)', borderVar: 'var(--accent-purple)' },
+    emerald: { bgVar: 'var(--accent-emerald)', textVar: 'var(--tint-emerald-text)', borderVar: 'var(--accent-emerald)' },
+    amber: { bgVar: 'var(--accent-amber)', textVar: 'var(--tint-amber-text)', borderVar: 'var(--accent-amber)' },
+    rose: { bgVar: 'var(--accent-rose)', textVar: 'var(--tint-rose-text)', borderVar: 'var(--accent-rose)' },
+    cyan: { bgVar: 'var(--accent-cyan)', textVar: 'var(--tint-cyan-text)', borderVar: 'var(--accent-cyan)' },
+    indigo: { bgVar: 'var(--accent-indigo)', textVar: 'var(--tint-indigo-text)', borderVar: 'var(--accent-indigo)' },
   };
   const c = colorMap[color];
   return (
     <span
       className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
-      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+      style={{
+        background: `color-mix(in srgb, ${c.bgVar} 12%, transparent)`,
+        color: c.textVar,
+        border: `1px solid color-mix(in srgb, ${c.borderVar} 25%, transparent)`,
+      }}
     >
       {children}
     </span>

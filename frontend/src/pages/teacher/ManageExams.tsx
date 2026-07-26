@@ -6,8 +6,8 @@ import { TeacherLayout } from '../../components/ui/DarkLayout';
 import { examAPI } from '../../services/api';
 import {
   FileText, Edit, Trash2, Plus, Users, BarChart3, Search, CheckCircle2,
-  Share2, Copy, ToggleLeft, ToggleRight, Zap, Clock, Target, X, ArrowUpRight,
-  Filter, BookOpen
+  Share2, Copy, Zap, Clock, Target, X,
+  BookOpen
 } from 'lucide-react';
 import type { Exam } from '../../types';
 import Toast from '../../components/ui/Toast';
@@ -65,17 +65,17 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
       <div
         className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '85vh', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}
+        style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid var(--border-hover)', maxHeight: '85vh', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}
       >
         {/* Header */}
-        <div className="px-6 py-5 flex items-start justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-6 py-5 flex items-start justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
           <div>
-            <h3 className="text-base font-bold text-white">Assign Candidates</h3>
-            <p className="text-xs mt-0.5" style={{ color: 'rgba(240,240,245,0.4)' }}>{exam.title}</p>
+            <h3 className="text-base font-bold text-heading">Assign Candidates</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{exam.title}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors" style={{ color: 'rgba(240,240,245,0.4)' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.4)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
             <X size={16} />
           </button>
         </div>
@@ -87,22 +87,22 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
               {[1,2,3,4].map(i => <div key={i} className="h-14 rounded-xl skeleton" />)}
             </div>
           ) : error ? (
-            <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>{error}</div>
+            <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>{error}</div>
           ) : students.length === 0 ? (
             <div className="text-center py-12">
-              <Users size={32} className="mx-auto mb-3" style={{ color: 'rgba(240,240,245,0.2)' }} />
-              <p className="text-sm" style={{ color: 'rgba(240,240,245,0.4)' }}>No student accounts registered yet</p>
+              <Users size={32} className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No student accounts registered yet</p>
             </div>
           ) : (
             <>
               {success && (
-                <div className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
+                <div className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm" style={{ background: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-emerald) 20%, transparent)', color: 'var(--tint-emerald-text)' }}>
                   <CheckCircle2 size={15} /> {success}
                 </div>
               )}
               {/* Search */}
               <div className="relative mb-4">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
@@ -112,12 +112,12 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
               </div>
               {/* Select all */}
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs" style={{ color: 'rgba(240,240,245,0.5)' }}>
-                  <span className="font-bold text-white">{selectedStudents.length}</span> / {students.length} selected
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="font-bold text-heading">{selectedStudents.length}</span> / {students.length} selected
                 </span>
                 <div className="flex gap-3">
-                  <button onClick={() => setSelectedStudents(students.map(s => s.id))} className="text-xs font-semibold" style={{ color: '#8b5cf6' }}>All</button>
-                  <button onClick={() => setSelectedStudents([])} className="text-xs font-semibold" style={{ color: 'rgba(240,240,245,0.4)' }}>Clear</button>
+                  <button onClick={() => setSelectedStudents(students.map(s => s.id))} className="text-xs font-semibold" style={{ color: 'var(--accent-purple)' }}>All</button>
+                  <button onClick={() => setSelectedStudents([])} className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Clear</button>
                 </div>
               </div>
               {/* List */}
@@ -130,29 +130,29 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
                       onClick={() => setSelectedStudents(prev => prev.includes(student.id) ? prev.filter(id => id !== student.id) : [...prev, student.id])}
                       className="flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200"
                       style={{
-                        background: isSelected ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${isSelected ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                        background: isSelected ? 'color-mix(in srgb, var(--accent-purple) 10%, transparent)' : 'var(--bg-card)',
+                        border: `1px solid ${isSelected ? 'color-mix(in srgb, var(--accent-purple) 30%, transparent)' : 'var(--border)'}`,
                       }}
                     >
                       <div>
-                        <div className="text-sm font-semibold text-white">{student.name}</div>
-                        <div className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>{student.email}</div>
+                        <div className="text-sm font-semibold text-heading">{student.name}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{student.email}</div>
                       </div>
-                      {isSelected && <CheckCircle2 size={16} style={{ color: '#8b5cf6', flexShrink: 0 }} />}
+                      {isSelected && <CheckCircle2 size={16} style={{ color: 'var(--accent-purple)', flexShrink: 0 }} />}
                     </div>
                   );
                 })}
               </div>
               {/* Email toggle */}
-              <div className="mt-4 pt-4 flex items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="mt-4 pt-4 flex items-center gap-3" style={{ borderTop: '1px solid var(--border)' }}>
                 <div
                   className="relative h-5 w-9 rounded-full cursor-pointer transition-all flex-shrink-0"
-                  style={{ background: sendEmailNotification ? '#8b5cf6' : 'rgba(255,255,255,0.1)' }}
+                  style={{ background: sendEmailNotification ? 'var(--accent-purple)' : 'var(--border-hover)' }}
                   onClick={() => setSendEmailNotification(!sendEmailNotification)}
                 >
                   <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ left: sendEmailNotification ? '17px' : '2px' }} />
                 </div>
-                <label className="text-xs cursor-pointer" style={{ color: 'rgba(240,240,245,0.55)' }} onClick={() => setSendEmailNotification(!sendEmailNotification)}>
+                <label className="text-xs cursor-pointer" style={{ color: 'var(--text-secondary)' }} onClick={() => setSendEmailNotification(!sendEmailNotification)}>
                   Send email invitations with SEB access links
                 </label>
               </div>
@@ -161,15 +161,15 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
           <button onClick={onClose} disabled={saving}
             className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'var(--border)', color: 'var(--text-secondary)', border: '1px solid var(--border-hover)' }}>
             Cancel
           </button>
           <button onClick={handleSave} disabled={saving || loading}
             className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all flex items-center gap-2"
-            style={{ background: saving ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}>
+            style={{ background: saving ? 'color-mix(in srgb, var(--accent-purple) 50%, transparent)' : 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 20px color-mix(in srgb, var(--accent-purple) 30%, transparent)' }}>
             {saving ? <><div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Saving...</> : 'Save Assignments'}
           </button>
         </div>
@@ -272,18 +272,18 @@ const ManageExams: React.FC = () => {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1)' }} />
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8b5cf6' }}>Assessment Management</span>
+              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-purple), var(--accent-indigo))' }} />
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-purple)' }}>Assessment Management</span>
             </div>
-            <h1 className="text-2xl font-black text-white">Assessments</h1>
-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
+            <h1 className="text-2xl font-black text-heading">Assessments</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
               {exams.length} total · {activeCount} active · {inactiveCount} inactive
             </p>
           </div>
           <Link
             to="/teacher/create-exam"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
-            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 24px rgba(139,92,246,0.35)' }}
+            style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
           >
             <Plus size={15} /> New Assessment
           </Link>
@@ -293,7 +293,7 @@ const ManageExams: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           {/* Search */}
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
             <input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -302,15 +302,15 @@ const ManageExams: React.FC = () => {
             />
           </div>
           {/* Tabs */}
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             {([['all', 'All', exams.length], ['active', 'Active', activeCount], ['inactive', 'Inactive', inactiveCount]] as const).map(([tab, label, count]) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200"
                 style={{
-                  background: activeTab === tab ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'transparent',
-                  color: activeTab === tab ? '#fff' : 'rgba(240,240,245,0.45)',
+                  background: activeTab === tab ? 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' : 'transparent',
+                  color: activeTab === tab ? '#fff' : 'var(--text-secondary)',
                 }}
               >
                 {label} <span className="ml-1 opacity-70">{count}</span>
@@ -326,18 +326,18 @@ const ManageExams: React.FC = () => {
           </div>
         ) : filteredExams.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)' }}>
-              <FileText size={32} style={{ color: 'rgba(139,92,246,0.5)' }} />
+            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'color-mix(in srgb, var(--accent-purple) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 15%, transparent)' }}>
+              <FileText size={32} style={{ color: 'color-mix(in srgb, var(--accent-purple) 50%, transparent)' }} />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">
+            <h3 className="text-lg font-bold text-heading mb-2">
               {searchQuery ? 'No results found' : 'No assessments yet'}
             </h3>
-            <p className="text-sm text-center max-w-xs mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>
+            <p className="text-sm text-center max-w-xs mb-6" style={{ color: 'var(--text-muted)' }}>
               {searchQuery ? `No assessments match "${searchQuery}"` : 'Create your first assessment to start evaluating candidates.'}
             </p>
             {!searchQuery && (
               <Link to="/teacher/create-exam" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}>
                 <Zap size={15} /> Create First Assessment
               </Link>
             )}
@@ -353,18 +353,18 @@ const ManageExams: React.FC = () => {
                 <div
                   key={examId}
                   className="rounded-2xl overflow-hidden transition-all duration-300 group"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.25)'; (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.04)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'color-mix(in srgb, var(--accent-purple) 25%, transparent)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 4%, transparent)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'; }}
                 >
                   {/* Card top */}
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-3">
                       <div
                         className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}
+                        style={{ background: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
                       >
-                        <FileText size={17} style={{ color: '#8b5cf6' }} />
+                        <FileText size={17} style={{ color: 'var(--accent-purple)' }} />
                       </div>
                       {/* Status badge */}
                       <button
@@ -372,27 +372,27 @@ const ManageExams: React.FC = () => {
                         disabled={isToggling}
                         className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full transition-all"
                         style={{
-                          background: exam.isActive ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)',
-                          color: exam.isActive ? '#34d399' : 'rgba(240,240,245,0.4)',
-                          border: `1px solid ${exam.isActive ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                          background: exam.isActive ? 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)' : 'var(--border)',
+                          color: exam.isActive ? 'var(--tint-emerald-text)' : 'var(--text-muted)',
+                          border: `1px solid ${exam.isActive ? 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)' : 'var(--border-hover)'}`,
                         }}
                       >
                         {isToggling ? (
                           <div className="h-3 w-3 rounded-full border border-current border-t-transparent animate-spin" />
                         ) : (
-                          <div className="h-1.5 w-1.5 rounded-full" style={{ background: exam.isActive ? '#34d399' : 'rgba(240,240,245,0.3)', boxShadow: exam.isActive ? '0 0 6px #34d399' : 'none' }} />
+                          <div className="h-1.5 w-1.5 rounded-full" style={{ background: exam.isActive ? 'var(--tint-emerald-text)' : 'var(--text-muted)', boxShadow: exam.isActive ? '0 0 6px var(--tint-emerald-text)' : 'none' }} />
                         )}
                         {exam.isActive ? 'Active' : 'Inactive'}
                       </button>
                     </div>
 
-                    <h3 className="text-sm font-bold text-white mb-1 line-clamp-1">{exam.title}</h3>
+                    <h3 className="text-sm font-bold text-heading mb-1 line-clamp-1">{exam.title}</h3>
                     {exam.description && (
-                      <p className="text-xs mb-3 line-clamp-2" style={{ color: 'rgba(240,240,245,0.4)' }}>{exam.description}</p>
+                      <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{exam.description}</p>
                     )}
 
                     {/* Stats row */}
-                    <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(240,240,245,0.35)' }}>
+                    <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
                       <span className="flex items-center gap-1"><Clock size={11} />{exam.duration}m</span>
                       <span className="flex items-center gap-1"><Target size={11} />{exam.totalMarks} marks</span>
                       <span className="flex items-center gap-1"><BookOpen size={11} />{(exam as any).questionsCount || exam.questions?.length || 0}q</span>
@@ -400,28 +400,28 @@ const ManageExams: React.FC = () => {
                   </div>
 
                   {/* Divider */}
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }} />
+                  <div style={{ borderTop: '1px solid var(--bg-card)' }} />
 
                   {/* Actions */}
                   <div className="px-4 py-3 flex items-center gap-1.5 flex-wrap">
                     <Link
                       to={`/teacher/exams/${examId}/results`}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all"
-                      style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
+                      style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
                     >
                       <BarChart3 size={12} /> Results
                     </Link>
                     <button
                       onClick={() => setSelectedExam(exam)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{ background: 'rgba(6,182,212,0.1)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.2)' }}
+                      style={{ background: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)', color: 'var(--tint-cyan-text)', border: '1px solid color-mix(in srgb, var(--accent-cyan) 20%, transparent)' }}
                     >
                       <Users size={12} /> Assign
                     </button>
                     <button
                       onClick={() => copyStudentAccessLink(examId)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}
+                      style={{ background: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: '1px solid color-mix(in srgb, var(--accent-emerald) 20%, transparent)' }}
                       title="Copy student access link"
                     >
                       <Share2 size={12} /> Link
@@ -430,18 +430,18 @@ const ManageExams: React.FC = () => {
                       <Link
                         to={`/teacher/edit-exam/${examId}`}
                         className="p-1.5 rounded-lg transition-all"
-                        style={{ color: 'rgba(240,240,245,0.3)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.1)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-muted)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-purple-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 10%, transparent)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                       >
                         <Edit size={14} />
                       </Link>
                       <button
                         onClick={() => handleDuplicate(examId, exam.title)}
                         className="p-1.5 rounded-lg transition-all"
-                        style={{ color: 'rgba(240,240,245,0.3)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#22d3ee'; (e.currentTarget as HTMLElement).style.background = 'rgba(6,182,212,0.1)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-muted)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-cyan-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Duplicate"
                       >
                         <Copy size={14} />
@@ -450,9 +450,9 @@ const ManageExams: React.FC = () => {
                         onClick={() => handleDelete(examId)}
                         disabled={isDeleting}
                         className="p-1.5 rounded-lg transition-all"
-                        style={{ color: 'rgba(240,240,245,0.3)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.1)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                        style={{ color: 'var(--text-muted)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 10%, transparent)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                       >
                         {isDeleting ? <div className="h-3.5 w-3.5 rounded-full border border-current border-t-transparent animate-spin" /> : <Trash2 size={14} />}
                       </button>

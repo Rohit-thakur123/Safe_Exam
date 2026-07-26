@@ -302,9 +302,9 @@ const categoryNameFor = (q: Question) => {
 };
 
 const difficultyStyle = (d?: string) => {
-  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
-  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
-  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
+  if (d === 'easy') return { bg: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' };
+  if (d === 'hard') return { bg: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', color: 'var(--tint-rose-text)', border: 'color-mix(in srgb, var(--accent-rose) 20%, transparent)' };
+  return { bg: 'color-mix(in srgb, var(--accent-amber) 10%, transparent)', color: 'var(--tint-amber-text)', border: 'color-mix(in srgb, var(--accent-amber) 20%, transparent)' };
 };
 
 const ManageMCQ: React.FC = () => {
@@ -380,14 +380,14 @@ const ManageMCQ: React.FC = () => {
       {/* Delete Confirm Modal */}
       {deleteQuestion && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
-          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
-            <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 mx-auto" style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.2)' }}>
-              <Trash2 size={20} style={{ color: '#fb7185' }} />
+          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid var(--border-hover)', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
+            <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 mx-auto" style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)' }}>
+              <Trash2 size={20} style={{ color: 'var(--tint-rose-text)' }} />
             </div>
-            <h3 className="text-base font-bold text-white text-center mb-2">Delete Question?</h3>
-            <p className="text-sm text-center mb-6 line-clamp-2" style={{ color: 'rgba(240,240,245,0.5)' }}>"{deleteQuestion.question}"</p>
+            <h3 className="text-base font-bold text-heading text-center mb-2">Delete Question?</h3>
+            <p className="text-sm text-center mb-6 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>"{deleteQuestion.question}"</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteQuestion(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancel</button>
+              <button onClick={() => setDeleteQuestion(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'var(--border)', color: 'var(--text-secondary)', border: '1px solid var(--border-hover)' }}>Cancel</button>
               <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>Delete</button>
             </div>
           </div>
@@ -399,18 +399,18 @@ const ManageMCQ: React.FC = () => {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #06b6d4, #6366f1)' }} />
-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#06b6d4' }}>Question Bank</span>
+              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-indigo))' }} />
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-cyan)' }}>Question Bank</span>
             </div>
-            <h1 className="text-2xl font-black text-white">MCQ Library</h1>
-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
+            <h1 className="text-2xl font-black text-heading">MCQ Library</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
               {loading ? '...' : `${questions.length} questions across ${categoryFilters.length - 1} categories`}
             </p>
           </div>
           <Link
             to="/teacher/create-question"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
-            style={{ background: 'linear-gradient(135deg, #06b6d4, #6366f1)', boxShadow: '0 4px 24px rgba(6,182,212,0.25)' }}
+            style={{ background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo))', boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-cyan) 25%, transparent)' }}
           >
             <Plus size={15} /> Add Question
           </Link>
@@ -419,7 +419,7 @@ const ManageMCQ: React.FC = () => {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search questions or options..." className="input-dark pl-10" />
           </div>
@@ -428,9 +428,9 @@ const ManageMCQ: React.FC = () => {
               <button key={cat} onClick={() => setActiveCategory(cat)}
                 className="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
                 style={{
-                  background: activeCategory === cat ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.04)',
-                  color: activeCategory === cat ? '#22d3ee' : 'rgba(240,240,245,0.45)',
-                  border: `1px solid ${activeCategory === cat ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                  background: activeCategory === cat ? 'color-mix(in srgb, var(--accent-cyan) 15%, transparent)' : 'var(--bg-card)',
+                  color: activeCategory === cat ? 'var(--tint-cyan-text)' : 'var(--text-secondary)',
+                  border: `1px solid ${activeCategory === cat ? 'color-mix(in srgb, var(--accent-cyan) 30%, transparent)' : 'var(--border)'}`,
                 }}>
                 {cat} {cat !== 'All' && <span className="ml-1 opacity-60">{questions.filter(q => categoryNameFor(q) === cat).length}</span>}
               </button>
@@ -443,14 +443,14 @@ const ManageMCQ: React.FC = () => {
           <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
         ) : filteredQuestions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24">
-            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)' }}>
-              <ListChecks size={32} style={{ color: 'rgba(6,182,212,0.4)' }} />
+            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-cyan) 15%, transparent)' }}>
+              <ListChecks size={32} style={{ color: 'color-mix(in srgb, var(--accent-cyan) 40%, transparent)' }} />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">{searchQuery ? 'No results found' : 'No MCQ questions yet'}</h3>
-            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{searchQuery ? `No matches for "${searchQuery}"` : 'Start building your question bank'}</p>
+            <h3 className="text-lg font-bold text-heading mb-2">{searchQuery ? 'No results found' : 'No MCQ questions yet'}</h3>
+            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{searchQuery ? `No matches for "${searchQuery}"` : 'Start building your question bank'}</p>
             {!searchQuery && (
               <Link to="/teacher/create-question" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: 'linear-gradient(135deg, #06b6d4, #6366f1)' }}>
+                style={{ background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo))' }}>
                 <Plus size={15} /> Create First Question
               </Link>
             )}
@@ -460,34 +460,34 @@ const ManageMCQ: React.FC = () => {
             {Object.entries(groupedQuestions).map(([catName, qs]) => {
               const isCollapsed = collapsed[catName];
               return (
-                <div key={catName} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div key={catName} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
                   {/* Category header */}
                   <button
                     onClick={() => setCollapsed(prev => ({ ...prev, [catName]: !prev[catName] }))}
                     className="w-full px-5 py-4 flex items-center justify-between transition-colors"
-                    style={{ background: 'rgba(255,255,255,0.02)' }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
+                    style={{ background: 'var(--bg-card)' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.2)' }}>
-                        <BookOpen size={14} style={{ color: '#22d3ee' }} />
+                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-cyan) 20%, transparent)' }}>
+                        <BookOpen size={14} style={{ color: 'var(--tint-cyan-text)' }} />
                       </div>
-                      <span className="text-sm font-bold text-white">{catName}</span>
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(6,182,212,0.12)', color: '#22d3ee' }}>{qs.length}</span>
+                      <span className="text-sm font-bold text-heading">{catName}</span>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)', color: 'var(--tint-cyan-text)' }}>{qs.length}</span>
                     </div>
-                    {isCollapsed ? <ChevronRight size={16} style={{ color: 'rgba(240,240,245,0.35)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(240,240,245,0.35)' }} />}
+                    {isCollapsed ? <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
                   </button>
 
                   {!isCollapsed && (
-                    <div className="divide-y" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.04)' }}>
+                    <div className="divide-y" style={{ borderTop: '1px solid var(--bg-card)', borderColor: 'var(--bg-card)' }}>
                       {qs.map(q => {
                         const qId = q._id || q.id || '';
                         const diff = difficultyStyle(q.difficulty);
                         return (
                           <div key={qId} className="px-5 py-4 group transition-colors"
-                            style={{ borderColor: 'rgba(255,255,255,0.04)' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
+                            style={{ borderColor: 'var(--bg-card)' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                           >
                             <div className="flex items-start justify-between gap-4">
@@ -497,25 +497,25 @@ const ManageMCQ: React.FC = () => {
                                     {q.difficulty || 'medium'}
                                   </span>
                                   {(q as any).marks && (
-                                    <span className="text-[11px] font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{(q as any).marks} marks</span>
+                                    <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>{(q as any).marks} marks</span>
                                   )}
                                 </div>
-                                <p className="text-sm font-semibold text-white mb-3 leading-relaxed">{q.question}</p>
+                                <p className="text-sm font-semibold text-heading mb-3 leading-relaxed">{q.question}</p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                                   {(q.options || []).map((opt, idx) => {
                                     const isCorrect = opt === q.answer;
                                     return (
                                       <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-lg"
                                         style={{
-                                          background: isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
-                                          border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                                          background: isCorrect ? 'color-mix(in srgb, var(--accent-emerald) 8%, transparent)' : 'var(--bg-card)',
+                                          border: `1px solid ${isCorrect ? 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' : 'var(--bg-card)'}`,
                                         }}>
                                         <div className="h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
-                                          style={{ background: isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', color: isCorrect ? '#34d399' : 'rgba(240,240,245,0.35)' }}>
+                                          style={{ background: isCorrect ? 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' : 'var(--border)', color: isCorrect ? 'var(--tint-emerald-text)' : 'var(--text-muted)' }}>
                                           {String.fromCharCode(65 + idx)}
                                         </div>
-                                        <span className="text-xs" style={{ color: isCorrect ? '#34d399' : 'rgba(240,240,245,0.55)' }}>{opt}</span>
-                                        {isCorrect && <CheckCircle2 size={12} className="ml-auto flex-shrink-0" style={{ color: '#34d399' }} />}
+                                        <span className="text-xs" style={{ color: isCorrect ? 'var(--tint-emerald-text)' : 'var(--text-secondary)' }}>{opt}</span>
+                                        {isCorrect && <CheckCircle2 size={12} className="ml-auto flex-shrink-0" style={{ color: 'var(--tint-emerald-text)' }} />}
                                       </div>
                                     );
                                   })}
@@ -524,9 +524,9 @@ const ManageMCQ: React.FC = () => {
                               <button
                                 onClick={() => setDeleteQuestion(q)}
                                 className="p-2 rounded-lg flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
-                                style={{ color: 'rgba(240,240,245,0.3)' }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.1)'; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                style={{ color: 'var(--text-muted)' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 10%, transparent)'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                               >
                                 <Trash2 size={15} />
                               </button>
