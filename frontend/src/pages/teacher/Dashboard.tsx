@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { TeacherNavbar } from '../../components/TeacherNavbar';
 import { TeacherLayout } from '../../components/ui/DarkLayout';
-import { questionAPI, examAPI, codingQuestionAPI } from '../../services/api';
-import {
+import { questionAPI, examAPI, codingQuestionAPI, subjectiveQuestionAPI } from '../../services/api';
+import { 
   Code2, FileText, ListChecks, BarChart3, Shield, Eye,
-  Plus, ChevronRight, Activity, Zap, CheckCircle2, RefreshCw,
-  BookOpen, Clock, TrendingUp, AlertCircle, ArrowUpRight, Layers,
-  Users, Star, Globe, Lock
+  Plus, Activity, Zap, CheckCircle2, RefreshCw,
+  BookOpen, Clock, AlertCircle, ArrowUpRight, Layers
 } from 'lucide-react';
 import type { Question, Exam, CodingQuestion } from '../../types';
 import Toast from '../../components/ui/Toast';
@@ -128,6 +127,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [mcqQuestions, setMcqQuestions] = useState<Question[]>([]);
   const [codingQuestions, setCodingQuestions] = useState<CodingQuestion[]>([]);
+  const [subjectiveQuestions, setSubjectiveQuestions] = useState<any[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -142,9 +142,10 @@ const Dashboard: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [mcqData, codingData, examsData, analyticsRes] = await Promise.all([
+      const [mcqData, codingData, subjData, examsData, analyticsRes] = await Promise.all([
         questionAPI.getAll().catch(() => []),
         codingQuestionAPI.getAll({ limit: 100 }).then(res => res.questions).catch(() => []),
+        subjectiveQuestionAPI.getAll({ limit: 100 }).then(res => res.questions).catch(() => []),
         examAPI.getAll().catch(() => []),
         examAPI.getAnalytics().catch(() => null),
       ]);
@@ -164,6 +165,7 @@ const Dashboard: React.FC = () => {
 
       setMcqQuestions(myMcqs);
       setCodingQuestions(codingData || []);
+      setSubjectiveQuestions(subjData || []);
       setExams(myExams);
       setAnalytics(analyticsRes?.analytics || null);
     } catch (err: any) {
@@ -249,8 +251,8 @@ const Dashboard: React.FC = () => {
               <MetricCard
                 icon={FileText}
                 label="Total Assessments"
-                value={analytics?.totalExams ?? exams.length}
-                sub={`${analytics?.activeExams ?? activeExams.length} currently active`}
+                value={exams.length}
+                sub={`${activeExams.length} currently active`}
                 accent="#8b5cf6"
                 glow="rgba(139,92,246,0.12)"
                 link="/teacher/exams"
@@ -258,10 +260,10 @@ const Dashboard: React.FC = () => {
               <MetricCard
                 icon={Activity}
                 label="Live Exams"
-                value={analytics?.activeExams ?? activeExams.length}
+                value={activeExams.length}
                 sub="Candidates can access now"
-                badge={(analytics?.activeExams ?? activeExams.length) > 0 ? 'Live' : 'Idle'}
-                badgeColor={(analytics?.activeExams ?? activeExams.length) > 0 ? '#34d399' : '#8b8ba0'}
+                badge={activeExams.length > 0 ? 'Live' : 'Idle'}
+                badgeColor={activeExams.length > 0 ? '#34d399' : '#8b8ba0'}
                 accent="#10b981"
                 glow="rgba(16,185,129,0.12)"
                 link="/teacher/exams"
@@ -269,7 +271,7 @@ const Dashboard: React.FC = () => {
               <MetricCard
                 icon={ListChecks}
                 label="MCQ Questions"
-                value={analytics?.totalMcqs ?? mcqQuestions.length}
+                value={mcqQuestions.length}
                 sub="Multiple choice bank"
                 accent="#06b6d4"
                 glow="rgba(6,182,212,0.12)"
@@ -278,7 +280,7 @@ const Dashboard: React.FC = () => {
               <MetricCard
                 icon={Code2}
                 label="Coding Challenges"
-                value={analytics?.totalCoding ?? codingQuestions.length}
+                value={codingQuestions.length}
                 sub="Algorithm problems"
                 accent="#6366f1"
                 glow="rgba(99,102,241,0.12)"
@@ -295,7 +297,7 @@ const Dashboard: React.FC = () => {
           ) : (
             <>
               {[
-                { label: 'Subjective Questions', value: analytics?.subjectiveQuestionsCount ?? 0, sub: 'Descriptive Q&A bank', accent: '#a78bfa', icon: BookOpen, link: '/teacher/subjective-questions' },
+                { label: 'Subjective Questions', value: subjectiveQuestions.length, sub: 'Descriptive Q&A bank', accent: '#a78bfa', icon: BookOpen, link: '/teacher/subjective-questions' },
                 { label: 'Pending Grading', value: analytics?.pendingEvaluationCount ?? 0, sub: 'Awaiting your review', accent: '#fbbf24', badge: (analytics?.pendingEvaluationCount ?? 0) > 0 ? 'Action Required' : undefined, badgeColor: '#fbbf24', icon: AlertCircle, link: '/teacher/subjective-questions' },
                 { label: 'Graded Answers', value: analytics?.evaluatedCount ?? 0, sub: 'Evaluations completed', accent: '#34d399', icon: CheckCircle2, link: '/teacher/subjective-questions' },
                 { label: 'Review Queue', value: analytics?.manualReviewQueueCount ?? 0, sub: 'In grading pipeline', accent: '#818cf8', icon: Layers, link: '/teacher/subjective-questions' },
@@ -479,7 +481,7 @@ const Dashboard: React.FC = () => {
                 {[
                   { to: '/teacher/mcq', label: 'MCQ Library', count: mcqQuestions.length, icon: ListChecks, color: '#06b6d4' },
                   { to: '/teacher/coding-questions', label: 'Coding Challenges', count: codingQuestions.length, icon: Code2, color: '#6366f1' },
-                  { to: '/teacher/subjective-questions', label: 'Subjective Questions', count: analytics?.subjectiveQuestionsCount ?? 0, icon: BookOpen, color: '#a78bfa' },
+                  { to: '/teacher/subjective-questions', label: 'Subjective Questions', count: subjectiveQuestions.length, icon: BookOpen, color: '#a78bfa' },
                   { to: '/teacher/exams', label: 'All Assessments', count: exams.length, icon: Eye, color: '#10b981' },
                 ].map(({ to, label, count, icon: Icon, color }) => (
                   <Link

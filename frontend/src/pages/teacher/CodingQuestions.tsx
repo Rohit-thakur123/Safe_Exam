@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TeacherNavbar } from '../../components/TeacherNavbar';
-import { Button } from '../../components/ui/Button';
+import { TeacherLayout } from '../../components/ui/DarkLayout';
 import {
   Plus, Search, Pencil, Trash2, Eye, Copy, Code2, Settings,
-  ChevronLeft, ChevronRight, ArrowLeft
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { codingQuestionAPI } from '../../services/api';
 import type { CodingQuestion } from '../../types';
@@ -15,9 +15,9 @@ const LANGUAGES = ['Python', 'Java', 'JavaScript', 'C', 'C++'];
 
 const difficultyBadge = (diff?: string) => {
   const d = (diff || 'Medium').toLowerCase();
-  if (d === 'easy') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-  if (d === 'hard') return 'bg-rose-50 text-rose-700 border-rose-200';
-  return 'bg-amber-50 text-amber-700 border-amber-200';
+  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
+  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
+  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
 };
 
 const CodingQuestionsPage: React.FC = () => {
@@ -117,158 +117,181 @@ const CodingQuestionsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/60 font-sans">
+    <TeacherLayout>
       <TeacherNavbar />
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <Link to="/teacher" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
-              <ArrowLeft size={14} className="mr-1" /> Back to Dashboard
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Coding Challenges Library</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage algorithmic problems, language constraints, and testcase suites</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #6366f1, #a855f7)' }} />
+              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6366f1' }}>Coding Challenges</span>
+            </div>
+            <h1 className="text-2xl font-black text-white">Algorithms Library</h1>
+            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
+              Manage algorithmic problems, language constraints, and testcase suites
+            </p>
           </div>
           <Link
             to="/teacher/coding-questions/create"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-semibold text-white hover:from-violet-500 hover:to-indigo-500 transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 4px 24px rgba(99,102,241,0.25)' }}
           >
-            <Plus size={16} /> New Coding Challenge
+            <Plus size={15} /> New Challenge
           </Link>
         </div>
 
-        {/* Search & Filter Toolbar */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 shadow-xs">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col md:flex-row gap-3 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by problem title, tag, or keyword..."
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
-              />
-            </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
+            <form onSubmit={handleSearchSubmit}>
+              <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
+                placeholder="Search by problem title, tag, or keyword..." className="input-dark pl-10 w-full" />
+            </form>
+          </div>
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+            <select
+              value={difficulty}
+              onChange={e => setDifficulty(e.target.value)}
+              className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
+              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <option value="" className="bg-gray-900 text-white">All Difficulties</option>
+              <option value="Easy" className="bg-gray-900 text-white">Easy</option>
+              <option value="Medium" className="bg-gray-900 text-white">Medium</option>
+              <option value="Hard" className="bg-gray-900 text-white">Hard</option>
+            </select>
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <select
-                value={difficulty}
-                onChange={e => setDifficulty(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-              >
-                <option value="">All Difficulties</option>
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-
-              <select
-                value={language}
-                onChange={e => setLanguage(e.target.value)}
-                className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-              >
-                <option value="">All Languages</option>
-                {LANGUAGES.map(lang => (
-                  <option key={lang} value={lang}>{lang}</option>
-                ))}
-              </select>
-
-              <Button type="submit" variant="secondary" size="sm">
-                Filter
-              </Button>
-            </div>
-          </form>
+            <select
+              value={language}
+              onChange={e => setLanguage(e.target.value)}
+              className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
+              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <option value="" className="bg-gray-900 text-white">All Languages</option>
+              {LANGUAGES.map(lang => (
+                <option key={lang} value={lang} className="bg-gray-900 text-white">{lang}</option>
+              ))}
+            </select>
+            <button
+              onClick={handleSearchSubmit}
+              className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap"
+              style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)' }}
+            >
+              Filter
+            </button>
+          </div>
         </div>
 
         {/* Content List */}
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-sm text-gray-500">Loading coding challenges...</p>
-          </div>
+          <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
         ) : questions.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
-            <Code2 className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-base font-semibold text-gray-900">No coding challenges found</h3>
-            <p className="text-xs text-gray-500 mt-1">Get started by creating your first coding problem with automated test cases.</p>
-            <Link
-              to="/teacher/coding-questions/create"
-              className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
-            >
-              <Plus size={14} /> Create Problem
-            </Link>
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
+              <Code2 size={32} style={{ color: 'rgba(99,102,241,0.4)' }} />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">{search ? 'No results found' : 'No coding challenges yet'}</h3>
+            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{search ? `No matches for "${search}"` : 'Get started by creating your first coding problem'}</p>
+            {!search && (
+              <Link to="/teacher/coding-questions/create" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
+                <Plus size={15} /> Create Challenge
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
             {questions.map((q) => {
               const qId = q._id || q.id || '';
+              const diff = difficultyBadge(q.difficulty);
               return (
-                <div key={qId} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs hover:shadow-md transition-all">
+                <div key={qId} className="group rounded-2xl p-5 transition-all duration-200"
+                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
+                >
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-                        <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${difficultyBadge(q.difficulty)} uppercase tracking-wider`}>
-                          {q.difficulty || 'Medium'}
+                      <div className="flex items-center gap-2.5 mb-2.5 flex-wrap">
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.border}` }}>
+                          {q.difficulty || 'medium'}
                         </span>
-                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
                           🎯 {q.marks || 100} Marks
                         </span>
-                        <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
                           🧪 {q.visibleTestCaseCount || 0} Visible Testcases
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-gray-900 mb-1 hover:text-violet-600 transition-colors">
+                      <h3 className="text-base font-bold text-white mb-1.5 transition-colors group-hover:text-indigo-400">
                         <Link to={`/teacher/coding-questions/${qId}`}>{q.title}</Link>
                       </h3>
-                      <p className="text-xs text-gray-500 line-clamp-2 mb-3">{q.description}</p>
+                      <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: 'rgba(240,240,245,0.6)' }}>{q.description}</p>
 
                       <div className="flex items-center gap-2 flex-wrap">
                         {(q.supportedLanguages || []).map((lang: string) => (
-                          <span key={lang} className="text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-lg">
+                          <span key={lang} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
                             {lang}
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <Link
                         to={`/teacher/coding-questions/${qId}/preview`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                        className="p-2 rounded-xl transition-all"
+                        style={{ color: 'rgba(240,240,245,0.5)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Preview Problem"
                       >
-                        <Eye size={14} /> Preview
+                        <Eye size={16} />
                       </Link>
                       <Link
                         to={`/teacher/coding-questions/${qId}/testcases`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
+                        className="p-2 rounded-xl transition-all"
+                        style={{ color: 'rgba(240,240,245,0.5)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#818cf8'; (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.15)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Manage Testcases"
                       >
-                        <Settings size={14} /> Testcases
+                        <Settings size={16} />
                       </Link>
                       <Link
                         to={`/teacher/coding-questions/edit/${qId}`}
-                        className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                        className="p-2 rounded-xl transition-all"
+                        style={{ color: 'rgba(240,240,245,0.5)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c084fc'; (e.currentTarget as HTMLElement).style.background = 'rgba(168,85,247,0.15)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Edit Question"
                       >
-                        <Pencil size={14} /> Edit
+                        <Pencil size={16} />
                       </Link>
                       <button
                         onClick={() => handleDuplicate(qId, q.title)}
-                        className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        className="p-2 rounded-xl transition-all"
+                        style={{ color: 'rgba(240,240,245,0.5)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Duplicate Question"
                       >
-                        <Copy size={15} />
+                        <Copy size={16} />
                       </button>
                       <button
                         onClick={() => handleDelete(qId, q.title)}
-                        className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="p-2 rounded-xl transition-all"
+                        style={{ color: 'rgba(240,240,245,0.5)' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.15)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                         title="Delete Question"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
@@ -278,34 +301,34 @@ const CodingQuestionsPage: React.FC = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4">
-                <p className="text-xs text-gray-500">
+              <div className="flex items-center justify-between pt-4 mt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+                <p className="text-xs" style={{ color: 'rgba(240,240,245,0.5)' }}>
                   Showing page {page} of {totalPages} ({total} total challenges)
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <button
                     disabled={page === 1}
                     onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-30"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}
                   >
                     <ChevronLeft size={14} /> Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  </button>
+                  <button
                     disabled={page === totalPages}
                     onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-30"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}
                   >
                     Next <ChevronRight size={14} />
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
           </div>
         )}
       </main>
-    </div>
+    </TeacherLayout>
   );
 };
 

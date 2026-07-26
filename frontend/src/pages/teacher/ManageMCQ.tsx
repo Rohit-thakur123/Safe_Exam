@@ -290,7 +290,7 @@ import { TeacherLayout } from '../../components/ui/DarkLayout';
 import { categoryAPI, questionAPI } from '../../services/api';
 import {
   BookOpen, ChevronDown, ChevronRight, Plus, Search,
-  Trash2, CheckCircle2, X, Filter, ListChecks, Edit
+  Trash2, CheckCircle2, ListChecks
 } from 'lucide-react';
 import type { Category, Question } from '../../types';
 import Toast from '../../components/ui/Toast';
@@ -496,8 +496,8 @@ const ManageMCQ: React.FC = () => {
                                   <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.border}` }}>
                                     {q.difficulty || 'medium'}
                                   </span>
-                                  {q.marks && (
-                                    <span className="text-[11px] font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{q.marks} marks</span>
+                                  {(q as any).marks && (
+                                    <span className="text-[11px] font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{(q as any).marks} marks</span>
                                   )}
                                 </div>
                                 <p className="text-sm font-semibold text-white mb-3 leading-relaxed">{q.question}</p>

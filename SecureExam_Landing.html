@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SecureExam Enterprise — AI-Powered Examination Infrastructure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;
+  --surface:#0C0C14;
+  --surface2:#111118;
+  --accent:#4F46E5;
+  --violet:#7C3AED;
+  --blue:#3B82F6;
+  --success:#22C55E;
+  --warn:#F59E0B;
+  --danger:#EF4444;
+  --text:rgba(255,255,255,1);
+  --text2:rgba(255,255,255,.65);
+  --text3:rgba(255,255,255,.35);
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.12);
+  --glow-accent:rgba(79,70,229,.25);
+  --glow-violet:rgba(124,58,237,.2);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.6}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:rgba(79,70,229,.4);border-radius:3px}
+
+/* ── CANVAS BG ── */
+#neural-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── GRAIN OVERLAY ── */
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── NAV ── */
+nav{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
+  display:flex;align-items:center;gap:0;
+  background:rgba(12,12,20,.7);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  padding:10px 16px;
+  box-shadow:0 4px 40px rgba(0,0,0,.5),0 0 0 0.5px rgba(255,255,255,.04) inset;
+  min-width:min(900px,95vw);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--violet));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 20px var(--glow-accent)}
+.nav-logo-icon svg{width:16px;height:16px}
+.nav-name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.nav-links{display:flex;align-items:center;gap:2px;margin:0 auto;padding:0 24px}
+.nav-links a{color:var(--text2);font-size:13px;font-weight:500;text-decoration:none;padding:6px 14px;border-radius:9px;transition:all .2s}
+.nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-btn{font-size:13px;font-weight:600;padding:7px 18px;border-radius:10px;cursor:pointer;border:none;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center}
+.nav-btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.nav-btn-ghost:hover{color:var(--text);border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.05)}
+.nav-btn-solid{background:linear-gradient(135deg,var(--accent),var(--violet));color:#fff;box-shadow:0 0 24px var(--glow-accent)}
+.nav-btn-solid:hover{box-shadow:0 0 32px rgba(79,70,229,.5);transform:translateY(-1px)}
+
+/* ── HERO ── */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;z-index:10;padding:120px 24px 80px}
+.hero-content{max-width:900px;width:100%;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px 6px 8px;border-radius:999px;border:1px solid rgba(79,70,229,.3);background:rgba(79,70,229,.08);margin-bottom:40px;font-size:12px;font-weight:600;color:rgba(148,140,255,.9);letter-spacing:.5px;text-transform:uppercase}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.hero-headline{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(52px,8vw,96px);line-height:1.0;letter-spacing:-2px;color:var(--text);margin-bottom:0}
+.hero-headline em{font-style:italic;background:linear-gradient(135deg,#818CF8 0%,#A78BFA 50%,#60A5FA 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub-label{font-family:'Inter',sans-serif;font-size:13px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin:18px 0 12px}
+.hero-headline-2{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(52px,8vw,96px);line-height:1.0;letter-spacing:-2px;color:var(--text);margin-bottom:32px}
+.hero-desc{font-size:18px;color:var(--text2);max-width:580px;margin:0 auto 48px;line-height:1.7;font-weight:400}
+.hero-cta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:15px 32px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--violet));color:#fff;font-size:15px;font-weight:700;text-decoration:none;border:none;cursor:pointer;box-shadow:0 0 40px var(--glow-accent),0 4px 24px rgba(0,0,0,.4);transition:all .3s;letter-spacing:-.2px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(79,70,229,.5),0 8px 32px rgba(0,0,0,.5)}
+.btn-primary svg{width:16px;height:16px;transition:transform .3s}
+.btn-primary:hover svg{transform:translateX(3px)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:15px 32px;border-radius:14px;background:rgba(255,255,255,.05);color:var(--text);font-size:15px;font-weight:600;text-decoration:none;border:1px solid var(--border2);cursor:pointer;transition:all .3s}
+.btn-secondary:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.2);transform:translateY(-1px)}
+.hero-trust{display:flex;align-items:center;justify-content:center;gap:32px;margin-top:64px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);font-weight:500;letter-spacing:.3px;text-transform:uppercase}
+.trust-item svg{width:13px;height:13px;opacity:.5}
+.trust-divider{width:1px;height:16px;background:var(--border)}
+
+/* ── SECTION COMMON ── */
+section{position:relative;z-index:10}
+.section-inner{max-width:1100px;margin:0 auto;padding:0 24px}
+.section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.section-heading{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(36px,5vw,60px);line-height:1.05;letter-spacing:-1.5px;color:var(--text);margin-bottom:20px}
+.section-body{font-size:17px;color:var(--text2);max-width:560px;line-height:1.7}
+
+/* ── METRICS ROW ── */
+.metrics-strip{padding:60px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.metric-item{padding:32px 40px;border-right:1px solid var(--border);text-align:center}
+.metric-item:last-child{border-right:none}
+.metric-val{font-family:'Instrument Serif',serif;font-size:52px;line-height:1;letter-spacing:-2px;background:linear-gradient(135deg,#fff 40%,rgba(255,255,255,.5));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.metric-label{font-size:12px;color:var(--text3);font-weight:500;letter-spacing:.3px;text-transform:uppercase;margin-top:6px}
+
+/* ── PROBLEM ── */
+.problem-section{padding:120px 0}
+.problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;margin-top:64px}
+.problem-cards{display:flex;flex-direction:column;gap:12px}
+.problem-card{padding:20px 24px;border-radius:14px;border:1px solid rgba(239,68,68,.15);background:rgba(239,68,68,.04);display:flex;align-items:flex-start;gap:14px;transition:all .3s}
+.problem-card:hover{border-color:rgba(239,68,68,.28);background:rgba(239,68,68,.07)}
+.problem-icon{width:36px;height:36px;border-radius:10px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.problem-icon svg{width:16px;height:16px;color:#EF4444}
+.problem-card-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.problem-card-body{font-size:13px;color:var(--text2);line-height:1.5}
+
+/* ── SOLUTION / AI ── */
+.ai-section{padding:120px 0;background:linear-gradient(180deg,var(--bg) 0%,var(--surface) 50%,var(--bg) 100%)}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;margin-top:64px}
+.ai-features{display:flex;flex-direction:column;gap:8px}
+.ai-feat{padding:20px 24px;border-radius:14px;border:1px solid var(--border);background:transparent;display:flex;align-items:flex-start;gap:16px;cursor:default;transition:all .3s}
+.ai-feat:hover,.ai-feat.active{border-color:rgba(79,70,229,.35);background:rgba(79,70,229,.07)}
+.ai-feat-num{font-size:11px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:.1em;padding-top:2px;min-width:24px}
+.ai-feat-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ai-feat-body{font-size:13px;color:var(--text2);line-height:1.55}
+.ai-visual{position:relative}
+.ai-screen{border-radius:20px;overflow:hidden;border:1px solid var(--border2);box-shadow:0 40px 120px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04) inset;background:var(--surface)}
+.ai-screen-top{height:36px;background:rgba(255,255,255,.04);display:flex;align-items:center;padding:0 16px;gap:6px;border-bottom:1px solid var(--border)}
+.ai-screen-dot{width:10px;height:10px;border-radius:50%}
+.ai-screen-body{padding:24px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.5;max-width:88%}
+.ai-msg-system{background:rgba(79,70,229,.15);border:1px solid rgba(79,70,229,.2);color:rgba(200,200,255,.9)}
+.ai-msg-user{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text2);align-self:flex-end;text-align:right}
+.ai-msg-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;opacity:.6}
+.ai-typing{display:flex;gap:4px;padding:14px 16px;background:rgba(79,70,229,.1);border:1px solid rgba(79,70,229,.15);border-radius:12px;width:fit-content}
+.ai-typing span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:typing-bounce .9s ease-in-out infinite}
+.ai-typing span:nth-child(2){animation-delay:.15s}
+.ai-typing span:nth-child(3){animation-delay:.3s}
+@keyframes typing-bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ── SECURITY ── */
+.security-section{padding:120px 0}
+.security-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:64px}
+.sec-card{padding:32px 28px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(145deg,rgba(255,255,255,.03),transparent);transition:all .35s;cursor:default;position:relative;overflow:hidden}
+.sec-card::before{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,rgba(79,70,229,.08),transparent);opacity:0;transition:opacity .35s}
+.sec-card:hover{border-color:rgba(79,70,229,.3);transform:translateY(-4px);box-shadow:0 24px 64px rgba(0,0,0,.4),0 0 0 1px rgba(79,70,229,.1)}
+.sec-card:hover::before{opacity:1}
+.sec-card-icon{width:48px;height:48px;border-radius:14px;background:rgba(79,70,229,.12);border:1px solid rgba(79,70,229,.2);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.sec-card-icon svg{width:22px;height:22px}
+.sec-card-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.2px}
+.sec-card-body{font-size:13px;color:var(--text2);line-height:1.65}
+.sec-badge{display:inline-flex;align-items:center;gap:5px;margin-top:16px;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:600;background:rgba(34,197,94,.1);color:#4ADE80;border:1px solid rgba(34,197,94,.2)}
+.sec-badge-dot{width:5px;height:5px;border-radius:50%;background:#22C55E}
+
+/* ── PRODUCT SHOWCASE ── */
+.product-section{padding:120px 0}
+.product-tabs{display:flex;gap:4px;padding:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;width:fit-content;margin:48px auto 0}
+.product-tab{padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .25s;border:none;background:transparent}
+.product-tab.active{background:rgba(79,70,229,.2);color:var(--text);border:1px solid rgba(79,70,229,.3)}
+.product-tab:not(.active):hover{color:var(--text2);background:rgba(255,255,255,.05)}
+.product-display{margin-top:32px;border-radius:20px;overflow:hidden;border:1px solid var(--border2);background:var(--surface);box-shadow:0 48px 120px rgba(0,0,0,.8)}
+.product-topbar{height:48px;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border)}
+.topbar-dots{display:flex;gap:6px}
+.topbar-dot{width:12px;height:12px;border-radius:50%}
+.topbar-title{font-size:12px;color:var(--text3);font-weight:500}
+.topbar-actions{display:flex;gap:8px}
+.topbar-action{font-size:11px;color:var(--text3);padding:4px 12px;border-radius:7px;border:1px solid var(--border);cursor:pointer;transition:all .2s}
+.topbar-action:hover{color:var(--text);border-color:var(--border2)}
+.product-body{padding:32px;display:grid;grid-template-columns:240px 1fr;gap:24px;min-height:480px}
+.product-sidebar{display:flex;flex-direction:column;gap:4px}
+.sidebar-section{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:12px 12px 6px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s}
+.sidebar-item:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.sidebar-item.active{background:rgba(79,70,229,.15);color:var(--text);border:1px solid rgba(79,70,229,.2)}
+.sidebar-item svg{width:15px;height:15px;opacity:.7;flex-shrink:0}
+.sidebar-item.active svg{opacity:1;color:var(--accent)}
+.sidebar-badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--accent);color:#fff;padding:2px 7px;border-radius:99px}
+.product-main{display:flex;flex-direction:column;gap:20px}
+.product-main-header{display:flex;align-items:center;justify-content:space-between}
+.main-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.5px}
+.main-cta{display:flex;gap:8px}
+.cta-btn{padding:8px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s}
+.cta-btn-primary{background:linear-gradient(135deg,var(--accent),var(--violet));color:#fff;box-shadow:0 0 20px var(--glow-accent)}
+.cta-btn-ghost{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border)}
+.exam-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.exam-card{padding:18px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.02);transition:all .25s;cursor:pointer}
+.exam-card:hover{border-color:var(--border2);background:rgba(255,255,255,.04);transform:translateY(-2px)}
+.exam-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.exam-card-title{font-size:14px;font-weight:700;color:var(--text)}
+.exam-status{font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
+.status-live{background:rgba(34,197,94,.12);color:#4ADE80;border:1px solid rgba(34,197,94,.2)}
+.status-draft{background:rgba(255,255,255,.06);color:var(--text3);border:1px solid var(--border)}
+.status-review{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid rgba(245,158,11,.2)}
+.exam-meta{display:flex;gap:16px;margin-bottom:10px}
+.exam-meta-item{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.exam-progress{height:3px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.exam-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--violet))}
+
+/* ── ANALYTICS ── */
+.analytics-section{padding:120px 0;background:linear-gradient(180deg,var(--bg),var(--surface) 50%,var(--bg))}
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;margin-top:64px}
+.chart-container{background:var(--surface2);border-radius:20px;border:1px solid var(--border);padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.chart-title{font-size:14px;font-weight:700;color:var(--text)}
+.chart-subtitle{font-size:12px;color:var(--text3);margin-top:3px}
+.chart-legend{display:flex;gap:16px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.chart-canvas-wrap{height:180px;position:relative}
+canvas#analyticsChart{width:100%!important;height:180px!important}
+.stats-list{display:flex;flex-direction:column;gap:16px}
+.stat-row{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.02);transition:all .3s}
+.stat-row:hover{border-color:var(--border2);background:rgba(255,255,255,.04)}
+.stat-row-icon{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-row-label{font-size:13px;color:var(--text2);flex:1}
+.stat-row-val{font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.5px}
+.stat-row-change{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px}
+.change-up{background:rgba(34,197,94,.12);color:#4ADE80}
+.change-down{background:rgba(239,68,68,.1);color:#F87171}
+
+/* ── PRICING ── */
+.pricing-section{padding:120px 0}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:64px}
+.pricing-card{padding:32px 28px;border-radius:20px;border:1px solid var(--border);background:rgba(255,255,255,.02);display:flex;flex-direction:column;position:relative;transition:all .35s}
+.pricing-card:hover{transform:translateY(-4px);box-shadow:0 32px 80px rgba(0,0,0,.4)}
+.pricing-card.featured{border-color:rgba(79,70,229,.4);background:rgba(79,70,229,.07);box-shadow:0 0 60px rgba(79,70,229,.1)}
+.pricing-featured-tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--accent),var(--violet));color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:99px;letter-spacing:.5px;white-space:nowrap}
+.pricing-tier{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.pricing-price{font-family:'Instrument Serif',serif;font-size:48px;line-height:1;letter-spacing:-2px;color:var(--text);margin-bottom:6px}
+.pricing-price span{font-family:'Inter',sans-serif;font-size:15px;font-weight:500;color:var(--text3);letter-spacing:0}
+.pricing-desc{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.55}
+.pricing-feats{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1}
+.pricing-feats li{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text2);line-height:1.4}
+.pricing-check{width:18px;height:18px;border-radius:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.pricing-check svg{width:10px;height:10px;color:#4ADE80}
+.pricing-cta-wrap{margin-top:28px}
+.pricing-btn{width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;transition:all .3s;text-align:center}
+.pricing-btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border2)}
+.pricing-btn-ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)}
+.pricing-btn-solid{background:linear-gradient(135deg,var(--accent),var(--violet));color:#fff;box-shadow:0 0 30px var(--glow-accent)}
+.pricing-btn-solid:hover{box-shadow:0 0 48px rgba(79,70,229,.5);transform:translateY(-1px)}
+
+/* ── FAQ ── */
+.faq-section{padding:120px 0}
+.faq-grid{max-width:720px;margin:64px auto 0;display:flex;flex-direction:column;gap:2px}
+.faq-item{border-radius:14px;border:1px solid var(--border);overflow:hidden;transition:all .3s}
+.faq-item.open{border-color:rgba(79,70,229,.3);background:rgba(79,70,229,.05)}
+.faq-q{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;cursor:pointer;font-size:15px;font-weight:600;color:var(--text);gap:16px;user-select:none}
+.faq-q:hover{background:rgba(255,255,255,.03)}
+.faq-chevron{width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .3s}
+.faq-item.open .faq-chevron{transform:rotate(180deg);background:rgba(79,70,229,.2)}
+.faq-chevron svg{width:12px;height:12px;color:var(--text2)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease,padding .4s ease}
+.faq-a-inner{padding:0 24px 20px;font-size:14px;color:var(--text2);line-height:1.7}
+.faq-item.open .faq-a{max-height:300px}
+
+/* ── FOOTER ── */
+footer{padding:80px 0 40px;border-top:1px solid var(--border);position:relative;z-index:10}
+.footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:48px;margin-bottom:64px}
+.footer-brand{max-width:280px}
+.footer-logo{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.footer-logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--violet));display:flex;align-items:center;justify-content:center}
+.footer-logo-name{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.3px}
+.footer-tagline{font-size:13px;color:var(--text3);line-height:1.6}
+.footer-col-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:16px}
+.footer-links{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-links a{font-size:13px;color:var(--text2);text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:32px;border-top:1px solid var(--border)}
+.footer-copy{font-size:12px;color:var(--text3)}
+.footer-badges{display:flex;gap:16px}
+.footer-badge{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px}
+.footer-badge svg{width:11px;height:11px;opacity:.5}
+
+/* ── SCROLL REVEAL ── */
+.reveal{opacity:0;transform:translateY(32px);transition:opacity .8s cubic-bezier(.22,1,.36,1),transform .8s cubic-bezier(.22,1,.36,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+.reveal-delay-4{transition-delay:.4s}
+
+/* ── CURSOR GLOW ── */
+.cursor-glow{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:5;background:radial-gradient(circle,rgba(79,70,229,.08) 0%,transparent 70%);transform:translate(-50%,-50%);transition:opacity .5s}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{min-width:92vw;padding:8px 12px}
+  .nav-links{display:none}
+  .hero-headline,.hero-headline-2{font-size:42px;letter-spacing:-1px}
+  .metrics-grid{grid-template-columns:repeat(2,1fr)}
+  .metric-item{border-right:none;border-bottom:1px solid var(--border)}
+  .problem-grid,.ai-grid,.analytics-grid,.pricing-grid,.security-grid,.footer-grid{grid-template-columns:1fr}
+  .product-body{grid-template-columns:1fr;min-height:auto}
+  .product-sidebar{display:none}
+  .exam-cards{grid-template-columns:1fr}
+  .pricing-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Neural canvas background -->
+<canvas id="neural-canvas"></canvas>
+
+<!-- Film grain -->
+<div class="grain" aria-hidden="true"></div>
+
+<!-- Cursor glow -->
+<div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+
+<!-- ─────────────────────────── NAV ─────────────────────────── -->
+<nav role="navigation" aria-label="Main navigation">
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+    <span class="nav-name">SecureExam Enterprise</span>
+  </a>
+  <div class="nav-links">
+    <a href="#product">Product</a>
+    <a href="#security">Security</a>
+    <a href="#analytics">Analytics</a>
+    <a href="#pricing">Pricing</a>
+  </div>
+  <div class="nav-right">
+    <a class="nav-btn nav-btn-ghost" href="/login">Sign in</a>
+    <a class="nav-btn nav-btn-solid" href="/register">Get started</a>
+  </div>
+</nav>
+
+<!-- ─────────────────────────── HERO ─────────────────────────── -->
+<section class="hero" aria-labelledby="hero-heading">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Now in enterprise general availability
+    </div>
+
+    <h1 id="hero-heading">
+      <div class="hero-headline">The future of</div>
+      <div class="hero-sub-label">AI-powered · Zero-compromise · Enterprise-grade</div>
+      <div class="hero-headline"><em>examination</em></div>
+      <div class="hero-headline">infrastructure.</div>
+    </h1>
+
+    <p class="hero-desc">
+      SecureExam Enterprise brings military-grade security, real-time AI proctoring, and adaptive intelligence to every exam your institution runs — at any scale.
+    </p>
+
+    <div class="hero-cta">
+      <a class="btn-primary" href="/register">
+        Deploy for your institution
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a class="btn-secondary" href="#product">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        Watch demo
+      </a>
+    </div>
+
+    <div class="hero-trust">
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        SOC 2 Type II
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        ISO 27001
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        GDPR Compliant
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        99.99% Uptime SLA
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── METRICS ─────────────────────────── -->
+<div class="metrics-strip reveal">
+  <div class="section-inner">
+    <div class="metrics-grid">
+      <div class="metric-item">
+        <div class="metric-val">2.4M+</div>
+        <div class="metric-label">Exams Conducted</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">340+</div>
+        <div class="metric-label">Institutions Worldwide</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">99.97%</div>
+        <div class="metric-label">Integrity Rate</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">&lt;80ms</div>
+        <div class="metric-label">Global Response Time</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────── PROBLEM ─────────────────────────── -->
+<section class="problem-section" id="problem" aria-labelledby="problem-heading">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">The problem</div>
+      <h2 id="problem-heading" class="section-heading">Examination systems<br/>built for another era.</h2>
+    </div>
+    <div class="problem-grid">
+      <div class="reveal reveal-delay-1">
+        <p class="section-body">Universities, governments, and certification bodies run mission-critical assessments on infrastructure that was never designed for the AI era — brittle, insecure, and impossible to scale.</p>
+        <p class="section-body" style="margin-top:20px">The result: billion-dollar losses to academic fraud, catastrophic data breaches, and experiences that erode institutional trust.</p>
+      </div>
+      <div class="problem-cards reveal reveal-delay-2">
+        <div class="problem-card">
+          <div class="problem-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div>
+            <div class="problem-card-title">Undetectable cheating at scale</div>
+            <div class="problem-card-body">Legacy systems miss 73% of sophisticated collusion attempts, AI-generated answers, and identity spoofing.</div>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+          <div>
+            <div class="problem-card-title">Infrastructure that collapses under load</div>
+            <div class="problem-card-body">Concurrent exam sessions routinely exceed what traditional systems were architected to handle.</div>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          </div>
+          <div>
+            <div class="problem-card-title">No intelligence. No adaptivity.</div>
+            <div class="problem-card-body">Static question banks and rigid grading fail to capture real competency or adapt to individual learning.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── AI INTELLIGENCE ─────────────────────────── -->
+<section class="ai-section" id="ai" aria-labelledby="ai-heading">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">AI Intelligence</div>
+      <h2 id="ai-heading" class="section-heading">Your examination<br/>thinks for itself.</h2>
+      <p class="section-body" style="margin:0 auto">An AI engine purpose-built for assessment integrity — detecting anomalies, generating adaptive questions, and grading subjective answers with human-level precision.</p>
+    </div>
+    <div class="ai-grid">
+      <div class="ai-features reveal reveal-delay-1">
+        <div class="ai-feat active">
+          <div class="ai-feat-num">01</div>
+          <div>
+            <div class="ai-feat-title">Behavioral Anomaly Detection</div>
+            <div class="ai-feat-body">Real-time gaze tracking, keystroke dynamics, and browser fingerprinting identify suspicious patterns before a violation occurs.</div>
+          </div>
+        </div>
+        <div class="ai-feat">
+          <div class="ai-feat-num">02</div>
+          <div>
+            <div class="ai-feat-title">Adaptive Question Generation</div>
+            <div class="ai-feat-body">AI generates unique exam variants per student from your question bank, making sharing answers structurally impossible.</div>
+          </div>
+        </div>
+        <div class="ai-feat">
+          <div class="ai-feat-num">03</div>
+          <div>
+            <div class="ai-feat-title">Subjective Answer Grading</div>
+            <div class="ai-feat-body">Large language models evaluate long-form answers against expert rubrics, with confidence scores and explainability.</div>
+          </div>
+        </div>
+        <div class="ai-feat">
+          <div class="ai-feat-num">04</div>
+          <div>
+            <div class="ai-feat-title">Code Execution & Assessment</div>
+            <div class="ai-feat-body">Sandboxed multi-language compiler with AI-powered test case generation and time/space complexity analysis.</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-visual reveal reveal-delay-2">
+        <div class="ai-screen">
+          <div class="ai-screen-top">
+            <div class="ai-screen-dot" style="background:#EF4444"></div>
+            <div class="ai-screen-dot" style="background:#F59E0B"></div>
+            <div class="ai-screen-dot" style="background:#22C55E"></div>
+          </div>
+          <div class="ai-screen-body">
+            <div class="ai-msg ai-msg-system">
+              <div class="ai-msg-label">SecureExam AI</div>
+              Exam session initialized. Monitoring 847 active candidates across 12 campuses. Zero anomalies detected in the last 4 minutes.
+            </div>
+            <div class="ai-msg ai-msg-user">
+              <div class="ai-msg-label" style="text-align:right">Examiner</div>
+              Flag any candidate exhibiting gaze deviation greater than 3 standard deviations.
+            </div>
+            <div class="ai-msg ai-msg-system">
+              <div class="ai-msg-label">SecureExam AI</div>
+              Flagged 2 candidates: Roll 2214 (deviation: 4.1σ, confidence 97%) and Roll 3087 (deviation: 3.4σ, confidence 89%). Live feeds queued for review. Intervention recommended within 90 seconds.
+            </div>
+            <div class="ai-typing">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── SECURITY ─────────────────────────── -->
+<section class="security-section" id="security" aria-labelledby="security-heading">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">Security Architecture</div>
+      <h2 id="security-heading" class="section-heading">Built like the<br/>systems that protect nations.</h2>
+    </div>
+    <div class="security-grid">
+      <div class="sec-card reveal reveal-delay-1">
+        <div class="sec-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="sec-card-title">Safe Exam Browser Integration</div>
+        <div class="sec-card-body">Deep integration with Safe Exam Browser locks down the OS environment, preventing screen capture, alt-tab, clipboard access, and process injection.</div>
+        <div class="sec-badge"><span class="sec-badge-dot"></span>Hardware-level enforcement</div>
+      </div>
+      <div class="sec-card reveal reveal-delay-2">
+        <div class="sec-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div class="sec-card-title">End-to-End Encryption</div>
+        <div class="sec-card-body">AES-256 encryption for all exam content at rest. TLS 1.3 in transit. Question banks are decrypted client-side only at the moment of rendering.</div>
+        <div class="sec-badge"><span class="sec-badge-dot"></span>Zero-knowledge architecture</div>
+      </div>
+      <div class="sec-card reveal reveal-delay-3">
+        <div class="sec-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="sec-card-title">Multi-Factor Identity Verification</div>
+        <div class="sec-card-body">Biometric face matching, government ID validation, and continuous re-authentication throughout the exam session.</div>
+        <div class="sec-badge"><span class="sec-badge-dot"></span>99.3% identity accuracy</div>
+      </div>
+      <div class="sec-card reveal reveal-delay-1">
+        <div class="sec-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="sec-card-title">Real-Time Anomaly Monitoring</div>
+        <div class="sec-card-body">Stream processing engine analyzes behavioral signals at sub-100ms latency. Proctors receive instant alerts ranked by violation confidence.</div>
+        <div class="sec-badge"><span class="sec-badge-dot"></span>&lt;100ms detection latency</div>
+      </div>
+      <div class="sec-card reveal reveal-delay-2">
+        <div class="sec-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div class="sec-card-title">Immutable Audit Trail</div>
+        <div class="sec-card-body">Every action is cryptographically signed and written to an append-only audit log. Legally admissible evidence for academic misconduct proceedings.</div>
+        <div class="sec-badge"><span class="sec-badge-dot"></span>Blockchain-anchored logs</div>
+      </div>
+      <div class="sec-card reveal reveal-delay-3">
+        <div class="sec-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        </div>
+        <div class="sec-card-title">Global Edge Delivery</div>
+        <div class="sec-card-body">212 PoPs across 6 continents. Exam delivery latency under 80ms globally. Automatic failover with zero data loss during infrastructure events.</div>
+        <div class="sec-badge"><span class="sec-badge-dot"></span>212 global edge nodes</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── PRODUCT SHOWCASE ─────────────────────────── -->
+<section class="product-section" id="product" aria-labelledby="product-heading">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">Product</div>
+      <h2 id="product-heading" class="section-heading">Not a dashboard.<br/>An operating system.</h2>
+      <p class="section-body" style="margin:0 auto">Every surface designed around how educators and institutions actually think — fast, command-driven, and built for depth.</p>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="product-tabs" role="tablist">
+        <button class="product-tab active" role="tab">Teacher Portal</button>
+        <button class="product-tab" role="tab">Exam Builder</button>
+        <button class="product-tab" role="tab">Analytics</button>
+        <button class="product-tab" role="tab">Student View</button>
+      </div>
+    </div>
+    <div class="product-display reveal reveal-delay-2">
+      <div class="product-topbar">
+        <div class="topbar-dots">
+          <div class="topbar-dot" style="background:#EF4444"></div>
+          <div class="topbar-dot" style="background:#F59E0B"></div>
+          <div class="topbar-dot" style="background:#22C55E"></div>
+        </div>
+        <div class="topbar-title">SecureExam Enterprise — Teacher Portal</div>
+        <div class="topbar-actions">
+          <div class="topbar-action">Live session: 847 candidates</div>
+          <div class="topbar-action" style="color:var(--success);border-color:rgba(34,197,94,.2)">● System nominal</div>
+        </div>
+      </div>
+      <div class="product-body">
+        <div class="product-sidebar">
+          <div class="sidebar-section">Command Center</div>
+          <div class="sidebar-item active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </div>
+          <div class="sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Exams
+            <span class="sidebar-badge">12</span>
+          </div>
+          <div class="sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Question Bank
+          </div>
+          <div class="sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Live Monitoring
+          </div>
+          <div class="sidebar-section">Reports</div>
+          <div class="sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Analytics
+          </div>
+          <div class="sidebar-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Results
+          </div>
+        </div>
+        <div class="product-main">
+          <div class="product-main-header">
+            <div class="main-title">Active Examinations</div>
+            <div class="main-cta">
+              <button class="cta-btn cta-btn-ghost">Import questions</button>
+              <button class="cta-btn cta-btn-primary">+ Create exam</button>
+            </div>
+          </div>
+          <div class="exam-cards">
+            <div class="exam-card">
+              <div class="exam-card-header">
+                <div class="exam-card-title">Data Structures — Final</div>
+                <span class="exam-status status-live">Live</span>
+              </div>
+              <div class="exam-meta">
+                <span class="exam-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  342 candidates
+                </span>
+                <span class="exam-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  47 min left
+                </span>
+              </div>
+              <div class="exam-progress"><div class="exam-progress-fill" style="width:62%"></div></div>
+            </div>
+            <div class="exam-card">
+              <div class="exam-card-header">
+                <div class="exam-card-title">Algorithms — Midterm</div>
+                <span class="exam-status status-live">Live</span>
+              </div>
+              <div class="exam-meta">
+                <span class="exam-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  189 candidates
+                </span>
+                <span class="exam-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  1h 12m left
+                </span>
+              </div>
+              <div class="exam-progress"><div class="exam-progress-fill" style="width:38%"></div></div>
+            </div>
+            <div class="exam-card">
+              <div class="exam-card-header">
+                <div class="exam-card-title">OS Design — Quiz 4</div>
+                <span class="exam-status status-review">Grading</span>
+              </div>
+              <div class="exam-meta">
+                <span class="exam-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  98 candidates
+                </span>
+                <span class="exam-meta-item">AI grading 73%</span>
+              </div>
+              <div class="exam-progress"><div class="exam-progress-fill" style="width:73%;background:linear-gradient(90deg,var(--warn),#FBBF24)"></div></div>
+            </div>
+            <div class="exam-card">
+              <div class="exam-card-header">
+                <div class="exam-card-title">Networks — Final Exam</div>
+                <span class="exam-status status-draft">Scheduled</span>
+              </div>
+              <div class="exam-meta">
+                <span class="exam-meta-item">Starts in 3 days</span>
+                <span class="exam-meta-item">218 enrolled</span>
+              </div>
+              <div class="exam-progress"><div class="exam-progress-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── ANALYTICS ─────────────────────────── -->
+<section class="analytics-section" id="analytics" aria-labelledby="analytics-heading">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">Analytics</div>
+      <h2 id="analytics-heading" class="section-heading">Intelligence in<br/>every data point.</h2>
+    </div>
+    <div class="analytics-grid">
+      <div class="chart-container reveal reveal-delay-1">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Exam Performance Distribution</div>
+            <div class="chart-subtitle">Last 30 days · 2,847 sessions</div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Pass</div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div>Fail</div>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="analyticsChart"></canvas>
+        </div>
+      </div>
+      <div class="stats-list reveal reveal-delay-2">
+        <div class="stat-row">
+          <div class="stat-row-icon" style="background:rgba(79,70,229,.12)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="width:18px;height:18px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </div>
+          <div class="stat-row-label">Pass rate this semester</div>
+          <div class="stat-row-val">84.2%</div>
+          <div class="stat-row-change change-up">↑ 6.1%</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-icon" style="background:rgba(34,197,94,.1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2" style="width:18px;height:18px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="stat-row-label">Integrity incidents flagged</div>
+          <div class="stat-row-val">0.03%</div>
+          <div class="stat-row-change change-down">↓ 91%</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-icon" style="background:rgba(59,130,246,.12)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="width:18px;height:18px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-row-label">Avg. completion time</div>
+          <div class="stat-row-val">52m</div>
+          <div class="stat-row-change change-up">↑ On track</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-row-icon" style="background:rgba(124,58,237,.12)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2" style="width:18px;height:18px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <div class="stat-row-label">AI-graded subjective answers</div>
+          <div class="stat-row-val">18,432</div>
+          <div class="stat-row-change change-up">↑ 24%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── PRICING ─────────────────────────── -->
+<section class="pricing-section" id="pricing" aria-labelledby="pricing-heading">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:560px;margin:0 auto">
+      <div class="section-label">Pricing</div>
+      <h2 id="pricing-heading" class="section-heading">Scale with confidence.</h2>
+      <p class="section-body" style="margin:0 auto">Transparent, institution-aligned pricing with no hidden per-exam fees. Volume discounts available for national deployments.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card reveal reveal-delay-1">
+        <div class="pricing-tier">Academic</div>
+        <div class="pricing-price">$499<span>/mo</span></div>
+        <div class="pricing-desc">For departments and smaller institutions running up to 5,000 exam sessions monthly.</div>
+        <ul class="pricing-feats">
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Up to 5,000 sessions/month</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>MCQ, coding & subjective questions</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>AI anomaly detection</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>SEB integration</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Standard analytics</li>
+        </ul>
+        <div class="pricing-cta-wrap">
+          <button class="pricing-btn pricing-btn-ghost">Start free trial</button>
+        </div>
+      </div>
+      <div class="pricing-card featured reveal reveal-delay-2">
+        <div class="pricing-featured-tag">Most popular</div>
+        <div class="pricing-tier">University</div>
+        <div class="pricing-price">$1,999<span>/mo</span></div>
+        <div class="pricing-desc">For full university deployments with multiple departments and concurrent exam delivery.</div>
+        <ul class="pricing-feats">
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Unlimited sessions</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Full AI suite including grading</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Live monitoring command center</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Advanced behavioral analytics</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>99.99% SLA + dedicated support</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Custom branding & domain</li>
+        </ul>
+        <div class="pricing-cta-wrap">
+          <button class="pricing-btn pricing-btn-solid">Get started</button>
+        </div>
+      </div>
+      <div class="pricing-card reveal reveal-delay-3">
+        <div class="pricing-tier">Government / Enterprise</div>
+        <div class="pricing-price" style="font-size:42px">Custom</div>
+        <div class="pricing-desc">For governments, certification bodies, and national-scale deployments. Air-gapped options available.</div>
+        <ul class="pricing-feats">
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Unlimited scale</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>On-premise deployment</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Air-gapped & classified environments</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>White-label platform rights</li>
+          <li><div class="pricing-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>Dedicated engineering team</li>
+        </ul>
+        <div class="pricing-cta-wrap">
+          <button class="pricing-btn pricing-btn-ghost">Talk to sales</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── FAQ ─────────────────────────── -->
+<section class="faq-section" id="faq" aria-labelledby="faq-heading">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:500px;margin:0 auto">
+      <div class="section-label">FAQ</div>
+      <h2 id="faq-heading" class="section-heading">Questions we hear from institutions.</h2>
+    </div>
+    <div class="faq-grid reveal reveal-delay-1">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          How does SecureExam integrate with existing LMS platforms?
+          <div class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">SecureExam integrates natively with Moodle, Canvas, Blackboard, and Brightspace via LTI 1.3. Our API-first architecture means any custom LMS can connect through our REST or GraphQL endpoints. Data sync is real-time, bidirectional, and requires no manual exports.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          What happens if a student loses internet connectivity mid-exam?
+          <div class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">Our offline-resilient client caches all responses locally and syncs automatically when connectivity is restored. Sessions are preserved for up to 15 minutes of disconnection. Proctors are alerted immediately with the connectivity event logged in the audit trail.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          How accurate is the AI subjective answer grading?
+          <div class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">In independent benchmarks against expert human graders, our AI achieves 94.7% agreement on rubric-based assessments. All AI grades include a confidence score. Answers below 80% confidence are automatically queued for human review. Graders can override and the AI learns from corrections.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          Is on-premise deployment available for sensitive environments?
+          <div class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">Yes. Our Government & Enterprise tier supports fully air-gapped on-premise deployment on your own infrastructure. We provide containerized deployment packages compatible with Kubernetes, Docker Swarm, and bare-metal installations. Dedicated professional services teams handle the deployment and ongoing maintenance.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          How does the Safe Exam Browser integration work?
+          <div class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">SecureExam generates cryptographically signed SEB configuration files per exam. When students launch the SEB client, it validates the signature, locks the OS environment, and establishes a secure channel to our servers. The configuration enforces allowed URLs, disables screen recording, clipboard, and process switching at the OS level.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── FOOTER ─────────────────────────── -->
+<footer>
+  <div class="section-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <div class="footer-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="footer-logo-name">SecureExam Enterprise</div>
+        </div>
+        <p class="footer-tagline">AI-powered examination infrastructure for universities, governments, and enterprise certification bodies worldwide.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Product</div>
+        <ul class="footer-links">
+          <li><a href="#">Teacher Portal</a></li>
+          <li><a href="#">Student Interface</a></li>
+          <li><a href="#">AI Grading</a></li>
+          <li><a href="#">Question Bank</a></li>
+          <li><a href="#">Live Monitoring</a></li>
+          <li><a href="#">Analytics</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Security</div>
+        <ul class="footer-links">
+          <li><a href="#">SEB Integration</a></li>
+          <li><a href="#">Compliance</a></li>
+          <li><a href="#">Audit Logs</a></li>
+          <li><a href="#">Penetration Testing</a></li>
+          <li><a href="#">Trust Center</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">API Reference</a></li>
+          <li><a href="#">Status</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2025 SecureExam Enterprise. Built at GLA University, Mathura.</div>
+      <div class="footer-badges">
+        <div class="footer-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          SOC 2 Type II
+        </div>
+        <div class="footer-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          ISO 27001
+        </div>
+        <div class="footer-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          GDPR
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── NEURAL CANVAS ──────────────────────────────────────────────────
+(function(){
+  const canvas = document.getElementById('neural-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], mouse = {x:0,y:0};
+  const NODE_COUNT = 60;
+  const CONNECTION_DIST = 160;
+  const MOUSE_INFLUENCE = 180;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function initNodes(){
+    nodes = [];
+    for(let i = 0; i < NODE_COUNT; i++){
+      nodes.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        vx: (Math.random()-.5)*.35,
+        vy: (Math.random()-.5)*.35,
+        r: Math.random()*1.8+.6,
+        pulse: Math.random()*Math.PI*2
+      });
+    }
+  }
+
+  function lerp(a,b,t){return a+(b-a)*t}
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // Ambient radial glows
+    const g1 = ctx.createRadialGradient(W*.2,H*.1,0,W*.2,H*.1,W*.45);
+    g1.addColorStop(0,'rgba(79,70,229,.055)');
+    g1.addColorStop(1,'transparent');
+    ctx.fillStyle=g1; ctx.fillRect(0,0,W,H);
+
+    const g2 = ctx.createRadialGradient(W*.8,H*.85,0,W*.8,H*.85,W*.4);
+    g2.addColorStop(0,'rgba(124,58,237,.04)');
+    g2.addColorStop(1,'transparent');
+    ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
+
+    // Mouse glow
+    const gm = ctx.createRadialGradient(mouse.x,mouse.y,0,mouse.x,mouse.y,MOUSE_INFLUENCE);
+    gm.addColorStop(0,'rgba(79,70,229,.07)');
+    gm.addColorStop(1,'transparent');
+    ctx.fillStyle=gm; ctx.fillRect(0,0,W,H);
+
+    // Connections
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const a=nodes[i], b=nodes[j];
+        const dx=a.x-b.x, dy=a.y-b.y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<CONNECTION_DIST){
+          const alpha=(.6-dist/CONNECTION_DIST)*0.22;
+          // Mouse proximity boost
+          const mdxa=mouse.x-a.x, mdya=mouse.y-a.y;
+          const mdista=Math.sqrt(mdxa*mdxa+mdya*mdya);
+          const boost=mdista<MOUSE_INFLUENCE?(1-(mdista/MOUSE_INFLUENCE))*.5:0;
+          ctx.beginPath();
+          ctx.strokeStyle=`rgba(120,110,255,${alpha+boost})`;
+          ctx.lineWidth=.6;
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Nodes
+    const now = Date.now()*.0008;
+    nodes.forEach(n=>{
+      const pulse = Math.sin(now+n.pulse)*.5+.5;
+      const mdx=mouse.x-n.x, mdy=mouse.y-n.y;
+      const md=Math.sqrt(mdx*mdx+mdy*mdy);
+      const mBoost = md<MOUSE_INFLUENCE?(1-(md/MOUSE_INFLUENCE))*.8:0;
+      const r = n.r*(1+pulse*.4+mBoost*.6);
+      const alpha = .3+pulse*.3+mBoost*.3;
+
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(148,140,255,${alpha})`;
+      ctx.fill();
+
+      if(mBoost>.3){
+        ctx.beginPath();
+        ctx.arc(n.x,n.y,r*2.5,0,Math.PI*2);
+        ctx.fillStyle=`rgba(79,70,229,${mBoost*.08})`;
+        ctx.fill();
+      }
+    });
+  }
+
+  function update(){
+    nodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>W) n.vx*=-1;
+      if(n.y<0||n.y>H) n.vy*=-1;
+      // Gentle mouse attraction
+      const dx=mouse.x-n.x, dy=mouse.y-n.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<MOUSE_INFLUENCE&&d>1){
+        n.vx+=dx/d*.003;
+        n.vy+=dy/d*.003;
+        const speed=Math.sqrt(n.vx*n.vx+n.vy*n.vy);
+        if(speed>.6){n.vx*=.6/speed;n.vy*=.6/speed;}
+      }
+    });
+  }
+
+  function loop(){draw();update();requestAnimationFrame(loop);}
+
+  window.addEventListener('resize',()=>{resize();initNodes();});
+  window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+  resize(); initNodes(); loop();
+})();
+
+// ── CURSOR GLOW ────────────────────────────────────────────────────
+(function(){
+  const glow = document.getElementById('cursorGlow');
+  let cx=window.innerWidth/2, cy=window.innerHeight/2;
+  let tx=cx, ty=cy;
+  window.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY;});
+  function animate(){
+    cx+=(tx-cx)*.08; cy+=(ty-cy)*.08;
+    glow.style.left=cx+'px'; glow.style.top=cy+'px';
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+// ── SCROLL REVEAL ──────────────────────────────────────────────────
+(function(){
+  const els = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});
+  },{threshold:.12});
+  els.forEach(el=>io.observe(el));
+})();
+
+// ── FAQ ────────────────────────────────────────────────────────────
+function toggleFaq(el){
+  const item=el.closest('.faq-item');
+  const wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+  if(!wasOpen) item.classList.add('open');
+}
+
+// ── PRODUCT TABS ───────────────────────────────────────────────────
+document.querySelectorAll('.product-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.product-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+// ── ANALYTICS CHART ────────────────────────────────────────────────
+(function(){
+  const ctx2 = document.getElementById('analyticsChart').getContext('2d');
+  const labels = ['Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+  new Chart(ctx2,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Pass',
+        data:[78,81,79,83,82,86,84],
+        borderColor:'rgba(79,70,229,.9)',
+        backgroundColor:'rgba(79,70,229,.08)',
+        borderWidth:2,
+        pointBackgroundColor:'rgba(79,70,229,1)',
+        pointRadius:3,
+        pointHoverRadius:5,
+        fill:true,
+        tension:.4
+      },{
+        label:'Fail',
+        data:[22,19,21,17,18,14,16],
+        borderColor:'rgba(239,68,68,.7)',
+        backgroundColor:'rgba(239,68,68,.05)',
+        borderWidth:2,
+        pointBackgroundColor:'rgba(239,68,68,1)',
+        pointRadius:3,
+        pointHoverRadius:5,
+        fill:true,
+        tension:.4
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{intersect:false,mode:'index'},
+      plugins:{legend:{display:false},tooltip:{
+        backgroundColor:'rgba(12,12,20,.95)',
+        borderColor:'rgba(255,255,255,.12)',
+        borderWidth:1,
+        titleColor:'rgba(255,255,255,.9)',
+        bodyColor:'rgba(255,255,255,.6)',
+        padding:12,
+        cornerRadius:10
+      }},
+      scales:{
+        x:{
+          grid:{color:'rgba(255,255,255,.04)',drawBorder:false},
+          ticks:{color:'rgba(255,255,255,.35)',font:{size:11,family:'Inter'}}
+        },
+        y:{
+          grid:{color:'rgba(255,255,255,.04)',drawBorder:false},
+          ticks:{color:'rgba(255,255,255,.35)',font:{size:11,family:'Inter'},callback:v=>v+'%'},
+          min:0,max:100
+        }
+      }
+    }
+  });
+})();
+
+// ── AI TYPING LOOP ─────────────────────────────────────────────────
+(function(){
+  const msgs=[
+    "Behavioral baseline established for 847 candidates. Session integrity nominal.",
+    "Roll 2214 flagged: gaze deviation 4.1σ — confidence 97%. Live feed queued.",
+    "Question variant distribution complete. Zero duplicate allocations detected.",
+    "Subjective answer batch graded: 234 answers, avg confidence 91.3%. 18 queued for review.",
+    "Network latency spike detected at Node 7 (Mumbai). Automatic failover initiated. Zero disruption."
+  ];
+  let i=0;
+  const el=document.querySelector('.ai-msg-system:last-of-type');
+  if(!el)return;
+  function cycle(){
+    el.style.opacity='0';
+    setTimeout(()=>{
+      el.textContent=msgs[i%msgs.length];
+      el.style.transition='opacity .6s';
+      el.style.opacity='1';
+      i++;
+    },600);
+  }
+  setInterval(cycle,4000);
+})();
+</script>
+</body>
+</html>
