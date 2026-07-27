@@ -25,6 +25,30 @@ export interface UserProfile extends User {
   examAttempts: ExamAttemptSummary[];
 }
 
+export type SecurityAction = "WARNING" | "AUTO_SUBMIT" | "TERMINATE";
+
+export interface SecurityPolicy {
+  requireFullscreen: boolean;
+  fullscreenExitLimit: number;
+  
+  tabSwitchLimit: number;
+  windowBlurLimit: number;
+  
+  copyPasteLimit: number;
+  rightClickLimit: number;
+  devToolsLimit: number;
+  
+  networkDisconnectLimit: number;
+  idleLimitSeconds: number;
+  
+  cameraRequired: boolean;
+  microphoneRequired: boolean;
+  screenSharingRequired: boolean;
+  
+  overallViolationLimit: number;
+  action: SecurityAction;
+}
+
 export interface Question {
   _id?: string;
   id?: string; // For compatibility
@@ -112,6 +136,7 @@ export interface Exam {
   resultPublishTime?: string;
   resultPublishDateTimeUTC?: string | Date;
   resultsPublished?: boolean;
+  securityPolicy?: SecurityPolicy;
   assignedCandidates?: Array<string | { _id?: string; id?: string }>;
   assignedStudents?: string[];
   sendEmailNotification?: boolean;

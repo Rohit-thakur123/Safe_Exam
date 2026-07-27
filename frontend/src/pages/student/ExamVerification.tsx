@@ -485,17 +485,22 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
             )} */}
             {examInfo?.canAttempt ? (
             <Button
-              onClick={() => {
+              onClick={async () => {
                 console.log("EXAM INFO:", examInfo);
-                // window.location.href = `/student/exam/${examInfo?.examId}`;
                 if (!examInfo || !examInfo.examId) {
+                  alert('Exam ID not found');
+                  return;
+                }
+                
+                try {
+                  if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                  }
+                } catch (err) {
+                  console.error('Error attempting to enable fullscreen:', err);
+                }
 
-                alert('Exam ID not found');
-
-                return;
-              }
-
-              navigate(`/student/exam/${examInfo.examId}`);
+                navigate(`/student/exam/${examInfo.examId}`);
               }}
               className="px-8 py-3 text-lg"
               size="lg"

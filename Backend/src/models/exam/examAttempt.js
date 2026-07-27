@@ -62,7 +62,7 @@ const ExamAttemptSchema = new mongoose.Schema({
     // Student Attempt Finite State Machine (FSM) Status
     status: {
         type: String,
-        enum: ['not_started', 'started', 'in_progress', 'submitted', 'completed', 'evaluated', 'abandoned', 'locked'],
+        enum: ['not_started', 'started', 'in_progress', 'submitted', 'completed', 'evaluated', 'abandoned', 'locked', 'terminated'],
         default: 'in_progress'
     },
     ipAddress: {
@@ -85,7 +85,7 @@ const ExamAttemptSchema = new mongoose.Schema({
     violations: [{
         type: {
             type: String,
-            enum: ['tab_switch', 'window_blur', 'copy_attempt', 'paste_attempt', 'devtools_open', 'refresh_attempt', 'keyboard_shortcut'],
+            enum: ['tab_switch', 'window_blur', 'copy_attempt', 'paste_attempt', 'cut_attempt', 'devtools_open', 'refresh_attempt', 'keyboard_shortcut', 'fullscreen_exit', 'right_click', 'offline', 'resize', 'mouse_leave'],
             required: true
         },
         timestamp: { type: Date, default: Date.now },
@@ -96,8 +96,15 @@ const ExamAttemptSchema = new mongoose.Schema({
         windowBlurs: { type: Number, default: 0 },
         copyAttempts: { type: Number, default: 0 },
         pasteAttempts: { type: Number, default: 0 },
+        cutAttempts: { type: Number, default: 0 },
         devToolsAttempts: { type: Number, default: 0 },
+        fullscreenExits: { type: Number, default: 0 },
+        rightClicks: { type: Number, default: 0 },
+        offlineCount: { type: Number, default: 0 },
         totalViolations: { type: Number, default: 0 }
+    },
+    terminationReason: {
+        type: String
     },
     subjectiveStatus: {
         type: String,

@@ -22,7 +22,23 @@ const CreateExam: React.FC = () => {
   const [availableStudents, setAvailableStudents] = useState<Array<{ id: string; name: string; email: string }>>([]);
 
   // Form State
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1);
+  const [securityPolicy, setSecurityPolicy] = useState({
+    requireFullscreen: true,
+    fullscreenExitLimit: 2,
+    tabSwitchLimit: 3,
+    windowBlurLimit: 3,
+    copyPasteLimit: 2,
+    rightClickLimit: 2,
+    devToolsLimit: 1,
+    networkDisconnectLimit: 5,
+    idleLimitSeconds: 300,
+    cameraRequired: false,
+    microphoneRequired: false,
+    screenSharingRequired: false,
+    overallViolationLimit: 8,
+    action: "TERMINATE" as "WARNING" | "AUTO_SUBMIT" | "TERMINATE"
+  });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([]);
@@ -136,6 +152,9 @@ const CreateExam: React.FC = () => {
       setAutoSubmit(exam.autoSubmit !== false);
       setResultPublishDate(formatDateInput(exam.resultPublishDate));
       setResultPublishTime(exam.resultPublishTime || '');
+      if (exam.securityPolicy) {
+        setSecurityPolicy(exam.securityPolicy);
+      }
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
       setToast({
@@ -286,6 +305,7 @@ const CreateExam: React.FC = () => {
         autoSubmit,
         resultPublishDate: resultPublishDate || undefined,
         resultPublishTime: resultPublishTime || undefined,
+        securityPolicy,
         assignedStudents: selectedStudents.length > 0 ? selectedStudents : undefined,
         sendEmailNotification: selectedStudents.length > 0 ? sendEmailNotification : false,
       };
@@ -332,8 +352,9 @@ const CreateExam: React.FC = () => {
         <div className="bg-white rounded-2xl border border-gray-100 p-2 mb-8 shadow-xs flex items-center justify-between">
           {[
             { num: 1, label: '1. Basic Config & Timing' },
-            { num: 2, label: '2. Select Questions & Challenges' },
-            { num: 3, label: '3. Candidates & Access' }
+            { num: 2, label: '2. Select Questions' },
+            { num: 3, label: '3. Candidates & Access' },
+            { num: 4, label: '4. Security Policy' }
           ].map((step) => {
             const isActive = activeStep === step.num;
             return (
@@ -782,6 +803,100 @@ const CreateExam: React.FC = () => {
 
               <div className="flex justify-between pt-4 border-t border-gray-100">
                 <Button type="button" variant="outline" onClick={() => setActiveStep(2)}>← Back: Questions</Button>
+                <Button type="button" onClick={() => setActiveStep(4)}>Next: Security Policy →</Button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Security Policy */}
+          {activeStep === 4 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-5">
+              <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">Security & Anti-Cheat Policy</h2>
+              
+              <p className="text-xs text-gray-500 mb-4">
+                Configure limits for different types of security violations. If a candidate exceeds the <b>Overall Violation Limit</b> or a specific limit, the chosen <b>Enforcement Action</b> will be triggered.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Enforcement Action *</label>
+                  <select
+                    value={securityPolicy.action}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, action: e.target.value as any })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+                  >
+                    <option value="WARNING">Warning Only (Log but don't terminate)</option>
+                    <option value="AUTO_SUBMIT">Auto-Submit Exam</option>
+                    <option value="TERMINATE">Terminate Immediately</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Overall Violation Limit *</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={securityPolicy.overallViolationLimit}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, overallViolationLimit: Number(e.target.value) })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Tab Switch Limit</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={securityPolicy.tabSwitchLimit}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, tabSwitchLimit: Number(e.target.value) })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Window Blur Limit</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={securityPolicy.windowBlurLimit}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, windowBlurLimit: Number(e.target.value) })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Copy/Paste Limit</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={securityPolicy.copyPasteLimit}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, copyPasteLimit: Number(e.target.value) })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">DevTools Open Limit</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={securityPolicy.devToolsLimit}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, devToolsLimit: Number(e.target.value) })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Fullscreen Exit Limit</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={securityPolicy.fullscreenExitLimit}
+                    onChange={e => setSecurityPolicy({ ...securityPolicy, fullscreenExitLimit: Number(e.target.value) })}
+                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between pt-4 border-t border-gray-100">
+                <Button type="button" variant="outline" onClick={() => setActiveStep(3)}>← Back: Candidates</Button>
                 <Button type="submit" disabled={isLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600">
                   {isLoading ? 'Saving Assessment...' : isEditMode ? 'Update Assessment' : 'Save & Publish Assessment'}
                 </Button>

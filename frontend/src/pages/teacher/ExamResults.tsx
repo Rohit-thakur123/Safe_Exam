@@ -13,6 +13,7 @@ import type { ToastMessage } from '../../components/ui/Toast';
 
 interface CandidateAttempt {
   id: string; status: string;
+  terminationReason?: string;
   subjectiveStatus?: 'not_applicable' | 'pending_evaluation' | 'evaluated';
   subjectiveScore?: number;
   student: { id: string; name: string; email: string; };
@@ -213,8 +214,8 @@ const ExamResults: React.FC = () => {
                         color: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : 'var(--tint-amber-text)',
                         border: `1px solid ${attempt.status === 'completed' ? 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 25%, transparent)'}`,
                       }}>
-                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : 'var(--tint-amber-text)' }} />
-                      {attempt.status === 'completed' ? 'Completed' : 'In Progress'}
+                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : attempt.status === 'terminated' ? 'var(--tint-rose-text)' : 'var(--tint-amber-text)' }} />
+                      {attempt.status === 'completed' ? 'Completed' : attempt.status === 'terminated' ? 'Terminated' : 'In Progress'}
                     </span>
                     {attempt.subjectiveStatus === 'pending_evaluation' && (
                       <span className="mt-1 inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -296,6 +297,18 @@ const ExamResults: React.FC = () => {
             </div>
 
             <div className="px-6 py-6 space-y-6">
+              {/* Termination Notice */}
+              {selectedCandidate.status === 'terminated' && (
+                <div className="rounded-xl p-4" style={{ background: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', border: '1px solid var(--accent-rose)' }}>
+                  <div className="text-sm font-bold flex items-center gap-2 mb-1" style={{ color: 'var(--tint-rose-text)' }}>
+                    <AlertTriangle size={16} /> Exam Terminated Due To Security Violation
+                  </div>
+                  <div className="text-xs font-semibold" style={{ color: 'var(--tint-rose-text)' }}>
+                    Reason: {selectedCandidate.terminationReason || 'Policy limit exceeded'}
+                  </div>
+                </div>
+              )}
+
               {/* Score overview */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl p-5" style={{ background: 'color-mix(in srgb, var(--accent-purple) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 18%, transparent)' }}>
@@ -362,7 +375,10 @@ const ExamResults: React.FC = () => {
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: 'Tab Switches', value: selectedCandidate.violationSummary?.tabSwitches || 0 },
-                    { label: 'Copy Attempts', value: selectedCandidate.violationSummary?.copyAttempts || 0 },
+                    { label: 'Window Blurs', value: selectedCandidate.violationSummary?.windowBlurs || 0 },
+                    { label: 'Fullscreen Exits', value: selectedCandidate.violationSummary?.fullscreenExits || 0 },
+                    { label: 'Copy/Paste', value: (selectedCandidate.violationSummary?.copyAttempts || 0) + (selectedCandidate.violationSummary?.pasteAttempts || 0) },
+                    { label: 'Right Clicks', value: selectedCandidate.violationSummary?.rightClicks || 0 },
                     { label: 'DevTools', value: selectedCandidate.violationSummary?.devToolsAttempts || 0 },
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-xl p-3 text-center" style={{

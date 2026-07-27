@@ -376,6 +376,15 @@ export const examAttemptAPI = {
   getByExam: async (examId: string) => {
     const response = await api.get(`/exam-attempts/exam/${examId}`);
     return response.data;
+  },
+
+  reportViolation: async (attemptId: string, violationType: string, details?: string) => {
+    const response = await api.post(`/exam-attempts/report-violation`, {
+      attemptId,
+      type: violationType.toLowerCase(),
+      metadata: { details }
+    });
+    return response.data;
   }
 };
 

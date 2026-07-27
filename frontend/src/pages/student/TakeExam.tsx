@@ -7,6 +7,8 @@ import { examAttemptAPI } from '../../services/api';
 import { ArrowLeft, Clock, CheckCircle } from 'lucide-react';
 import type { ExamAttempt, ExamQuestion, Question } from '../../types';
 import CodingAssessment from '../../components/exam/CodingAssessment';
+import { useSecurityManager } from '../../hooks/useSecurityManager';
+import { SecurityOverlay } from '../../components/exam/SecurityOverlay';
 
 const TakeExam: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
@@ -21,6 +23,11 @@ const TakeExam: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const { securityState, dismissWarning } = useSecurityManager(
+    attempt?.id || null, 
+    attempt?.exam?.securityPolicy
+  );
 
   useEffect(() => {
     const startExamAttempt = async () => {
@@ -119,6 +126,13 @@ const TakeExam: React.FC = () => {
     }
   }, [timeLeft, attempt, submitting, handleSubmit]);
 
+  // Auto-submit if terminated by security policy
+  useEffect(() => {
+    if (securityState.terminated && attempt && !submitting) {
+      handleSubmit();
+    }
+  }, [securityState.terminated, attempt, submitting, handleSubmit]);
+
   const handleAnswerChange = (questionId: string, answer: string) => {
     setAnswers(prev => ({
       ...prev,
@@ -196,6 +210,11 @@ const TakeExam: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SecurityOverlay 
+        securityState={securityState} 
+        onDismissWarning={dismissWarning} 
+        requireFullscreen={!!attempt?.exam?.securityPolicy?.requireFullscreen}
+      />
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">

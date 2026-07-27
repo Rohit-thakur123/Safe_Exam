@@ -59,6 +59,30 @@ const ExamSchema = new mongoose.Schema({
     allowRetakes: { type: Boolean, default: false },
     shuffleQuestions: { type: Boolean, default: false },
     assignedCandidates: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    
+    // Security Policy
+    securityPolicy: {
+        requireFullscreen: { type: Boolean, default: true },
+        fullscreenExitLimit: { type: Number, default: 2 },
+        
+        tabSwitchLimit: { type: Number, default: 3 },
+        windowBlurLimit: { type: Number, default: 3 },
+        
+        copyPasteLimit: { type: Number, default: 2 },
+        rightClickLimit: { type: Number, default: 2 },
+        devToolsLimit: { type: Number, default: 1 },
+        
+        networkDisconnectLimit: { type: Number, default: 5 },
+        idleLimitSeconds: { type: Number, default: 300 },
+        
+        cameraRequired: { type: Boolean, default: false },
+        microphoneRequired: { type: Boolean, default: false },
+        screenSharingRequired: { type: Boolean, default: false },
+        
+        overallViolationLimit: { type: Number, default: 8 },
+        action: { type: String, enum: ['WARNING', 'AUTO_SUBMIT', 'TERMINATE'], default: 'TERMINATE' }
+    },
+    
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 });

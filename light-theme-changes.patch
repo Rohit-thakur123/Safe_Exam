@@ -1,0 +1,2472 @@
+diff --git a/frontend/src/App.tsx b/frontend/src/App.tsx
+index 9d12172..d668565 100644
+--- a/frontend/src/App.tsx
++++ b/frontend/src/App.tsx
+@@ -1,6 +1,7 @@
+ import React from 'react';
+ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+ import { AuthProvider, useAuth } from './context/AuthContext';
++import { ThemeProvider } from './context/ThemeContext';
+ import Login from './pages/Login';
+ import Register from './pages/Register';
+ import Landing from './pages/Landing/Landing';
+@@ -63,10 +64,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | '
+ 
+ function App() {
+   return (
++    <ThemeProvider>
+     <Router>
+       <AuthProvider>
+ 
+-        <div className="min-h-screen bg-gray-50">
++        <div className="min-h-screen" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+           <Routes>
+             <Route path="/login" element={<Login />} />
+             <Route path="/register" element={<Register />} />
+@@ -193,6 +195,7 @@ function App() {
+         </div>
+       </AuthProvider >
+     </Router>
++    </ThemeProvider>
+ 
+   );
+ }
+diff --git a/frontend/src/components/TeacherNavbar.tsx b/frontend/src/components/TeacherNavbar.tsx
+index 8b4d2ff..27f5a43 100644
+--- a/frontend/src/components/TeacherNavbar.tsx
++++ b/frontend/src/components/TeacherNavbar.tsx
+@@ -1,9 +1,10 @@
+ import React, { useState, useEffect } from 'react';
+ import { Link, useLocation } from 'react-router-dom';
+ import { useAuth } from '../context/AuthContext';
++import { useTheme } from '../context/ThemeContext';
+ import {
+   Shield, BarChart3, Plus, ListChecks, FileText, Eye,
+-  Code2, BookOpen, LogOut, Menu, X, ChevronDown, Bell, Settings
++  Code2, BookOpen, LogOut, Menu, X, ChevronDown, Sun, Moon
+ } from 'lucide-react';
+ 
+ const NAV_LINKS = [
+@@ -23,6 +24,7 @@ const CREATE_LINKS = [
+ 
+ export const TeacherNavbar: React.FC = () => {
+   const { user, logout } = useAuth();
++  const { theme, toggleTheme } = useTheme();
+   const location = useLocation();
+   const [mobileOpen, setMobileOpen] = useState(false);
+   const [createOpen, setCreateOpen] = useState(false);
+@@ -49,13 +51,11 @@ export const TeacherNavbar: React.FC = () => {
+       <header
+         className="sticky top-0 z-50 transition-all duration-300"
+         style={{
+-          background: scrolled
+-            ? 'rgba(10,10,15,0.95)'
+-            : 'rgba(10,10,15,0.7)',
++          background: scrolled ? 'var(--nav-bg-scrolled)' : 'var(--nav-bg)',
+           backdropFilter: 'blur(24px)',
+           WebkitBackdropFilter: 'blur(24px)',
+-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+-          boxShadow: scrolled ? '0 4px 40px rgba(0,0,0,0.4)' : 'none',
++          borderBottom: '1px solid var(--border)',
++          boxShadow: scrolled ? 'var(--shadow-md)' : 'none',
+         }}
+       >
+         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+@@ -66,15 +66,15 @@ export const TeacherNavbar: React.FC = () => {
+               <div
+                 className="h-9 w-9 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105"
+                 style={{
+-                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+-                  boxShadow: '0 0 20px rgba(139,92,246,0.4)',
++                  background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
++                  boxShadow: '0 0 20px var(--glow-purple)',
+                 }}
+               >
+                 <Shield size={17} className="text-white" />
+               </div>
+               <div>
+-                <div className="text-sm font-bold text-white leading-none">SecureExam</div>
+-                <div className="text-[10px] font-medium leading-none mt-1" style={{ color: '#8b5cf6' }}>
++                <div className="text-sm font-bold leading-none" style={{ color: 'var(--text-primary)' }}>SecureExam</div>
++                <div className="text-[10px] font-medium leading-none mt-1" style={{ color: 'var(--accent-purple)' }}>
+                   Enterprise Console
+                 </div>
+               </div>
+@@ -88,22 +88,11 @@ export const TeacherNavbar: React.FC = () => {
+                   <Link
+                     key={to}
+                     to={to}
+-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 relative"
++                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all duration-200 relative nav-link"
++                    data-active={active}
+                     style={{
+-                      color: active ? '#a78bfa' : 'rgba(240,240,245,0.55)',
+-                      background: active ? 'rgba(139,92,246,0.12)' : 'transparent',
+-                    }}
+-                    onMouseEnter={e => {
+-                      if (!active) {
+-                        (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.9)';
+-                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)';
+-                      }
+-                    }}
+-                    onMouseLeave={e => {
+-                      if (!active) {
+-                        (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.55)';
+-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+-                      }
++                      color: active ? 'var(--tint-purple-text)' : 'var(--text-secondary)',
++                      background: active ? 'color-mix(in srgb, var(--accent-purple) 12%, transparent)' : 'transparent',
+                     }}
+                   >
+                     <Icon size={15} />
+@@ -111,7 +100,7 @@ export const TeacherNavbar: React.FC = () => {
+                     {active && (
+                       <span
+                         className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
+-                        style={{ background: '#8b5cf6' }}
++                        style={{ background: 'var(--accent-purple)' }}
+                       />
+                     )}
+                   </Link>
+@@ -121,6 +110,16 @@ export const TeacherNavbar: React.FC = () => {
+ 
+             {/* Right Actions */}
+             <div className="flex items-center gap-2">
++              {/* Theme toggle */}
++              <button
++                onClick={toggleTheme}
++                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
++                className="p-2 rounded-xl transition-all duration-200 icon-btn"
++                style={{ color: 'var(--text-secondary)' }}
++              >
++                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
++              </button>
++
+               {/* Create dropdown */}
+               <div className="relative hidden sm:block">
+                 <button
+@@ -129,8 +128,8 @@ export const TeacherNavbar: React.FC = () => {
+                   style={{
+                     background: createOpen
+                       ? 'linear-gradient(135deg, #7c3aed, #4f46e5)'
+-                      : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+-                    boxShadow: '0 2px 20px rgba(139,92,246,0.3)',
++                      : 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
++                    boxShadow: '0 2px 20px var(--glow-purple)',
+                   }}
+                 >
+                   <Plus size={15} />
+@@ -144,28 +143,20 @@ export const TeacherNavbar: React.FC = () => {
+                     <div
+                       className="absolute right-0 top-full mt-2 w-52 rounded-2xl overflow-hidden z-50 py-2"
+                       style={{
+-                        background: 'rgba(15,15,23,0.98)',
+-                        border: '1px solid rgba(255,255,255,0.1)',
++                        background: 'var(--surface-elevated)',
++                        border: '1px solid var(--border)',
+                         backdropFilter: 'blur(24px)',
+-                        boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.1)',
++                        boxShadow: 'var(--shadow-lg)',
+                       }}
+                     >
+                       {CREATE_LINKS.map(({ to, label, icon: Icon }) => (
+                         <Link
+                           key={to}
+                           to={to}
+-                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors"
+-                          style={{ color: 'rgba(240,240,245,0.7)' }}
+-                          onMouseEnter={e => {
+-                            (e.currentTarget as HTMLElement).style.color = '#fff';
+-                            (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.12)';
+-                          }}
+-                          onMouseLeave={e => {
+-                            (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.7)';
+-                            (e.currentTarget as HTMLElement).style.background = 'transparent';
+-                          }}
++                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors dropdown-link"
++                          style={{ color: 'var(--text-secondary)' }}
+                         >
+-                          <Icon size={14} style={{ color: '#8b5cf6' }} />
++                          <Icon size={14} style={{ color: 'var(--accent-purple)' }} />
+                           {label}
+                         </Link>
+                       ))}
+@@ -175,19 +166,19 @@ export const TeacherNavbar: React.FC = () => {
+               </div>
+ 
+               {/* Divider */}
+-              <div className="hidden sm:block h-6 w-px mx-1" style={{ background: 'rgba(255,255,255,0.08)' }} />
++              <div className="hidden sm:block h-6 w-px mx-1" style={{ background: 'var(--border)' }} />
+ 
+               {/* User avatar */}
+               <div className="hidden sm:flex items-center gap-2.5">
+                 <div
+                   className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
++                  style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
+                 >
+                   {initials}
+                 </div>
+                 <div className="hidden md:block">
+-                  <div className="text-xs font-semibold text-white leading-none">{user?.name}</div>
+-                  <div className="text-[10px] mt-0.5 capitalize" style={{ color: 'rgba(240,240,245,0.4)' }}>
++                  <div className="text-xs font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>{user?.name}</div>
++                  <div className="text-[10px] mt-0.5 capitalize" style={{ color: 'var(--text-muted)' }}>
+                     Instructor
+                   </div>
+                 </div>
+@@ -196,16 +187,8 @@ export const TeacherNavbar: React.FC = () => {
+               {/* Logout */}
+               <button
+                 onClick={logout}
+-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200"
+-                style={{ color: 'rgba(240,240,245,0.4)' }}
+-                onMouseEnter={e => {
+-                  (e.currentTarget as HTMLElement).style.color = '#fb7185';
+-                  (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.08)';
+-                }}
+-                onMouseLeave={e => {
+-                  (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.4)';
+-                  (e.currentTarget as HTMLElement).style.background = 'transparent';
+-                }}
++                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 logout-btn"
++                style={{ color: 'var(--text-muted)' }}
+               >
+                 <LogOut size={14} />
+                 <span className="hidden lg:inline">Sign out</span>
+@@ -215,7 +198,7 @@ export const TeacherNavbar: React.FC = () => {
+               <button
+                 onClick={() => setMobileOpen(!mobileOpen)}
+                 className="lg:hidden p-2 rounded-xl transition-colors"
+-                style={{ color: 'rgba(240,240,245,0.6)', background: 'rgba(255,255,255,0.05)' }}
++                style={{ color: 'var(--text-secondary)', background: 'var(--bg-card)' }}
+               >
+                 {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+               </button>
+@@ -227,7 +210,7 @@ export const TeacherNavbar: React.FC = () => {
+         {mobileOpen && (
+           <div
+             className="lg:hidden border-t px-4 py-4 space-y-1"
+-            style={{ borderColor: 'rgba(255,255,255,0.06)', background: 'rgba(10,10,15,0.98)' }}
++            style={{ borderColor: 'var(--border)', background: 'var(--nav-bg-scrolled)' }}
+           >
+             {NAV_LINKS.map(({ to, label, icon: Icon, exact }) => (
+               <Link
+@@ -235,33 +218,33 @@ export const TeacherNavbar: React.FC = () => {
+                 to={to}
+                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"
+                 style={{
+-                  color: isActive(to, exact) ? '#a78bfa' : 'rgba(240,240,245,0.6)',
+-                  background: isActive(to, exact) ? 'rgba(139,92,246,0.12)' : 'transparent',
++                  color: isActive(to, exact) ? 'var(--tint-purple-text)' : 'var(--text-secondary)',
++                  background: isActive(to, exact) ? 'color-mix(in srgb, var(--accent-purple) 12%, transparent)' : 'transparent',
+                 }}
+               >
+                 <Icon size={15} />
+                 {label}
+               </Link>
+             ))}
+-            <div className="pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
++            <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+               {CREATE_LINKS.map(({ to, label, icon: Icon }) => (
+                 <Link
+                   key={to}
+                   to={to}
+                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium"
+-                  style={{ color: 'rgba(240,240,245,0.5)' }}
++                  style={{ color: 'var(--text-secondary)' }}
+                 >
+-                  <Icon size={14} style={{ color: '#8b5cf6' }} />
++                  <Icon size={14} style={{ color: 'var(--accent-purple)' }} />
+                   {label}
+                 </Link>
+               ))}
+             </div>
+-            <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+-              <span className="text-xs" style={{ color: 'rgba(240,240,245,0.3)' }}>{user?.email}</span>
++            <div className="pt-3 border-t flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
++              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{user?.email}</span>
+               <button
+                 onClick={logout}
+                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+-                style={{ color: '#fb7185', background: 'rgba(244,63,94,0.1)' }}
++                style={{ color: 'var(--tint-rose-text)', background: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)' }}
+               >
+                 <LogOut size={13} /> Sign out
+               </button>
+@@ -273,4 +256,4 @@ export const TeacherNavbar: React.FC = () => {
+   );
+ };
+ 
+-export default TeacherNavbar;
+\ No newline at end of file
++export default TeacherNavbar;
+diff --git a/frontend/src/components/ui/DarkLayout.tsx b/frontend/src/components/ui/DarkLayout.tsx
+index 998017e..dfa766d 100644
+--- a/frontend/src/components/ui/DarkLayout.tsx
++++ b/frontend/src/components/ui/DarkLayout.tsx
+@@ -6,43 +6,47 @@ export const MeshBackground: React.FC = () => {
+     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+       {/* Orb 1 - purple */}
+       <div
+-        className="absolute rounded-full blur-3xl opacity-20 animate-pulse"
++        className="absolute rounded-full blur-3xl animate-pulse"
+         style={{
+           width: '600px', height: '600px',
+-          background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)',
++          background: 'radial-gradient(circle, var(--accent-purple) 0%, transparent 70%)',
+           top: '-200px', left: '-100px',
++          opacity: 'var(--mesh-opacity-1)',
+           animationDuration: '8s',
+         }}
+       />
+       {/* Orb 2 - indigo */}
+       <div
+-        className="absolute rounded-full blur-3xl opacity-15"
++        className="absolute rounded-full blur-3xl"
+         style={{
+           width: '500px', height: '500px',
+-          background: 'radial-gradient(circle, #6366f1 0%, transparent 70%)',
++          background: 'radial-gradient(circle, var(--accent-indigo) 0%, transparent 70%)',
+           bottom: '-100px', right: '-100px',
++          opacity: 'var(--mesh-opacity-2)',
+           animation: 'pulse 10s ease-in-out infinite alternate',
+         }}
+       />
+       {/* Orb 3 - cyan */}
+       <div
+-        className="absolute rounded-full blur-3xl opacity-10"
++        className="absolute rounded-full blur-3xl"
+         style={{
+           width: '400px', height: '400px',
+-          background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)',
++          background: 'radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%)',
+           top: '40%', right: '20%',
++          opacity: 'var(--mesh-opacity-3)',
+           animation: 'pulse 12s ease-in-out infinite alternate-reverse',
+         }}
+       />
+       {/* Grid overlay */}
+       <div
+-        className="absolute inset-0 opacity-[0.03]"
++        className="absolute inset-0"
+         style={{
+           backgroundImage: `
+-            linear-gradient(rgba(139,92,246,0.5) 1px, transparent 1px),
+-            linear-gradient(90deg, rgba(139,92,246,0.5) 1px, transparent 1px)
++            linear-gradient(color-mix(in srgb, var(--accent-purple) 50%, transparent) 1px, transparent 1px),
++            linear-gradient(90deg, color-mix(in srgb, var(--accent-purple) 50%, transparent) 1px, transparent 1px)
+           `,
+           backgroundSize: '60px 60px',
++          opacity: 'var(--mesh-grid-opacity)',
+         }}
+       />
+     </div>
+@@ -73,20 +77,25 @@ interface GlassCardProps {
+   onClick?: () => void;
+ }
+ 
++const glowVarMap: Record<string, string> = {
++  purple: 'var(--accent-purple)',
++  indigo: 'var(--accent-indigo)',
++  emerald: 'var(--accent-emerald)',
++  cyan: 'var(--accent-cyan)',
++};
++
+ export const GlassCard: React.FC<GlassCardProps> = ({
+   children, className = '', hover = false, glow = 'none', onClick
+ }) => {
+-  const glowMap = {
+-    purple: 'hover:shadow-[0_0_30px_rgba(139,92,246,0.15)]',
+-    indigo: 'hover:shadow-[0_0_30px_rgba(99,102,241,0.15)]',
+-    emerald: 'hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]',
+-    cyan: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.15)]',
+-    none: '',
+-  };
++  const glowStyle: React.CSSProperties =
++    glow !== 'none'
++      ? ({ ['--glow-shadow-color' as string]: glowVarMap[glow] })
++      : {};
+ 
+   return (
+     <div
+-      className={`glass rounded-2xl transition-all duration-300 ${hover ? 'glass-hover cursor-pointer' : ''} ${glowMap[glow]} ${className}`}
++      className={`glass rounded-2xl transition-all duration-300 ${hover ? 'glass-hover cursor-pointer' : ''} ${glow !== 'none' ? 'glass-glow-hover' : ''} ${className}`}
++      style={glowStyle}
+       onClick={onClick}
+     >
+       {children}
+@@ -113,7 +122,7 @@ export const StatCardDark: React.FC<StatCardDarkProps> = ({
+ }) => (
+   <div
+     className="glass glass-hover rounded-2xl p-6 cursor-pointer transition-all duration-300 group relative overflow-hidden"
+-    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
++    style={{ borderColor: 'var(--border)' }}
+     onClick={onClick}
+   >
+     {/* Glow on hover */}
+@@ -141,10 +150,10 @@ export const StatCardDark: React.FC<StatCardDarkProps> = ({
+       </div>
+ 
+       <div className="count-up">
+-        <p className="text-3xl font-black tabular-nums tracking-tight text-white">{value}</p>
++        <p className="text-3xl font-black tabular-nums tracking-tight" style={{ color: 'var(--text-primary)' }}>{value}</p>
+       </div>
+-      <p className="text-sm font-semibold mt-1" style={{ color: 'rgba(240,240,245,0.7)' }}>{label}</p>
+-      {subtext && <p className="text-xs mt-1" style={{ color: 'rgba(240,240,245,0.35)' }}>{subtext}</p>}
++      <p className="text-sm font-semibold mt-1" style={{ color: 'var(--text-secondary)' }}>{label}</p>
++      {subtext && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{subtext}</p>}
+     </div>
+   </div>
+ );
+@@ -164,21 +173,21 @@ interface SectionHeaderProps {
+ }
+ 
+ export const SectionHeader: React.FC<SectionHeaderProps> = ({
+-  title, subtitle, action, icon: Icon, accentColor = '#8b5cf6'
++  title, subtitle, action, icon: Icon, accentColor = 'var(--accent-purple)'
+ }) => (
+   <div className="flex items-center justify-between mb-6">
+     <div className="flex items-center gap-3">
+       {Icon && (
+         <div
+           className="h-8 w-8 rounded-lg flex items-center justify-center"
+-          style={{ background: `${accentColor}22`, border: `1px solid ${accentColor}33` }}
++          style={{ background: `color-mix(in srgb, ${accentColor} 13%, transparent)`, border: `1px solid color-mix(in srgb, ${accentColor} 20%, transparent)` }}
+         >
+           <Icon size={15} style={{ color: accentColor }} />
+         </div>
+       )}
+       <div>
+-        <h2 className="text-base font-bold text-white">{title}</h2>
+-        {subtitle && <p className="text-xs mt-0.5" style={{ color: 'rgba(240,240,245,0.4)' }}>{subtitle}</p>}
++        <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h2>
++        {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>}
+       </div>
+     </div>
+     {action && <div>{action}</div>}
+@@ -209,16 +218,22 @@ export const PremiumButton: React.FC<PremiumButtonProps> = ({
+ 
+   const variantMap = {
+     primary: 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500 shadow-lg shadow-violet-500/20',
+-    secondary: 'glass glass-hover text-white border-white/10',
+-    ghost: 'text-white/60 hover:text-white hover:bg-white/05',
+-    danger: 'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20',
++    secondary: 'glass glass-hover',
++    ghost: 'premium-btn-ghost',
++    danger: 'premium-btn-danger',
+   };
+ 
++  const variantStyle: React.CSSProperties =
++    variant === 'secondary'
++      ? { color: 'var(--text-primary)' }
++      : {};
++
+   return (
+     <button
+       type={type}
+       onClick={onClick}
+       disabled={disabled}
++      style={variantStyle}
+       className={`inline-flex items-center font-semibold rounded-xl transition-all duration-200 ${sizeMap[size]} ${variantMap[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+     >
+       {Icon && <Icon size={size === 'sm' ? 13 : 15} />}
+@@ -233,21 +248,25 @@ interface BadgeProps {
+   color?: 'purple' | 'emerald' | 'amber' | 'rose' | 'cyan' | 'indigo';
+ }
+ export const Badge: React.FC<BadgeProps> = ({ children, color = 'purple' }) => {
+-  const colorMap = {
+-    purple: { bg: 'rgba(139,92,246,0.12)', text: '#a78bfa', border: 'rgba(139,92,246,0.25)' },
+-    emerald: { bg: 'rgba(16,185,129,0.12)', text: '#34d399', border: 'rgba(16,185,129,0.25)' },
+-    amber: { bg: 'rgba(245,158,11,0.12)', text: '#fbbf24', border: 'rgba(245,158,11,0.25)' },
+-    rose: { bg: 'rgba(244,63,94,0.12)', text: '#fb7185', border: 'rgba(244,63,94,0.25)' },
+-    cyan: { bg: 'rgba(6,182,212,0.12)', text: '#22d3ee', border: 'rgba(6,182,212,0.25)' },
+-    indigo: { bg: 'rgba(99,102,241,0.12)', text: '#818cf8', border: 'rgba(99,102,241,0.25)' },
++  const colorMap: Record<string, { bgVar: string; textVar: string; borderVar: string }> = {
++    purple: { bgVar: 'var(--accent-purple)', textVar: 'var(--tint-purple-text)', borderVar: 'var(--accent-purple)' },
++    emerald: { bgVar: 'var(--accent-emerald)', textVar: 'var(--tint-emerald-text)', borderVar: 'var(--accent-emerald)' },
++    amber: { bgVar: 'var(--accent-amber)', textVar: 'var(--tint-amber-text)', borderVar: 'var(--accent-amber)' },
++    rose: { bgVar: 'var(--accent-rose)', textVar: 'var(--tint-rose-text)', borderVar: 'var(--accent-rose)' },
++    cyan: { bgVar: 'var(--accent-cyan)', textVar: 'var(--tint-cyan-text)', borderVar: 'var(--accent-cyan)' },
++    indigo: { bgVar: 'var(--accent-indigo)', textVar: 'var(--tint-indigo-text)', borderVar: 'var(--accent-indigo)' },
+   };
+   const c = colorMap[color];
+   return (
+     <span
+       className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider"
+-      style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
++      style={{
++        background: `color-mix(in srgb, ${c.bgVar} 12%, transparent)`,
++        color: c.textVar,
++        border: `1px solid color-mix(in srgb, ${c.borderVar} 25%, transparent)`,
++      }}
+     >
+       {children}
+     </span>
+   );
+-};
+\ No newline at end of file
++};
+diff --git a/frontend/src/index.css b/frontend/src/index.css
+index 4fd5098..b603b79 100644
+--- a/frontend/src/index.css
++++ b/frontend/src/index.css
+@@ -1,7 +1,8 @@
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+ @import "tailwindcss";
+     
+-:root {
++:root,
++[data-theme="dark"] {
+   --bg-primary: #0a0a0f;
+   --bg-secondary: #0f0f17;
+   --bg-card: rgba(255,255,255,0.04);
+@@ -15,8 +16,110 @@
+   --accent-indigo: #6366f1;
+   --accent-cyan: #06b6d4;
+   --accent-emerald: #10b981;
++  --accent-amber: #f59e0b;
++  --accent-rose: #f43f5e;
+   --glow-purple: rgba(139,92,246,0.15);
+   --glow-indigo: rgba(99,102,241,0.15);
++
++  /* Semantic aliases */
++  --background: var(--bg-primary);
++  --surface: var(--bg-secondary);
++  --surface-elevated: rgba(255,255,255,0.06);
++  --card: var(--bg-card);
++  --card-hover: var(--bg-card-hover);
++  --divider: var(--border);
++  --text-on-accent: #ffffff;
++  --primary: var(--accent-purple);
++  --secondary: var(--accent-indigo);
++  --success: var(--accent-emerald);
++  --warning: var(--accent-amber);
++  --danger: var(--accent-rose);
++
++  /* Badge/text-on-tint variants (need to stay readable on a translucent accent chip) */
++  --tint-purple-text: #a78bfa;
++  --tint-indigo-text: #818cf8;
++  --tint-cyan-text: #22d3ee;
++  --tint-emerald-text: #34d399;
++  --tint-amber-text: #fbbf24;
++  --tint-rose-text: #fb7185;
++
++  /* Elevation shadows */
++  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
++  --shadow-md: 0 8px 24px rgba(0,0,0,0.35);
++  --shadow-lg: 0 16px 48px rgba(0,0,0,0.45);
++  --shadow-card: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.3);
++
++  /* Mesh background orb intensities */
++  --mesh-opacity-1: 0.20;
++  --mesh-opacity-2: 0.15;
++  --mesh-opacity-3: 0.10;
++  --mesh-grid-opacity: 0.03;
++  --noise-opacity: 0.03;
++
++  --nav-bg: rgba(10,10,15,0.7);
++  --nav-bg-scrolled: rgba(10,10,15,0.95);
++
++  color-scheme: dark;
++}
++
++[data-theme="light"] {
++  /* Warm, layered neutrals — never pure white */
++  --bg-primary: #f8f7fb;
++  --bg-secondary: #f1f0f7;
++  --bg-card: rgba(255,255,255,0.72);
++  --bg-card-hover: rgba(255,255,255,0.92);
++  --border: rgba(23,20,45,0.08);
++  --border-hover: rgba(23,20,45,0.16);
++  --text-primary: #17142d;
++  --text-secondary: #5c5773;
++  --text-muted: #9490a8;
++
++  /* Accents deepened slightly for AA contrast on light surfaces */
++  --accent-purple: #7c3aed;
++  --accent-indigo: #4f46e5;
++  --accent-cyan: #0891b2;
++  --accent-emerald: #059669;
++  --accent-amber: #d97706;
++  --accent-rose: #e11d48;
++  --glow-purple: rgba(124,58,237,0.12);
++  --glow-indigo: rgba(79,70,229,0.12);
++
++  --background: var(--bg-primary);
++  --surface: var(--bg-secondary);
++  --surface-elevated: rgba(255,255,255,0.9);
++  --card: var(--bg-card);
++  --card-hover: var(--bg-card-hover);
++  --divider: var(--border);
++  --text-on-accent: #ffffff;
++  --primary: var(--accent-purple);
++  --secondary: var(--accent-indigo);
++  --success: var(--accent-emerald);
++  --warning: var(--accent-amber);
++  --danger: var(--accent-rose);
++
++  /* On light surfaces, tint text needs to be the deep accent itself for contrast */
++  --tint-purple-text: #6d28d9;
++  --tint-indigo-text: #4338ca;
++  --tint-cyan-text: #0e7490;
++  --tint-emerald-text: #047857;
++  --tint-amber-text: #b45309;
++  --tint-rose-text: #be123c;
++
++  --shadow-sm: 0 1px 2px rgba(23,20,45,0.04), 0 1px 1px rgba(23,20,45,0.03);
++  --shadow-md: 0 6px 16px rgba(23,20,45,0.06), 0 2px 6px rgba(23,20,45,0.05);
++  --shadow-lg: 0 20px 48px rgba(23,20,45,0.10), 0 6px 16px rgba(23,20,45,0.06);
++  --shadow-card: 0 1px 2px rgba(23,20,45,0.04), 0 12px 28px -8px rgba(23,20,45,0.10);
++
++  --mesh-opacity-1: 0.10;
++  --mesh-opacity-2: 0.08;
++  --mesh-opacity-3: 0.06;
++  --mesh-grid-opacity: 0.02;
++  --noise-opacity: 0.02;
++
++  --nav-bg: rgba(248,247,251,0.75);
++  --nav-bg-scrolled: rgba(248,247,251,0.92);
++
++  color-scheme: light;
+ }
+ 
+ * { box-sizing: border-box; }
+@@ -44,17 +147,47 @@ body {
+   backdrop-filter: blur(20px);
+   -webkit-backdrop-filter: blur(20px);
+   border: 1px solid var(--border);
++  box-shadow: var(--shadow-card);
++  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+ }
+ 
+ .glass-hover:hover {
+   background: var(--bg-card-hover);
+   border-color: var(--border-hover);
++  box-shadow: var(--shadow-md);
+ }
+ 
+ /* Glow effects */
+ .glow-purple { box-shadow: 0 0 40px var(--glow-purple); }
+ .glow-indigo { box-shadow: 0 0 40px var(--glow-indigo); }
+ 
++.glass-glow-hover:hover {
++  box-shadow: 0 0 30px color-mix(in srgb, var(--glow-shadow-color, var(--accent-purple)) 18%, transparent);
++}
++
++.premium-btn-ghost { color: var(--text-secondary); }
++.premium-btn-ghost:hover { color: var(--text-primary); background: var(--bg-card-hover); }
++
++.premium-btn-danger {
++  background: color-mix(in srgb, var(--accent-rose) 10%, transparent);
++  color: var(--tint-rose-text);
++  border: 1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent);
++}
++.premium-btn-danger:hover { background: color-mix(in srgb, var(--accent-rose) 20%, transparent); }
++
++/* Text that sits directly on a card/page surface (as opposed to a solid accent
++   button) must track the theme's primary text color rather than staying white. */
++.text-heading { color: var(--text-primary); }
++
++/* Navbar interactive states */
++.nav-link[data-active="false"]:hover {
++  color: var(--text-primary) !important;
++  background: var(--bg-card-hover) !important;
++}
++.icon-btn:hover { background: var(--bg-card-hover); color: var(--text-primary) !important; }
++.dropdown-link:hover { color: var(--text-primary) !important; background: color-mix(in srgb, var(--accent-purple) 12%, transparent); }
++.logout-btn:hover { color: var(--tint-rose-text) !important; background: color-mix(in srgb, var(--accent-rose) 8%, transparent); }
++
+ /* Gradient text */
+ .gradient-text {
+   background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 40%, #06b6d4 100%);
+@@ -74,6 +207,7 @@ body {
+   position: absolute;
+   inset: 0;
+   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
++  opacity: var(--noise-opacity);
+   pointer-events: none;
+   z-index: 0;
+   border-radius: inherit;
+@@ -82,10 +216,11 @@ body {
+ /* Mesh gradient background */
+ .mesh-bg {
+   background:
+-    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(139,92,246,0.12) 0%, transparent 60%),
+-    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(99,102,241,0.10) 0%, transparent 60%),
+-    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(6,182,212,0.05) 0%, transparent 60%),
+-    #0a0a0f;
++    radial-gradient(ellipse 80% 50% at 20% 0%, color-mix(in srgb, var(--accent-purple) 12%, transparent) 0%, transparent 60%),
++    radial-gradient(ellipse 60% 40% at 80% 100%, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, transparent 60%),
++    radial-gradient(ellipse 40% 30% at 50% 50%, color-mix(in srgb, var(--accent-cyan) 5%, transparent) 0%, transparent 60%),
++    var(--bg-primary);
++  transition: background-color 0.25s ease;
+ }
+ 
+ /* Stat counter animation */
+diff --git a/frontend/src/pages/Login.tsx b/frontend/src/pages/Login.tsx
+index 308b8f0..47fdbb8 100644
+--- a/frontend/src/pages/Login.tsx
++++ b/frontend/src/pages/Login.tsx
+@@ -49,39 +49,39 @@ const Login: React.FC = () => {
+         {/* Logo */}
+         <div className="text-center mb-10">
+           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl mb-4"
+-            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 0 40px rgba(139,92,246,0.4)' }}>
+-            <Shield size={24} className="text-white" />
++            style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 0 40px color-mix(in srgb, var(--accent-purple) 40%, transparent)' }}>
++            <Shield size={24} className="text-heading" />
+           </div>
+-          <h1 className="text-2xl font-black text-white">SecureExam</h1>
+-          <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>Enterprise Assessment Platform</p>
++          <h1 className="text-2xl font-black text-heading">SecureExam</h1>
++          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Enterprise Assessment Platform</p>
+         </div>
+ 
+         {/* Card */}
+         <div className="rounded-2xl p-8" style={{
+-          background: 'rgba(255,255,255,0.04)',
+-          border: '1px solid rgba(255,255,255,0.08)',
++          background: 'var(--bg-card)',
++          border: '1px solid var(--border-hover)',
+           backdropFilter: 'blur(24px)',
+           boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+         }}>
+-          <h2 className="text-xl font-bold text-white mb-1">Welcome back</h2>
+-          <p className="text-sm mb-8" style={{ color: 'rgba(240,240,245,0.45)' }}>Sign in to your account to continue</p>
++          <h2 className="text-xl font-bold text-heading mb-1">Welcome back</h2>
++          <p className="text-sm mb-8" style={{ color: 'var(--text-secondary)' }}>Sign in to your account to continue</p>
+ 
+           {/* Session error */}
+           {sessionError && (
+-            <div className="mb-5 p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>
++            <div className="mb-5 p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>
+               {sessionError.message || 'Session expired. Please sign in again.'}
+             </div>
+           )}
+ 
+           {/* Role tabs */}
+-          <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
++          <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl" style={{ background: 'var(--bg-card)' }}>
+             {(['student', 'teacher'] as const).map(r => (
+               <button key={r} type="button" onClick={() => setRole(r)}
+                 className="py-2.5 px-4 rounded-lg text-sm font-bold capitalize transition-all duration-200"
+                 style={{
+-                  background: role === r ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'transparent',
+-                  color: role === r ? '#fff' : 'rgba(240,240,245,0.45)',
+-                  boxShadow: role === r ? '0 4px 20px rgba(139,92,246,0.3)' : 'none',
++                  background: role === r ? 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' : 'transparent',
++                  color: role === r ? '#fff' : 'var(--text-secondary)',
++                  boxShadow: role === r ? '0 4px 20px color-mix(in srgb, var(--accent-purple) 30%, transparent)' : 'none',
+                 }}>
+                 {r === 'student' ? '👨‍🎓 Student' : '👨‍🏫 Instructor'}
+               </button>
+@@ -90,7 +90,7 @@ const Login: React.FC = () => {
+ 
+           <form onSubmit={handleSubmit} className="space-y-4">
+             <div>
+-              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>Email address</label>
++              <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Email address</label>
+               <input
+                 type="email"
+                 value={email}
+@@ -102,7 +102,7 @@ const Login: React.FC = () => {
+             </div>
+ 
+             <div>
+-              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>Password</label>
++              <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Password</label>
+               <div className="relative">
+                 <input
+                   type={showPassword ? 'text' : 'password'}
+@@ -114,14 +114,14 @@ const Login: React.FC = () => {
+                 />
+                 <button type="button" onClick={() => setShowPassword(!showPassword)}
+                   className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+-                  style={{ color: 'rgba(240,240,245,0.3)' }}>
++                  style={{ color: 'var(--text-muted)' }}>
+                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                 </button>
+               </div>
+             </div>
+ 
+             {error && (
+-              <div className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>
++              <div className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>
+                 {error}
+               </div>
+             )}
+@@ -131,8 +131,8 @@ const Login: React.FC = () => {
+               disabled={isLoading}
+               className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-200 mt-2"
+               style={{
+-                background: isLoading ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+-                boxShadow: isLoading ? 'none' : '0 4px 24px rgba(139,92,246,0.35)',
++                background: isLoading ? 'color-mix(in srgb, var(--accent-purple) 50%, transparent)' : 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
++                boxShadow: isLoading ? 'none' : '0 4px 24px color-mix(in srgb, var(--accent-purple) 35%, transparent)',
+                 cursor: isLoading ? 'not-allowed' : 'pointer',
+               }}>
+               {isLoading ? (
+@@ -144,8 +144,8 @@ const Login: React.FC = () => {
+           </form>
+ 
+           <div className="mt-6 text-center">
+-            <span className="text-sm" style={{ color: 'rgba(240,240,245,0.4)' }}>Don't have an account? </span>
+-            <Link to="/register" className="text-sm font-semibold" style={{ color: '#a78bfa' }}>Create one</Link>
++            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Don't have an account? </span>
++            <Link to="/register" className="text-sm font-semibold" style={{ color: 'var(--tint-purple-text)' }}>Create one</Link>
+           </div>
+         </div>
+ 
+@@ -156,7 +156,7 @@ const Login: React.FC = () => {
+             { icon: Users, label: 'Enterprise Ready' },
+             { icon: Code2, label: 'SEB Secured' },
+           ].map(({ icon: Icon, label }) => (
+-            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(240,240,245,0.25)' }}>
++            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+               <Icon size={12} />
+               {label}
+             </div>
+diff --git a/frontend/src/pages/Register.tsx b/frontend/src/pages/Register.tsx
+index 496d9df..cda60ea 100644
+--- a/frontend/src/pages/Register.tsx
++++ b/frontend/src/pages/Register.tsx
+@@ -38,23 +38,23 @@ const Register: React.FC = () => {
+       <div className="relative z-10 w-full max-w-md">
+         <div className="text-center mb-8">
+           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl mb-4"
+-            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 0 40px rgba(139,92,246,0.4)' }}>
+-            <Shield size={24} className="text-white" />
++            style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 0 40px color-mix(in srgb, var(--accent-purple) 40%, transparent)' }}>
++            <Shield size={24} className="text-heading" />
+           </div>
+-          <h1 className="text-2xl font-black text-white">SecureExam</h1>
+-          <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>Enterprise Assessment Platform</p>
++          <h1 className="text-2xl font-black text-heading">SecureExam</h1>
++          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Enterprise Assessment Platform</p>
+         </div>
+ 
+-        <div className="rounded-2xl p-8" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(24px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+-          <h2 className="text-xl font-bold text-white mb-1">Create account</h2>
+-          <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.45)' }}>Set up your SecureExam account</p>
++        <div className="rounded-2xl p-8" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-hover)', backdropFilter: 'blur(24px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
++          <h2 className="text-xl font-bold text-heading mb-1">Create account</h2>
++          <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Set up your SecureExam account</p>
+ 
+           {/* Role tabs */}
+-          <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
++          <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl" style={{ background: 'var(--bg-card)' }}>
+             {(['student', 'teacher'] as const).map(r => (
+               <button key={r} type="button" onClick={() => setRole(r)}
+                 className="py-2.5 px-4 rounded-lg text-sm font-bold capitalize transition-all duration-200"
+-                style={{ background: role === r ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'transparent', color: role === r ? '#fff' : 'rgba(240,240,245,0.45)', boxShadow: role === r ? '0 4px 20px rgba(139,92,246,0.3)' : 'none' }}>
++                style={{ background: role === r ? 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' : 'transparent', color: role === r ? '#fff' : 'var(--text-secondary)', boxShadow: role === r ? '0 4px 20px color-mix(in srgb, var(--accent-purple) 30%, transparent)' : 'none' }}>
+                 {r === 'student' ? '👨‍🎓 Student' : '👨‍🏫 Instructor'}
+               </button>
+             ))}
+@@ -66,39 +66,39 @@ const Register: React.FC = () => {
+               { label: 'Email address', value: email, setter: setEmail, type: 'email', placeholder: 'you@company.com' },
+             ].map(({ label, value, setter, type, placeholder }) => (
+               <div key={label}>
+-                <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>{label}</label>
++                <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>{label}</label>
+                 <input type={type} value={value} onChange={e => setter(e.target.value)} placeholder={placeholder} required className="input-dark" />
+               </div>
+             ))}
+             <div>
+-              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>Password</label>
++              <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Password</label>
+               <div className="relative">
+                 <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)}
+                   placeholder="Min. 6 characters" required className="input-dark pr-12" />
+-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }}>
++                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
+                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                 </button>
+               </div>
+             </div>
+             <div>
+-              <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(240,240,245,0.6)' }}>Confirm password</label>
++              <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Confirm password</label>
+               <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="••••••••" required className="input-dark" />
+             </div>
+ 
+             {error && (
+-              <div className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>{error}</div>
++              <div className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>{error}</div>
+             )}
+ 
+             <button type="submit" disabled={isLoading}
+               className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all mt-2"
+-              style={{ background: isLoading ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: isLoading ? 'none' : '0 4px 24px rgba(139,92,246,0.35)', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
++              style={{ background: isLoading ? 'color-mix(in srgb, var(--accent-purple) 50%, transparent)' : 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: isLoading ? 'none' : '0 4px 24px color-mix(in srgb, var(--accent-purple) 35%, transparent)', cursor: isLoading ? 'not-allowed' : 'pointer' }}>
+               {isLoading ? <><div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Creating account...</> : <>Create account <ArrowRight size={15} /></>}
+             </button>
+           </form>
+ 
+           <div className="mt-6 text-center">
+-            <span className="text-sm" style={{ color: 'rgba(240,240,245,0.4)' }}>Already have an account? </span>
+-            <Link to="/login" className="text-sm font-semibold" style={{ color: '#a78bfa' }}>Sign in</Link>
++            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Already have an account? </span>
++            <Link to="/login" className="text-sm font-semibold" style={{ color: 'var(--tint-purple-text)' }}>Sign in</Link>
+           </div>
+         </div>
+       </div>
+diff --git a/frontend/src/pages/teacher/CodingQuestions.tsx b/frontend/src/pages/teacher/CodingQuestions.tsx
+index f41066c..46a1fca 100644
+--- a/frontend/src/pages/teacher/CodingQuestions.tsx
++++ b/frontend/src/pages/teacher/CodingQuestions.tsx
+@@ -15,9 +15,9 @@ const LANGUAGES = ['Python', 'Java', 'JavaScript', 'C', 'C++'];
+ 
+ const difficultyBadge = (diff?: string) => {
+   const d = (diff || 'Medium').toLowerCase();
+-  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
+-  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
+-  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
++  if (d === 'easy') return { bg: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' };
++  if (d === 'hard') return { bg: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', color: 'var(--tint-rose-text)', border: 'color-mix(in srgb, var(--accent-rose) 20%, transparent)' };
++  return { bg: 'color-mix(in srgb, var(--accent-amber) 10%, transparent)', color: 'var(--tint-amber-text)', border: 'color-mix(in srgb, var(--accent-amber) 20%, transparent)' };
+ };
+ 
+ const CodingQuestionsPage: React.FC = () => {
+@@ -126,18 +126,18 @@ const CodingQuestionsPage: React.FC = () => {
+         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+           <div>
+             <div className="flex items-center gap-3 mb-2">
+-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #6366f1, #a855f7)' }} />
+-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#6366f1' }}>Coding Challenges</span>
++              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-indigo), #a855f7)' }} />
++              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-indigo)' }}>Coding Challenges</span>
+             </div>
+-            <h1 className="text-2xl font-black text-white">Algorithms Library</h1>
+-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
++            <h1 className="text-2xl font-black text-heading">Algorithms Library</h1>
++            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+               Manage algorithmic problems, language constraints, and testcase suites
+             </p>
+           </div>
+           <Link
+             to="/teacher/coding-questions/create"
+             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
+-            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 4px 24px rgba(99,102,241,0.25)' }}
++            style={{ background: 'linear-gradient(135deg, var(--accent-indigo), #a855f7)', boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-indigo) 25%, transparent)' }}
+           >
+             <Plus size={15} /> New Challenge
+           </Link>
+@@ -146,7 +146,7 @@ const CodingQuestionsPage: React.FC = () => {
+         {/* Filters */}
+         <div className="flex flex-col sm:flex-row gap-3 mb-6">
+           <div className="relative flex-1">
+-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
++            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+             <form onSubmit={handleSearchSubmit}>
+               <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
+                 placeholder="Search by problem title, tag, or keyword..." className="input-dark pl-10 w-full" />
+@@ -157,7 +157,7 @@ const CodingQuestionsPage: React.FC = () => {
+               value={difficulty}
+               onChange={e => setDifficulty(e.target.value)}
+               className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
+-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
++              style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+             >
+               <option value="" className="bg-gray-900 text-white">All Difficulties</option>
+               <option value="Easy" className="bg-gray-900 text-white">Easy</option>
+@@ -169,7 +169,7 @@ const CodingQuestionsPage: React.FC = () => {
+               value={language}
+               onChange={e => setLanguage(e.target.value)}
+               className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
+-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
++              style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+             >
+               <option value="" className="bg-gray-900 text-white">All Languages</option>
+               {LANGUAGES.map(lang => (
+@@ -179,7 +179,7 @@ const CodingQuestionsPage: React.FC = () => {
+             <button
+               onClick={handleSearchSubmit}
+               className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap"
+-              style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)' }}
++              style={{ background: 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)', color: 'var(--tint-indigo-text)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)' }}
+             >
+               Filter
+             </button>
+@@ -191,14 +191,14 @@ const CodingQuestionsPage: React.FC = () => {
+           <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
+         ) : questions.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-24">
+-            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
+-              <Code2 size={32} style={{ color: 'rgba(99,102,241,0.4)' }} />
++            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 15%, transparent)' }}>
++              <Code2 size={32} style={{ color: 'color-mix(in srgb, var(--accent-indigo) 40%, transparent)' }} />
+             </div>
+-            <h3 className="text-lg font-bold text-white mb-2">{search ? 'No results found' : 'No coding challenges yet'}</h3>
+-            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{search ? `No matches for "${search}"` : 'Get started by creating your first coding problem'}</p>
++            <h3 className="text-lg font-bold text-heading mb-2">{search ? 'No results found' : 'No coding challenges yet'}</h3>
++            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{search ? `No matches for "${search}"` : 'Get started by creating your first coding problem'}</p>
+             {!search && (
+               <Link to="/teacher/coding-questions/create" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+-                style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
++                style={{ background: 'linear-gradient(135deg, var(--accent-indigo), #a855f7)' }}>
+                 <Plus size={15} /> Create Challenge
+               </Link>
+             )}
+@@ -210,9 +210,9 @@ const CodingQuestionsPage: React.FC = () => {
+               const diff = difficultyBadge(q.difficulty);
+               return (
+                 <div key={qId} className="group rounded-2xl p-5 transition-all duration-200"
+-                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+-                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
+-                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
++                     style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
++                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-card-hover)'; }}
++                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'; }}
+                 >
+                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                     <div className="flex-1">
+@@ -220,22 +220,22 @@ const CodingQuestionsPage: React.FC = () => {
+                         <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.color, border: `1px solid ${diff.border}` }}>
+                           {q.difficulty || 'medium'}
+                         </span>
+-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
++                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
+                           🎯 {q.marks || 100} Marks
+                         </span>
+-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
++                        <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 10%, transparent)', color: 'var(--tint-indigo-text)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 20%, transparent)' }}>
+                           🧪 {q.visibleTestCaseCount || 0} Visible Testcases
+                         </span>
+                       </div>
+ 
+-                      <h3 className="text-base font-bold text-white mb-1.5 transition-colors group-hover:text-indigo-400">
++                      <h3 className="text-base font-bold text-heading mb-1.5 transition-colors group-hover:text-indigo-400">
+                         <Link to={`/teacher/coding-questions/${qId}`}>{q.title}</Link>
+                       </h3>
+-                      <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: 'rgba(240,240,245,0.6)' }}>{q.description}</p>
++                      <p className="text-sm line-clamp-2 mb-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{q.description}</p>
+ 
+                       <div className="flex items-center gap-2 flex-wrap">
+                         {(q.supportedLanguages || []).map((lang: string) => (
+-                          <span key={lang} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
++                          <span key={lang} className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
+                             {lang}
+                           </span>
+                         ))}
+@@ -246,9 +246,9 @@ const CodingQuestionsPage: React.FC = () => {
+                       <Link
+                         to={`/teacher/coding-questions/${qId}/preview`}
+                         className="p-2 rounded-xl transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.5)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-secondary)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                         title="Preview Problem"
+                       >
+                         <Eye size={16} />
+@@ -256,9 +256,9 @@ const CodingQuestionsPage: React.FC = () => {
+                       <Link
+                         to={`/teacher/coding-questions/${qId}/testcases`}
+                         className="p-2 rounded-xl transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.5)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#818cf8'; (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.15)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-secondary)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-indigo-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-indigo) 15%, transparent)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                         title="Manage Testcases"
+                       >
+                         <Settings size={16} />
+@@ -266,9 +266,9 @@ const CodingQuestionsPage: React.FC = () => {
+                       <Link
+                         to={`/teacher/coding-questions/edit/${qId}`}
+                         className="p-2 rounded-xl transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.5)' }}
++                        style={{ color: 'var(--text-secondary)' }}
+                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c084fc'; (e.currentTarget as HTMLElement).style.background = 'rgba(168,85,247,0.15)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                         title="Edit Question"
+                       >
+                         <Pencil size={16} />
+@@ -276,9 +276,9 @@ const CodingQuestionsPage: React.FC = () => {
+                       <button
+                         onClick={() => handleDuplicate(qId, q.title)}
+                         className="p-2 rounded-xl transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.5)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.1)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-secondary)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                         title="Duplicate Question"
+                       >
+                         <Copy size={16} />
+@@ -286,9 +286,9 @@ const CodingQuestionsPage: React.FC = () => {
+                       <button
+                         onClick={() => handleDelete(qId, q.title)}
+                         className="p-2 rounded-xl transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.5)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.15)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-secondary)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 15%, transparent)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                         title="Delete Question"
+                       >
+                         <Trash2 size={16} />
+@@ -301,8 +301,8 @@ const CodingQuestionsPage: React.FC = () => {
+ 
+             {/* Pagination Controls */}
+             {totalPages > 1 && (
+-              <div className="flex items-center justify-between pt-4 mt-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+-                <p className="text-xs" style={{ color: 'rgba(240,240,245,0.5)' }}>
++              <div className="flex items-center justify-between pt-4 mt-6 border-t" style={{ borderColor: 'var(--border)' }}>
++                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                   Showing page {page} of {totalPages} ({total} total challenges)
+                 </p>
+                 <div className="flex items-center gap-2">
+@@ -310,7 +310,7 @@ const CodingQuestionsPage: React.FC = () => {
+                     disabled={page === 1}
+                     onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-30"
+-                    style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}
++                    style={{ background: 'var(--bg-card-hover)', color: 'white' }}
+                   >
+                     <ChevronLeft size={14} /> Prev
+                   </button>
+@@ -318,7 +318,7 @@ const CodingQuestionsPage: React.FC = () => {
+                     disabled={page === totalPages}
+                     onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-30"
+-                    style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}
++                    style={{ background: 'var(--bg-card-hover)', color: 'white' }}
+                   >
+                     Next <ChevronRight size={14} />
+                   </button>
+diff --git a/frontend/src/pages/teacher/Dashboard.tsx b/frontend/src/pages/teacher/Dashboard.tsx
+index 937a51d..b64c222 100644
+--- a/frontend/src/pages/teacher/Dashboard.tsx
++++ b/frontend/src/pages/teacher/Dashboard.tsx
+@@ -89,7 +89,7 @@ const MetricCard: React.FC<{
+           )}
+         </div>
+ 
+-        <div className="text-4xl font-black text-white tabular-nums tracking-tight mb-1.5">
++        <div className="text-4xl font-black text-heading tabular-nums tracking-tight mb-1.5">
+           {count}
+         </div>
+         <div className="text-sm font-semibold" style={{ color: 'rgba(240,240,245,0.7)' }}>{label}</div>
+@@ -195,20 +195,20 @@ const Dashboard: React.FC = () => {
+               <div className="flex items-center gap-3 mb-2">
+                 <div
+                   className="h-1.5 w-8 rounded-full"
+-                  style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1)' }}
++                  style={{ background: 'linear-gradient(90deg, var(--accent-purple), var(--accent-indigo))' }}
+                 />
+-                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8b5cf6' }}>
++                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-purple)' }}>
+                   Assessment Control Center
+                 </span>
+               </div>
+-              <h1 className="text-3xl font-black text-white tracking-tight">
++              <h1 className="text-3xl font-black text-heading tracking-tight">
+                 {greeting},{' '}
+                 <span className="gradient-text">{firstName}</span>
+               </h1>
+               <p className="text-sm mt-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                 {activeExams.length > 0 && (
+-                  <span style={{ color: '#34d399' }}> · {activeExams.length} exam{activeExams.length > 1 ? 's' : ''} live now</span>
++                  <span style={{ color: 'var(--tint-emerald-text)' }}> · {activeExams.length} exam{activeExams.length > 1 ? 's' : ''} live now</span>
+                 )}
+               </p>
+             </div>
+@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
+                 style={{
+                   background: 'rgba(255,255,255,0.05)',
+                   border: '1px solid rgba(255,255,255,0.08)',
+-                  color: refreshing ? '#8b5cf6' : 'rgba(240,240,245,0.6)',
++                  color: refreshing ? 'var(--accent-purple)' : 'rgba(240,240,245,0.6)',
+                 }}
+               >
+                 <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+@@ -231,8 +231,8 @@ const Dashboard: React.FC = () => {
+                 to="/teacher/create-exam"
+                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-200"
+                 style={{
+-                  background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+-                  boxShadow: '0 4px 24px rgba(139,92,246,0.35)',
++                  background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
++                  boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-purple) 35%, transparent)',
+                 }}
+               >
+                 <Zap size={15} />
+@@ -253,8 +253,8 @@ const Dashboard: React.FC = () => {
+                 label="Total Assessments"
+                 value={exams.length}
+                 sub={`${activeExams.length} currently active`}
+-                accent="#8b5cf6"
+-                glow="rgba(139,92,246,0.12)"
++                accent="var(--accent-purple)"
++                glow="color-mix(in srgb, var(--accent-purple) 12%, transparent)"
+                 link="/teacher/exams"
+               />
+               <MetricCard
+@@ -263,9 +263,9 @@ const Dashboard: React.FC = () => {
+                 value={activeExams.length}
+                 sub="Candidates can access now"
+                 badge={activeExams.length > 0 ? 'Live' : 'Idle'}
+-                badgeColor={activeExams.length > 0 ? '#34d399' : '#8b8ba0'}
+-                accent="#10b981"
+-                glow="rgba(16,185,129,0.12)"
++                badgeColor={activeExams.length > 0 ? 'var(--tint-emerald-text)' : 'var(--text-secondary)'}
++                accent="var(--accent-emerald)"
++                glow="color-mix(in srgb, var(--accent-emerald) 12%, transparent)"
+                 link="/teacher/exams"
+               />
+               <MetricCard
+@@ -273,8 +273,8 @@ const Dashboard: React.FC = () => {
+                 label="MCQ Questions"
+                 value={mcqQuestions.length}
+                 sub="Multiple choice bank"
+-                accent="#06b6d4"
+-                glow="rgba(6,182,212,0.12)"
++                accent="var(--accent-cyan)"
++                glow="color-mix(in srgb, var(--accent-cyan) 12%, transparent)"
+                 link="/teacher/mcq"
+               />
+               <MetricCard
+@@ -282,8 +282,8 @@ const Dashboard: React.FC = () => {
+                 label="Coding Challenges"
+                 value={codingQuestions.length}
+                 sub="Algorithm problems"
+-                accent="#6366f1"
+-                glow="rgba(99,102,241,0.12)"
++                accent="var(--accent-indigo)"
++                glow="color-mix(in srgb, var(--accent-indigo) 12%, transparent)"
+                 link="/teacher/coding-questions"
+               />
+             </>
+@@ -297,10 +297,10 @@ const Dashboard: React.FC = () => {
+           ) : (
+             <>
+               {[
+-                { label: 'Subjective Questions', value: subjectiveQuestions.length, sub: 'Descriptive Q&A bank', accent: '#a78bfa', icon: BookOpen, link: '/teacher/subjective-questions' },
+-                { label: 'Pending Grading', value: analytics?.pendingEvaluationCount ?? 0, sub: 'Awaiting your review', accent: '#fbbf24', badge: (analytics?.pendingEvaluationCount ?? 0) > 0 ? 'Action Required' : undefined, badgeColor: '#fbbf24', icon: AlertCircle, link: '/teacher/subjective-questions' },
+-                { label: 'Graded Answers', value: analytics?.evaluatedCount ?? 0, sub: 'Evaluations completed', accent: '#34d399', icon: CheckCircle2, link: '/teacher/subjective-questions' },
+-                { label: 'Review Queue', value: analytics?.manualReviewQueueCount ?? 0, sub: 'In grading pipeline', accent: '#818cf8', icon: Layers, link: '/teacher/subjective-questions' },
++                { label: 'Subjective Questions', value: subjectiveQuestions.length, sub: 'Descriptive Q&A bank', accent: 'var(--tint-purple-text)', icon: BookOpen, link: '/teacher/subjective-questions' },
++                { label: 'Pending Grading', value: analytics?.pendingEvaluationCount ?? 0, sub: 'Awaiting your review', accent: 'var(--tint-amber-text)', badge: (analytics?.pendingEvaluationCount ?? 0) > 0 ? 'Action Required' : undefined, badgeColor: 'var(--tint-amber-text)', icon: AlertCircle, link: '/teacher/subjective-questions' },
++                { label: 'Graded Answers', value: analytics?.evaluatedCount ?? 0, sub: 'Evaluations completed', accent: 'var(--tint-emerald-text)', icon: CheckCircle2, link: '/teacher/subjective-questions' },
++                { label: 'Review Queue', value: analytics?.manualReviewQueueCount ?? 0, sub: 'In grading pipeline', accent: 'var(--tint-indigo-text)', icon: Layers, link: '/teacher/subjective-questions' },
+               ].map((m, i) => (
+                 <MetricCard key={i} icon={m.icon} label={m.label} value={m.value} sub={m.sub}
+                   badge={m.badge} badgeColor={m.badgeColor} accent={m.accent}
+@@ -326,13 +326,13 @@ const Dashboard: React.FC = () => {
+               <div className="flex items-center gap-3">
+                 <div
+                   className="h-2 w-2 rounded-full pulse-dot"
+-                  style={{ background: '#34d399', boxShadow: '0 0 8px #34d399' }}
++                  style={{ background: 'var(--tint-emerald-text)', boxShadow: '0 0 8px var(--tint-emerald-text)' }}
+                 />
+-                <h2 className="text-sm font-bold text-white">Live Exam Monitor</h2>
++                <h2 className="text-sm font-bold text-heading">Live Exam Monitor</h2>
+                 {!loading && (
+                   <span
+                     className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+-                    style={{ background: 'rgba(16,185,129,0.12)', color: '#34d399' }}
++                    style={{ background: 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)', color: 'var(--tint-emerald-text)' }}
+                   >
+                     {activeExams.length} active
+                   </span>
+@@ -341,7 +341,7 @@ const Dashboard: React.FC = () => {
+               <Link
+                 to="/teacher/exams"
+                 className="flex items-center gap-1 text-xs font-semibold transition-colors"
+-                style={{ color: '#8b5cf6' }}
++                style={{ color: 'var(--accent-purple)' }}
+               >
+                 All assessments <ArrowUpRight size={12} />
+               </Link>
+@@ -356,18 +356,18 @@ const Dashboard: React.FC = () => {
+                 <div className="flex flex-col items-center justify-center py-14">
+                   <div
+                     className="h-16 w-16 rounded-2xl flex items-center justify-center mb-4"
+-                    style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)' }}
++                    style={{ background: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
+                   >
+-                    <CheckCircle2 size={28} style={{ color: '#8b5cf6' }} />
++                    <CheckCircle2 size={28} style={{ color: 'var(--accent-purple)' }} />
+                   </div>
+-                  <h3 className="text-sm font-bold text-white mb-1">No live exams right now</h3>
++                  <h3 className="text-sm font-bold text-heading mb-1">No live exams right now</h3>
+                   <p className="text-xs text-center max-w-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                     Activate an existing assessment or create a new one to begin.
+                   </p>
+                   <Link
+                     to="/teacher/create-exam"
+                     className="mt-5 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white"
+-                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
++                    style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
+                   >
+                     <Plus size={13} /> Create Assessment
+                   </Link>
+@@ -382,8 +382,8 @@ const Dashboard: React.FC = () => {
+                         className="group flex items-center justify-between p-4 rounded-xl transition-all duration-200 cursor-pointer"
+                         style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+                         onMouseEnter={e => {
+-                          (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.06)';
+-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.2)';
++                          (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 6%, transparent)';
++                          (e.currentTarget as HTMLElement).style.borderColor = 'color-mix(in srgb, var(--accent-purple) 20%, transparent)';
+                         }}
+                         onMouseLeave={e => {
+                           (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)';
+@@ -394,12 +394,12 @@ const Dashboard: React.FC = () => {
+                         <div className="flex items-center gap-3.5">
+                           <div
+                             className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
+-                            style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}
++                            style={{ background: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
+                           >
+-                            <FileText size={16} style={{ color: '#8b5cf6' }} />
++                            <FileText size={16} style={{ color: 'var(--accent-purple)' }} />
+                           </div>
+                           <div>
+-                            <div className="text-sm font-bold text-white">{exam.title}</div>
++                            <div className="text-sm font-bold text-heading">{exam.title}</div>
+                             <div className="flex items-center gap-3 mt-1">
+                               <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                                 <Clock size={11} className="inline mr-1" />{exam.duration}m
+@@ -417,7 +417,7 @@ const Dashboard: React.FC = () => {
+                           to={`/teacher/exams/${id}/results`}
+                           onClick={e => e.stopPropagation()}
+                           className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-all"
+-                          style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
++                          style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
+                         >
+                           <BarChart3 size={12} /> Analytics
+                         </Link>
+@@ -435,22 +435,22 @@ const Dashboard: React.FC = () => {
+             <div
+               className="rounded-2xl p-6 relative overflow-hidden"
+               style={{
+-                background: 'linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(99,102,241,0.1) 100%)',
+-                border: '1px solid rgba(139,92,246,0.25)',
++                background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 15%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 100%)',
++                border: '1px solid color-mix(in srgb, var(--accent-purple) 25%, transparent)',
+               }}
+             >
+               <div
+                 className="absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl"
+-                style={{ background: 'rgba(139,92,246,0.2)' }}
++                style={{ background: 'color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
+               />
+               <div className="relative z-10">
+                 <div className="flex items-center gap-2 mb-3">
+-                  <Shield size={15} style={{ color: '#a78bfa' }} />
+-                  <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#a78bfa' }}>
++                  <Shield size={15} style={{ color: 'var(--tint-purple-text)' }} />
++                  <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--tint-purple-text)' }}>
+                     SEB Security
+                   </span>
+                 </div>
+-                <h3 className="text-base font-bold text-white mb-2 leading-snug">
++                <h3 className="text-base font-bold text-heading mb-2 leading-snug">
+                   Safe Exam Browser Active
+                 </h3>
+                 <p className="text-xs leading-relaxed mb-5" style={{ color: 'rgba(240,240,245,0.55)' }}>
+@@ -459,7 +459,7 @@ const Dashboard: React.FC = () => {
+                 <Link
+                   to="/teacher/exams"
+                   className="inline-flex items-center gap-1.5 text-xs font-bold transition-all"
+-                  style={{ color: '#a78bfa' }}
++                  style={{ color: 'var(--tint-purple-text)' }}
+                 >
+                   Configure policies <ArrowUpRight size={12} />
+                 </Link>
+@@ -475,14 +475,14 @@ const Dashboard: React.FC = () => {
+                 className="px-5 py-4"
+                 style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+               >
+-                <h3 className="text-sm font-bold text-white">Quick Access</h3>
++                <h3 className="text-sm font-bold text-heading">Quick Access</h3>
+               </div>
+               <div className="p-3 space-y-1">
+                 {[
+-                  { to: '/teacher/mcq', label: 'MCQ Library', count: mcqQuestions.length, icon: ListChecks, color: '#06b6d4' },
+-                  { to: '/teacher/coding-questions', label: 'Coding Challenges', count: codingQuestions.length, icon: Code2, color: '#6366f1' },
+-                  { to: '/teacher/subjective-questions', label: 'Subjective Questions', count: subjectiveQuestions.length, icon: BookOpen, color: '#a78bfa' },
+-                  { to: '/teacher/exams', label: 'All Assessments', count: exams.length, icon: Eye, color: '#10b981' },
++                  { to: '/teacher/mcq', label: 'MCQ Library', count: mcqQuestions.length, icon: ListChecks, color: 'var(--accent-cyan)' },
++                  { to: '/teacher/coding-questions', label: 'Coding Challenges', count: codingQuestions.length, icon: Code2, color: 'var(--accent-indigo)' },
++                  { to: '/teacher/subjective-questions', label: 'Subjective Questions', count: subjectiveQuestions.length, icon: BookOpen, color: 'var(--tint-purple-text)' },
++                  { to: '/teacher/exams', label: 'All Assessments', count: exams.length, icon: Eye, color: 'var(--accent-emerald)' },
+                 ].map(({ to, label, count, icon: Icon, color }) => (
+                   <Link
+                     key={to}
+@@ -518,12 +518,12 @@ const Dashboard: React.FC = () => {
+               className="rounded-2xl p-5"
+               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+             >
+-              <h3 className="text-sm font-bold text-white mb-3">Start Building</h3>
++              <h3 className="text-sm font-bold text-heading mb-3">Start Building</h3>
+               <div className="space-y-2">
+                 <Link
+                   to="/teacher/create-exam"
+                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl text-xs font-bold text-white transition-all"
+-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.25)' }}
++                  style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 20px color-mix(in srgb, var(--accent-purple) 25%, transparent)' }}
+                 >
+                   <Zap size={13} /> Create New Assessment
+                 </Link>
+diff --git a/frontend/src/pages/teacher/ExamResults.tsx b/frontend/src/pages/teacher/ExamResults.tsx
+index a907528..c9f00f3 100644
+--- a/frontend/src/pages/teacher/ExamResults.tsx
++++ b/frontend/src/pages/teacher/ExamResults.tsx
+@@ -94,19 +94,19 @@ const ExamResults: React.FC = () => {
+         {/* Header */}
+         <div className="mb-8">
+           <Link to="/teacher/exams" className="inline-flex items-center gap-1.5 text-xs font-semibold mb-4 transition-colors"
+-            style={{ color: 'rgba(240,240,245,0.45)' }}
+-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#a78bfa'}
+-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.45)'}>
++            style={{ color: 'var(--text-secondary)' }}
++            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--tint-purple-text)'}
++            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'}>
+             <ArrowLeft size={14} /> Back to Assessments
+           </Link>
+           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+             <div>
+               <div className="flex items-center gap-3 mb-1.5">
+-                <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1)' }} />
+-                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8b5cf6' }}>Results & Analytics</span>
++                <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-purple), var(--accent-indigo))' }} />
++                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-purple)' }}>Results & Analytics</span>
+               </div>
+-              <h1 className="text-2xl font-black text-white">{loading ? 'Loading...' : exam?.title || 'Exam Results'}</h1>
+-              <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
++              <h1 className="text-2xl font-black text-heading">{loading ? 'Loading...' : exam?.title || 'Exam Results'}</h1>
++              <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                 {attempts.length} candidates · {completedCount} completed · {passRate}% pass rate
+               </p>
+             </div>
+@@ -114,13 +114,13 @@ const ExamResults: React.FC = () => {
+               {exam && (
+                 <Link to={`/teacher/exams/${examId}/grade-subjective`}
+                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
+-                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}>
++                  style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 20px color-mix(in srgb, var(--accent-purple) 30%, transparent)' }}>
+                   <BookOpen size={14} /> Grade Subjective
+                 </Link>
+               )}
+               <button onClick={exportToCSV} disabled={!attempts.length}
+                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(240,240,245,0.7)' }}>
++                style={{ background: 'var(--border)', border: '1px solid var(--border-hover)', color: 'var(--text-secondary)' }}>
+                 <Download size={14} /> Export CSV
+               </button>
+             </div>
+@@ -131,22 +131,22 @@ const ExamResults: React.FC = () => {
+         {!loading && (
+           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+             {[
+-              { label: 'Total Candidates', value: attempts.length, icon: Users, accent: '#8b5cf6', glow: 'rgba(139,92,246,0.12)' },
+-              { label: 'Avg Score', value: stats ? `${Math.round(stats.averageScore)}%` : '—', icon: BarChart3, accent: '#06b6d4', glow: 'rgba(6,182,212,0.12)' },
+-              { label: 'Pass Rate', value: `${passRate}%`, icon: TrendingUp, accent: '#10b981', glow: 'rgba(16,185,129,0.12)' },
+-              { label: 'Highest Score', value: stats ? `${Math.round(stats.highestScore)}` : '—', icon: Target, accent: '#6366f1', glow: 'rgba(99,102,241,0.12)' },
++              { label: 'Total Candidates', value: attempts.length, icon: Users, accent: 'var(--accent-purple)', glow: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)' },
++              { label: 'Avg Score', value: stats ? `${Math.round(stats.averageScore)}%` : '—', icon: BarChart3, accent: 'var(--accent-cyan)', glow: 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)' },
++              { label: 'Pass Rate', value: `${passRate}%`, icon: TrendingUp, accent: 'var(--accent-emerald)', glow: 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)' },
++              { label: 'Highest Score', value: stats ? `${Math.round(stats.highestScore)}` : '—', icon: Target, accent: 'var(--accent-indigo)', glow: 'color-mix(in srgb, var(--accent-indigo) 12%, transparent)' },
+             ].map(({ label, value, icon: Icon, accent, glow }) => (
+               <div key={label} className="rounded-2xl p-5 relative overflow-hidden group transition-all duration-300"
+-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
++                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${accent}40`; (e.currentTarget as HTMLElement).style.boxShadow = `0 0 30px ${glow}`; }}
+-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}>
++                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}>
+                 <div className="flex items-center justify-between mb-3">
+                   <div className="h-9 w-9 rounded-xl flex items-center justify-center" style={{ background: `${accent}18`, border: `1px solid ${accent}28` }}>
+                     <Icon size={16} style={{ color: accent }} />
+                   </div>
+                 </div>
+-                <div className="text-2xl font-black text-white tabular-nums">{value}</div>
+-                <div className="text-xs mt-1 font-medium" style={{ color: 'rgba(240,240,245,0.45)' }}>{label}</div>
++                <div className="text-2xl font-black text-heading tabular-nums">{value}</div>
++                <div className="text-xs mt-1 font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+               </div>
+             ))}
+           </div>
+@@ -154,16 +154,16 @@ const ExamResults: React.FC = () => {
+ 
+         {/* Search */}
+         <div className="relative mb-5">
+-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
++          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+           <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+             placeholder="Search candidates by name or email..." className="input-dark pl-10" />
+         </div>
+ 
+         {/* Candidates table */}
+-        <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
++        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+           {/* Table header */}
+           <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-bold uppercase tracking-wider"
+-            style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.35)' }}>
++            style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--bg-card-hover)', color: 'var(--text-muted)' }}>
+             <div className="col-span-4">Candidate</div>
+             <div className="col-span-2">Status</div>
+             <div className="col-span-2">Score</div>
+@@ -178,83 +178,83 @@ const ExamResults: React.FC = () => {
+             </div>
+           ) : filteredAttempts.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-16">
+-              <Users size={32} className="mb-3" style={{ color: 'rgba(240,240,245,0.15)' }} />
+-              <p className="text-sm font-semibold text-white mb-1">No candidates found</p>
+-              <p className="text-xs" style={{ color: 'rgba(240,240,245,0.35)' }}>
++              <Users size={32} className="mb-3" style={{ color: 'var(--text-muted)' }} />
++              <p className="text-sm font-semibold text-heading mb-1">No candidates found</p>
++              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                 {searchQuery ? `No results for "${searchQuery}"` : 'No candidates have attempted this exam yet'}
+               </p>
+             </div>
+           ) : (
+-            <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
++            <div className="divide-y" style={{ borderColor: 'var(--bg-card)' }}>
+               {filteredAttempts.map(attempt => (
+                 <div key={attempt.id}
+                   className="grid grid-cols-12 items-center px-5 py-4 transition-colors group cursor-pointer"
+-                  style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
++                  style={{ borderColor: 'var(--bg-card)' }}
++                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
+                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                   onClick={() => setSelectedCandidate(attempt)}
+                 >
+                   {/* Candidate */}
+                   <div className="col-span-4 flex items-center gap-3">
+                     <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+-                      style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
++                      style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}>
+                       {attempt.student.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                     </div>
+                     <div className="min-w-0">
+-                      <div className="text-sm font-semibold text-white truncate">{attempt.student.name}</div>
+-                      <div className="text-xs truncate" style={{ color: 'rgba(240,240,245,0.4)' }}>{attempt.student.email}</div>
++                      <div className="text-sm font-semibold text-heading truncate">{attempt.student.name}</div>
++                      <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{attempt.student.email}</div>
+                     </div>
+                   </div>
+                   {/* Status */}
+                   <div className="col-span-2">
+                     <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                       style={{
+-                        background: attempt.status === 'completed' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+-                        color: attempt.status === 'completed' ? '#34d399' : '#fbbf24',
+-                        border: `1px solid ${attempt.status === 'completed' ? 'rgba(16,185,129,0.25)' : 'rgba(245,158,11,0.25)'}`,
++                        background: attempt.status === 'completed' ? 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 10%, transparent)',
++                        color: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : 'var(--tint-amber-text)',
++                        border: `1px solid ${attempt.status === 'completed' ? 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 25%, transparent)'}`,
+                       }}>
+-                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: attempt.status === 'completed' ? '#34d399' : '#fbbf24' }} />
++                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : 'var(--tint-amber-text)' }} />
+                       {attempt.status === 'completed' ? 'Completed' : 'In Progress'}
+                     </span>
+                     {attempt.subjectiveStatus === 'pending_evaluation' && (
+                       <span className="mt-1 inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full"
+-                        style={{ background: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.2)' }}>
++                        style={{ background: 'color-mix(in srgb, var(--accent-amber) 10%, transparent)', color: 'var(--tint-amber-text)', border: '1px solid color-mix(in srgb, var(--accent-amber) 20%, transparent)' }}>
+                         Grading Pending
+                       </span>
+                     )}
+                   </div>
+                   {/* Score */}
+                   <div className="col-span-2">
+-                    <span className="text-sm font-bold text-white">{attempt.score}</span>
+-                    <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}> / {attempt.totalMarks}</span>
++                    <span className="text-sm font-bold text-heading">{attempt.score}</span>
++                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}> / {attempt.totalMarks}</span>
+                   </div>
+                   {/* Result */}
+                   <div className="col-span-2">
+                     {attempt.status === 'completed' ? (
+                       <span className="inline-flex items-center gap-1.5 text-xs font-bold"
+-                        style={{ color: attempt.passed ? '#34d399' : '#fb7185' }}>
++                        style={{ color: attempt.passed ? 'var(--tint-emerald-text)' : 'var(--tint-rose-text)' }}>
+                         {attempt.passed ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                         {attempt.percentage}% {attempt.passed ? 'PASSED' : 'FAILED'}
+                       </span>
+                     ) : (
+-                      <span className="text-xs" style={{ color: 'rgba(240,240,245,0.35)' }}>—</span>
++                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+                     )}
+                   </div>
+                   {/* Violations */}
+                   <div className="col-span-1">
+                     {(attempt.violationSummary?.totalViolations || 0) > 0 ? (
+-                      <span className="text-xs font-bold" style={{ color: '#fbbf24' }}>
++                      <span className="text-xs font-bold" style={{ color: 'var(--tint-amber-text)' }}>
+                         <AlertTriangle size={12} className="inline mr-1" />
+                         {attempt.violationSummary.totalViolations}
+                       </span>
+                     ) : (
+-                      <span className="text-xs" style={{ color: 'rgba(240,240,245,0.3)' }}>0</span>
++                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>0</span>
+                     )}
+                   </div>
+                   {/* Detail */}
+                   <div className="col-span-1 flex justify-end">
+                     <button className="p-2 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+-                      style={{ background: 'rgba(139,92,246,0.12)', color: '#a78bfa' }}
++                      style={{ background: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)', color: 'var(--tint-purple-text)' }}
+                       onClick={e => { e.stopPropagation(); setSelectedCandidate(attempt); }}>
+                       <Eye size={13} />
+                     </button>
+@@ -271,26 +271,26 @@ const ExamResults: React.FC = () => {
+         <>
+           <div className="fixed inset-0 z-40" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedCandidate(null)} />
+           <div className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg overflow-y-auto"
+-            style={{ background: 'rgba(13,13,20,0.99)', borderLeft: '1px solid rgba(255,255,255,0.08)', boxShadow: '-20px 0 80px rgba(0,0,0,0.5)' }}>
++            style={{ background: 'rgba(13,13,20,0.99)', borderLeft: '1px solid var(--border-hover)', boxShadow: '-20px 0 80px rgba(0,0,0,0.5)' }}>
+             {/* Drawer header */}
+             <div className="sticky top-0 z-10 px-6 py-5 flex items-start justify-between"
+-              style={{ background: 'rgba(13,13,20,0.98)', borderBottom: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }}>
++              style={{ background: 'rgba(13,13,20,0.98)', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(20px)' }}>
+               <div>
+                 <div className="flex items-center gap-3 mb-1">
+                   <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+-                    style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
++                    style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}>
+                     {selectedCandidate.student.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                   </div>
+                   <div>
+-                    <div className="text-sm font-bold text-white">{selectedCandidate.student.name}</div>
+-                    <div className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>{selectedCandidate.student.email}</div>
++                    <div className="text-sm font-bold text-heading">{selectedCandidate.student.name}</div>
++                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{selectedCandidate.student.email}</div>
+                   </div>
+                 </div>
+               </div>
+               <button onClick={() => setSelectedCandidate(null)} className="p-2 rounded-xl transition-colors"
+-                style={{ color: 'rgba(240,240,245,0.4)' }}
+-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
+-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.4)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
++                style={{ color: 'var(--text-muted)' }}
++                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
++                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+                 <X size={18} />
+               </button>
+             </div>
+@@ -298,21 +298,21 @@ const ExamResults: React.FC = () => {
+             <div className="px-6 py-6 space-y-6">
+               {/* Score overview */}
+               <div className="grid grid-cols-2 gap-4">
+-                <div className="rounded-2xl p-5" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)' }}>
++                <div className="rounded-2xl p-5" style={{ background: 'color-mix(in srgb, var(--accent-purple) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 18%, transparent)' }}>
+                   <div className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: 'rgba(167,139,250,0.7)' }}>Total Score</div>
+-                  <div className="text-3xl font-black" style={{ color: '#a78bfa' }}>
++                  <div className="text-3xl font-black" style={{ color: 'var(--tint-purple-text)' }}>
+                     {selectedCandidate.score}<span className="text-base font-semibold opacity-60"> / {selectedCandidate.totalMarks}</span>
+                   </div>
+                 </div>
+                 <div className="rounded-2xl p-5" style={{
+-                  background: selectedCandidate.passed ? 'rgba(16,185,129,0.08)' : 'rgba(244,63,94,0.08)',
+-                  border: `1px solid ${selectedCandidate.passed ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)'}`,
++                  background: selectedCandidate.passed ? 'color-mix(in srgb, var(--accent-emerald) 8%, transparent)' : 'color-mix(in srgb, var(--accent-rose) 8%, transparent)',
++                  border: `1px solid ${selectedCandidate.passed ? 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' : 'color-mix(in srgb, var(--accent-rose) 20%, transparent)'}`,
+                 }}>
+                   <div className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: selectedCandidate.passed ? 'rgba(52,211,153,0.7)' : 'rgba(251,113,133,0.7)' }}>Result</div>
+-                  <div className="text-3xl font-black" style={{ color: selectedCandidate.passed ? '#34d399' : '#fb7185' }}>
++                  <div className="text-3xl font-black" style={{ color: selectedCandidate.passed ? 'var(--tint-emerald-text)' : 'var(--tint-rose-text)' }}>
+                     {selectedCandidate.percentage}%
+                   </div>
+-                  <div className="text-xs font-bold mt-1" style={{ color: selectedCandidate.passed ? '#34d399' : '#fb7185' }}>
++                  <div className="text-xs font-bold mt-1" style={{ color: selectedCandidate.passed ? 'var(--tint-emerald-text)' : 'var(--tint-rose-text)' }}>
+                     {selectedCandidate.passed ? '✓ PASSED' : '✗ FAILED'}
+                   </div>
+                 </div>
+@@ -327,20 +327,20 @@ const ExamResults: React.FC = () => {
+                 const subjectiveEarned = selectedCandidate?.subjectiveScore || 0;
+                 const mcqEarned = Math.max(0, (selectedCandidate?.score || 0) - codingEarned - subjectiveEarned);
+                 const rows = [
+-                  { label: 'MCQ', earned: mcqEarned, total: mcqTotal, bar: '#7c3aed', text: '#a78bfa' },
+-                  { label: 'Coding', earned: codingEarned, total: codingTotal, bar: '#4f46e5', text: '#818cf8' },
++                  { label: 'MCQ', earned: mcqEarned, total: mcqTotal, bar: '#7c3aed', text: 'var(--tint-purple-text)' },
++                  { label: 'Coding', earned: codingEarned, total: codingTotal, bar: '#4f46e5', text: 'var(--tint-indigo-text)' },
+                   { label: 'Subjective', earned: subjectiveEarned, total: subjectiveTotal, bar: '#9333ea', text: '#c084fc' },
+                 ].filter(r => r.total > 0);
+                 return rows.length > 0 ? (
+                   <div>
+-                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+-                      <BarChart3 size={13} style={{ color: '#8b5cf6' }} /> Marks Breakdown
++                    <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
++                      <BarChart3 size={13} style={{ color: 'var(--accent-purple)' }} /> Marks Breakdown
+                     </h4>
+                     <div className="space-y-3">
+                       {rows.map(row => (
+                         <div key={row.label} className="flex items-center gap-3">
+-                          <span className="text-xs font-semibold w-20 flex-shrink-0" style={{ color: 'rgba(240,240,245,0.5)' }}>{row.label}</span>
+-                          <div className="flex-1 rounded-full h-2 overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
++                          <span className="text-xs font-semibold w-20 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
++                          <div className="flex-1 rounded-full h-2 overflow-hidden" style={{ background: 'var(--border)' }}>
+                             <div className="h-2 rounded-full transition-all duration-700"
+                               style={{ width: row.total > 0 ? `${Math.min(100,(row.earned/row.total)*100)}%` : '0%', backgroundColor: row.bar }} />
+                           </div>
+@@ -356,8 +356,8 @@ const ExamResults: React.FC = () => {
+ 
+               {/* Security Log */}
+               <div>
+-                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+-                  <Shield size={13} style={{ color: '#fb7185' }} /> Security Violation Log
++                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
++                  <Shield size={13} style={{ color: 'var(--tint-rose-text)' }} /> Security Violation Log
+                 </h4>
+                 <div className="grid grid-cols-3 gap-3">
+                   {[
+@@ -366,11 +366,11 @@ const ExamResults: React.FC = () => {
+                     { label: 'DevTools', value: selectedCandidate.violationSummary?.devToolsAttempts || 0 },
+                   ].map(({ label, value }) => (
+                     <div key={label} className="rounded-xl p-3 text-center" style={{
+-                      background: value > 0 ? 'rgba(244,63,94,0.08)' : 'rgba(255,255,255,0.03)',
+-                      border: `1px solid ${value > 0 ? 'rgba(244,63,94,0.2)' : 'rgba(255,255,255,0.06)'}`,
++                      background: value > 0 ? 'color-mix(in srgb, var(--accent-rose) 8%, transparent)' : 'var(--bg-card)',
++                      border: `1px solid ${value > 0 ? 'color-mix(in srgb, var(--accent-rose) 20%, transparent)' : 'var(--border)'}`,
+                     }}>
+-                      <div className="text-xl font-black" style={{ color: value > 0 ? '#fb7185' : 'rgba(240,240,245,0.5)' }}>{value}</div>
+-                      <div className="text-[10px] mt-0.5 font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{label}</div>
++                      <div className="text-xl font-black" style={{ color: value > 0 ? 'var(--tint-rose-text)' : 'var(--text-secondary)' }}>{value}</div>
++                      <div className="text-[10px] mt-0.5 font-semibold" style={{ color: 'var(--text-muted)' }}>{label}</div>
+                     </div>
+                   ))}
+                 </div>
+@@ -379,26 +379,26 @@ const ExamResults: React.FC = () => {
+               {/* Coding Submissions */}
+               {candidateSubmissions.length > 0 && (
+                 <div>
+-                  <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+-                    <Code2 size={13} style={{ color: '#6366f1' }} /> Coding Submissions
++                  <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
++                    <Code2 size={13} style={{ color: 'var(--accent-indigo)' }} /> Coding Submissions
+                   </h4>
+                   <div className="space-y-3">
+                     {candidateSubmissions.map((sub, i) => (
+-                      <div key={i} className="rounded-xl p-4" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
++                      <div key={i} className="rounded-xl p-4" style={{ background: 'color-mix(in srgb, var(--accent-indigo) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-indigo) 15%, transparent)' }}>
+                         <div className="flex items-center justify-between mb-3">
+-                          <span className="text-sm font-bold text-white">{sub.questionTitle || 'Coding Problem'}</span>
++                          <span className="text-sm font-bold text-heading">{sub.questionTitle || 'Coding Problem'}</span>
+                           <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+-                            style={{ background: (sub.passedTestCases || 0) > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)', color: (sub.passedTestCases || 0) > 0 ? '#34d399' : '#fb7185' }}>
++                            style={{ background: (sub.passedTestCases || 0) > 0 ? 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)' : 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', color: (sub.passedTestCases || 0) > 0 ? 'var(--tint-emerald-text)' : 'var(--tint-rose-text)' }}>
+                             Passed {sub.passedTestCases || 0}/{sub.totalTestCases || 0} testcases
+                           </span>
+                         </div>
+-                        <div className="flex gap-4 text-xs mb-3" style={{ color: 'rgba(240,240,245,0.4)' }}>
++                        <div className="flex gap-4 text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+                           <span>Lang: {sub.language || 'N/A'}</span>
+                           <span>Time: {sub.executionTime || '—'} ms</span>
+                           <span>Memory: {sub.memoryUsed || '—'} KB</span>
+                         </div>
+                         {sub.code && (
+-                          <pre className="text-xs p-3 rounded-lg overflow-x-auto" style={{ background: 'rgba(0,0,0,0.4)', color: '#a78bfa', fontFamily: 'monospace' }}>
++                          <pre className="text-xs p-3 rounded-lg overflow-x-auto" style={{ background: 'rgba(0,0,0,0.4)', color: 'var(--tint-purple-text)', fontFamily: 'monospace' }}>
+                             <code>{sub.code.slice(0, 300)}{sub.code.length > 300 ? '...' : ''}</code>
+                           </pre>
+                         )}
+diff --git a/frontend/src/pages/teacher/ManageExams.tsx b/frontend/src/pages/teacher/ManageExams.tsx
+index 0707c78..0ace122 100644
+--- a/frontend/src/pages/teacher/ManageExams.tsx
++++ b/frontend/src/pages/teacher/ManageExams.tsx
+@@ -65,17 +65,17 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
+     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+       <div
+         className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
+-        style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid rgba(255,255,255,0.1)', maxHeight: '85vh', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}
++        style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid var(--border-hover)', maxHeight: '85vh', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}
+       >
+         {/* Header */}
+-        <div className="px-6 py-5 flex items-start justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
++        <div className="px-6 py-5 flex items-start justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
+           <div>
+-            <h3 className="text-base font-bold text-white">Assign Candidates</h3>
+-            <p className="text-xs mt-0.5" style={{ color: 'rgba(240,240,245,0.4)' }}>{exam.title}</p>
++            <h3 className="text-base font-bold text-heading">Assign Candidates</h3>
++            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{exam.title}</p>
+           </div>
+-          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors" style={{ color: 'rgba(240,240,245,0.4)' }}
+-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'; }}
+-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.4)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
++          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
++            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
++            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+             <X size={16} />
+           </button>
+         </div>
+@@ -87,22 +87,22 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
+               {[1,2,3,4].map(i => <div key={i} className="h-14 rounded-xl skeleton" />)}
+             </div>
+           ) : error ? (
+-            <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: '#fb7185' }}>{error}</div>
++            <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>{error}</div>
+           ) : students.length === 0 ? (
+             <div className="text-center py-12">
+-              <Users size={32} className="mx-auto mb-3" style={{ color: 'rgba(240,240,245,0.2)' }} />
+-              <p className="text-sm" style={{ color: 'rgba(240,240,245,0.4)' }}>No student accounts registered yet</p>
++              <Users size={32} className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
++              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No student accounts registered yet</p>
+             </div>
+           ) : (
+             <>
+               {success && (
+-                <div className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#34d399' }}>
++                <div className="mb-4 p-3 rounded-xl flex items-center gap-2 text-sm" style={{ background: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-emerald) 20%, transparent)', color: 'var(--tint-emerald-text)' }}>
+                   <CheckCircle2 size={15} /> {success}
+                 </div>
+               )}
+               {/* Search */}
+               <div className="relative mb-4">
+-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
++                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                 <input
+                   value={search}
+                   onChange={e => setSearch(e.target.value)}
+@@ -112,12 +112,12 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
+               </div>
+               {/* Select all */}
+               <div className="flex items-center justify-between mb-3">
+-                <span className="text-xs" style={{ color: 'rgba(240,240,245,0.5)' }}>
+-                  <span className="font-bold text-white">{selectedStudents.length}</span> / {students.length} selected
++                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
++                  <span className="font-bold text-heading">{selectedStudents.length}</span> / {students.length} selected
+                 </span>
+                 <div className="flex gap-3">
+-                  <button onClick={() => setSelectedStudents(students.map(s => s.id))} className="text-xs font-semibold" style={{ color: '#8b5cf6' }}>All</button>
+-                  <button onClick={() => setSelectedStudents([])} className="text-xs font-semibold" style={{ color: 'rgba(240,240,245,0.4)' }}>Clear</button>
++                  <button onClick={() => setSelectedStudents(students.map(s => s.id))} className="text-xs font-semibold" style={{ color: 'var(--accent-purple)' }}>All</button>
++                  <button onClick={() => setSelectedStudents([])} className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Clear</button>
+                 </div>
+               </div>
+               {/* List */}
+@@ -130,29 +130,29 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
+                       onClick={() => setSelectedStudents(prev => prev.includes(student.id) ? prev.filter(id => id !== student.id) : [...prev, student.id])}
+                       className="flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-200"
+                       style={{
+-                        background: isSelected ? 'rgba(139,92,246,0.1)' : 'rgba(255,255,255,0.03)',
+-                        border: `1px solid ${isSelected ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.06)'}`,
++                        background: isSelected ? 'color-mix(in srgb, var(--accent-purple) 10%, transparent)' : 'var(--bg-card)',
++                        border: `1px solid ${isSelected ? 'color-mix(in srgb, var(--accent-purple) 30%, transparent)' : 'var(--border)'}`,
+                       }}
+                     >
+                       <div>
+-                        <div className="text-sm font-semibold text-white">{student.name}</div>
+-                        <div className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>{student.email}</div>
++                        <div className="text-sm font-semibold text-heading">{student.name}</div>
++                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{student.email}</div>
+                       </div>
+-                      {isSelected && <CheckCircle2 size={16} style={{ color: '#8b5cf6', flexShrink: 0 }} />}
++                      {isSelected && <CheckCircle2 size={16} style={{ color: 'var(--accent-purple)', flexShrink: 0 }} />}
+                     </div>
+                   );
+                 })}
+               </div>
+               {/* Email toggle */}
+-              <div className="mt-4 pt-4 flex items-center gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
++              <div className="mt-4 pt-4 flex items-center gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+                 <div
+                   className="relative h-5 w-9 rounded-full cursor-pointer transition-all flex-shrink-0"
+-                  style={{ background: sendEmailNotification ? '#8b5cf6' : 'rgba(255,255,255,0.1)' }}
++                  style={{ background: sendEmailNotification ? 'var(--accent-purple)' : 'var(--border-hover)' }}
+                   onClick={() => setSendEmailNotification(!sendEmailNotification)}
+                 >
+                   <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ left: sendEmailNotification ? '17px' : '2px' }} />
+                 </div>
+-                <label className="text-xs cursor-pointer" style={{ color: 'rgba(240,240,245,0.55)' }} onClick={() => setSendEmailNotification(!sendEmailNotification)}>
++                <label className="text-xs cursor-pointer" style={{ color: 'var(--text-secondary)' }} onClick={() => setSendEmailNotification(!sendEmailNotification)}>
+                   Send email invitations with SEB access links
+                 </label>
+               </div>
+@@ -161,15 +161,15 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
+         </div>
+ 
+         {/* Footer */}
+-        <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
++        <div className="px-6 py-4 flex justify-end gap-3" style={{ borderTop: '1px solid var(--border)' }}>
+           <button onClick={onClose} disabled={saving}
+             className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+-            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>
++            style={{ background: 'var(--border)', color: 'var(--text-secondary)', border: '1px solid var(--border-hover)' }}>
+             Cancel
+           </button>
+           <button onClick={handleSave} disabled={saving || loading}
+             className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all flex items-center gap-2"
+-            style={{ background: saving ? 'rgba(139,92,246,0.5)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 20px rgba(139,92,246,0.3)' }}>
++            style={{ background: saving ? 'color-mix(in srgb, var(--accent-purple) 50%, transparent)' : 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 20px color-mix(in srgb, var(--accent-purple) 30%, transparent)' }}>
+             {saving ? <><div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Saving...</> : 'Save Assignments'}
+           </button>
+         </div>
+@@ -272,18 +272,18 @@ const ManageExams: React.FC = () => {
+         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+           <div>
+             <div className="flex items-center gap-3 mb-2">
+-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #8b5cf6, #6366f1)' }} />
+-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#8b5cf6' }}>Assessment Management</span>
++              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-purple), var(--accent-indigo))' }} />
++              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-purple)' }}>Assessment Management</span>
+             </div>
+-            <h1 className="text-2xl font-black text-white">Assessments</h1>
+-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
++            <h1 className="text-2xl font-black text-heading">Assessments</h1>
++            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+               {exams.length} total · {activeCount} active · {inactiveCount} inactive
+             </p>
+           </div>
+           <Link
+             to="/teacher/create-exam"
+             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
+-            style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', boxShadow: '0 4px 24px rgba(139,92,246,0.35)' }}
++            style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))', boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-purple) 35%, transparent)' }}
+           >
+             <Plus size={15} /> New Assessment
+           </Link>
+@@ -293,7 +293,7 @@ const ManageExams: React.FC = () => {
+         <div className="flex flex-col sm:flex-row gap-3 mb-6">
+           {/* Search */}
+           <div className="relative flex-1">
+-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
++            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+             <input
+               value={searchQuery}
+               onChange={e => setSearchQuery(e.target.value)}
+@@ -302,15 +302,15 @@ const ManageExams: React.FC = () => {
+             />
+           </div>
+           {/* Tabs */}
+-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
++          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+             {([['all', 'All', exams.length], ['active', 'Active', activeCount], ['inactive', 'Inactive', inactiveCount]] as const).map(([tab, label, count]) => (
+               <button
+                 key={tab}
+                 onClick={() => setActiveTab(tab)}
+                 className="px-4 py-2 rounded-lg text-xs font-bold transition-all duration-200"
+                 style={{
+-                  background: activeTab === tab ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'transparent',
+-                  color: activeTab === tab ? '#fff' : 'rgba(240,240,245,0.45)',
++                  background: activeTab === tab ? 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' : 'transparent',
++                  color: activeTab === tab ? '#fff' : 'var(--text-secondary)',
+                 }}
+               >
+                 {label} <span className="ml-1 opacity-70">{count}</span>
+@@ -326,18 +326,18 @@ const ManageExams: React.FC = () => {
+           </div>
+         ) : filteredExams.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-24">
+-            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.15)' }}>
+-              <FileText size={32} style={{ color: 'rgba(139,92,246,0.5)' }} />
++            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'color-mix(in srgb, var(--accent-purple) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 15%, transparent)' }}>
++              <FileText size={32} style={{ color: 'color-mix(in srgb, var(--accent-purple) 50%, transparent)' }} />
+             </div>
+-            <h3 className="text-lg font-bold text-white mb-2">
++            <h3 className="text-lg font-bold text-heading mb-2">
+               {searchQuery ? 'No results found' : 'No assessments yet'}
+             </h3>
+-            <p className="text-sm text-center max-w-xs mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>
++            <p className="text-sm text-center max-w-xs mb-6" style={{ color: 'var(--text-muted)' }}>
+               {searchQuery ? `No assessments match "${searchQuery}"` : 'Create your first assessment to start evaluating candidates.'}
+             </p>
+             {!searchQuery && (
+               <Link to="/teacher/create-exam" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}>
++                style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}>
+                 <Zap size={15} /> Create First Assessment
+               </Link>
+             )}
+@@ -353,18 +353,18 @@ const ManageExams: React.FC = () => {
+                 <div
+                   key={examId}
+                   className="rounded-2xl overflow-hidden transition-all duration-300 group"
+-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.25)'; (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.04)'; }}
+-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
++                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
++                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'color-mix(in srgb, var(--accent-purple) 25%, transparent)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 4%, transparent)'; }}
++                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'; }}
+                 >
+                   {/* Card top */}
+                   <div className="p-5">
+                     <div className="flex items-start justify-between mb-3">
+                       <div
+                         className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
+-                        style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.2)' }}
++                        style={{ background: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)' }}
+                       >
+-                        <FileText size={17} style={{ color: '#8b5cf6' }} />
++                        <FileText size={17} style={{ color: 'var(--accent-purple)' }} />
+                       </div>
+                       {/* Status badge */}
+                       <button
+@@ -372,27 +372,27 @@ const ManageExams: React.FC = () => {
+                         disabled={isToggling}
+                         className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full transition-all"
+                         style={{
+-                          background: exam.isActive ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.06)',
+-                          color: exam.isActive ? '#34d399' : 'rgba(240,240,245,0.4)',
+-                          border: `1px solid ${exam.isActive ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.08)'}`,
++                          background: exam.isActive ? 'color-mix(in srgb, var(--accent-emerald) 12%, transparent)' : 'var(--border)',
++                          color: exam.isActive ? 'var(--tint-emerald-text)' : 'var(--text-muted)',
++                          border: `1px solid ${exam.isActive ? 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)' : 'var(--border-hover)'}`,
+                         }}
+                       >
+                         {isToggling ? (
+                           <div className="h-3 w-3 rounded-full border border-current border-t-transparent animate-spin" />
+                         ) : (
+-                          <div className="h-1.5 w-1.5 rounded-full" style={{ background: exam.isActive ? '#34d399' : 'rgba(240,240,245,0.3)', boxShadow: exam.isActive ? '0 0 6px #34d399' : 'none' }} />
++                          <div className="h-1.5 w-1.5 rounded-full" style={{ background: exam.isActive ? 'var(--tint-emerald-text)' : 'var(--text-muted)', boxShadow: exam.isActive ? '0 0 6px var(--tint-emerald-text)' : 'none' }} />
+                         )}
+                         {exam.isActive ? 'Active' : 'Inactive'}
+                       </button>
+                     </div>
+ 
+-                    <h3 className="text-sm font-bold text-white mb-1 line-clamp-1">{exam.title}</h3>
++                    <h3 className="text-sm font-bold text-heading mb-1 line-clamp-1">{exam.title}</h3>
+                     {exam.description && (
+-                      <p className="text-xs mb-3 line-clamp-2" style={{ color: 'rgba(240,240,245,0.4)' }}>{exam.description}</p>
++                      <p className="text-xs mb-3 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{exam.description}</p>
+                     )}
+ 
+                     {/* Stats row */}
+-                    <div className="flex items-center gap-3 text-xs" style={{ color: 'rgba(240,240,245,0.35)' }}>
++                    <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+                       <span className="flex items-center gap-1"><Clock size={11} />{exam.duration}m</span>
+                       <span className="flex items-center gap-1"><Target size={11} />{exam.totalMarks} marks</span>
+                       <span className="flex items-center gap-1"><BookOpen size={11} />{(exam as any).questionsCount || exam.questions?.length || 0}q</span>
+@@ -400,28 +400,28 @@ const ManageExams: React.FC = () => {
+                   </div>
+ 
+                   {/* Divider */}
+-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }} />
++                  <div style={{ borderTop: '1px solid var(--bg-card)' }} />
+ 
+                   {/* Actions */}
+                   <div className="px-4 py-3 flex items-center gap-1.5 flex-wrap">
+                     <Link
+                       to={`/teacher/exams/${examId}/results`}
+                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all"
+-                      style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)' }}
++                      style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}
+                     >
+                       <BarChart3 size={12} /> Results
+                     </Link>
+                     <button
+                       onClick={() => setSelectedExam(exam)}
+                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+-                      style={{ background: 'rgba(6,182,212,0.1)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.2)' }}
++                      style={{ background: 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)', color: 'var(--tint-cyan-text)', border: '1px solid color-mix(in srgb, var(--accent-cyan) 20%, transparent)' }}
+                     >
+                       <Users size={12} /> Assign
+                     </button>
+                     <button
+                       onClick={() => copyStudentAccessLink(examId)}
+                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+-                      style={{ background: 'rgba(16,185,129,0.1)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}
++                      style={{ background: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: '1px solid color-mix(in srgb, var(--accent-emerald) 20%, transparent)' }}
+                       title="Copy student access link"
+                     >
+                       <Share2 size={12} /> Link
+@@ -430,18 +430,18 @@ const ManageExams: React.FC = () => {
+                       <Link
+                         to={`/teacher/edit-exam/${examId}`}
+                         className="p-1.5 rounded-lg transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.3)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#a78bfa'; (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.1)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-muted)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-purple-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 10%, transparent)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                       >
+                         <Edit size={14} />
+                       </Link>
+                       <button
+                         onClick={() => handleDuplicate(examId, exam.title)}
+                         className="p-1.5 rounded-lg transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.3)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#22d3ee'; (e.currentTarget as HTMLElement).style.background = 'rgba(6,182,212,0.1)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-muted)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-cyan-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-cyan) 10%, transparent)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                         title="Duplicate"
+                       >
+                         <Copy size={14} />
+@@ -450,9 +450,9 @@ const ManageExams: React.FC = () => {
+                         onClick={() => handleDelete(examId)}
+                         disabled={isDeleting}
+                         className="p-1.5 rounded-lg transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.3)' }}
+-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.1)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        style={{ color: 'var(--text-muted)' }}
++                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 10%, transparent)'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                       >
+                         {isDeleting ? <div className="h-3.5 w-3.5 rounded-full border border-current border-t-transparent animate-spin" /> : <Trash2 size={14} />}
+                       </button>
+diff --git a/frontend/src/pages/teacher/ManageMCQ.tsx b/frontend/src/pages/teacher/ManageMCQ.tsx
+index b2a3418..e944519 100644
+--- a/frontend/src/pages/teacher/ManageMCQ.tsx
++++ b/frontend/src/pages/teacher/ManageMCQ.tsx
+@@ -302,9 +302,9 @@ const categoryNameFor = (q: Question) => {
+ };
+ 
+ const difficultyStyle = (d?: string) => {
+-  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
+-  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
+-  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
++  if (d === 'easy') return { bg: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' };
++  if (d === 'hard') return { bg: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', color: 'var(--tint-rose-text)', border: 'color-mix(in srgb, var(--accent-rose) 20%, transparent)' };
++  return { bg: 'color-mix(in srgb, var(--accent-amber) 10%, transparent)', color: 'var(--tint-amber-text)', border: 'color-mix(in srgb, var(--accent-amber) 20%, transparent)' };
+ };
+ 
+ const ManageMCQ: React.FC = () => {
+@@ -380,14 +380,14 @@ const ManageMCQ: React.FC = () => {
+       {/* Delete Confirm Modal */}
+       {deleteQuestion && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
+-          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
+-            <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 mx-auto" style={{ background: 'rgba(244,63,94,0.12)', border: '1px solid rgba(244,63,94,0.2)' }}>
+-              <Trash2 size={20} style={{ color: '#fb7185' }} />
++          <div className="rounded-2xl p-6 w-full max-w-sm" style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid var(--border-hover)', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}>
++            <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 mx-auto" style={{ background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)' }}>
++              <Trash2 size={20} style={{ color: 'var(--tint-rose-text)' }} />
+             </div>
+-            <h3 className="text-base font-bold text-white text-center mb-2">Delete Question?</h3>
+-            <p className="text-sm text-center mb-6 line-clamp-2" style={{ color: 'rgba(240,240,245,0.5)' }}>"{deleteQuestion.question}"</p>
++            <h3 className="text-base font-bold text-heading text-center mb-2">Delete Question?</h3>
++            <p className="text-sm text-center mb-6 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>"{deleteQuestion.question}"</p>
+             <div className="flex gap-3">
+-              <button onClick={() => setDeleteQuestion(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.7)', border: '1px solid rgba(255,255,255,0.08)' }}>Cancel</button>
++              <button onClick={() => setDeleteQuestion(null)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold" style={{ background: 'var(--border)', color: 'var(--text-secondary)', border: '1px solid var(--border-hover)' }}>Cancel</button>
+               <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}>Delete</button>
+             </div>
+           </div>
+@@ -399,18 +399,18 @@ const ManageMCQ: React.FC = () => {
+         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+           <div>
+             <div className="flex items-center gap-3 mb-2">
+-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #06b6d4, #6366f1)' }} />
+-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#06b6d4' }}>Question Bank</span>
++              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-indigo))' }} />
++              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--accent-cyan)' }}>Question Bank</span>
+             </div>
+-            <h1 className="text-2xl font-black text-white">MCQ Library</h1>
+-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
++            <h1 className="text-2xl font-black text-heading">MCQ Library</h1>
++            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+               {loading ? '...' : `${questions.length} questions across ${categoryFilters.length - 1} categories`}
+             </p>
+           </div>
+           <Link
+             to="/teacher/create-question"
+             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
+-            style={{ background: 'linear-gradient(135deg, #06b6d4, #6366f1)', boxShadow: '0 4px 24px rgba(6,182,212,0.25)' }}
++            style={{ background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo))', boxShadow: '0 4px 24px color-mix(in srgb, var(--accent-cyan) 25%, transparent)' }}
+           >
+             <Plus size={15} /> Add Question
+           </Link>
+@@ -419,7 +419,7 @@ const ManageMCQ: React.FC = () => {
+         {/* Filters */}
+         <div className="flex flex-col sm:flex-row gap-3 mb-6">
+           <div className="relative flex-1">
+-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'rgba(240,240,245,0.3)' }} />
++            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+               placeholder="Search questions or options..." className="input-dark pl-10" />
+           </div>
+@@ -428,9 +428,9 @@ const ManageMCQ: React.FC = () => {
+               <button key={cat} onClick={() => setActiveCategory(cat)}
+                 className="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200"
+                 style={{
+-                  background: activeCategory === cat ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.04)',
+-                  color: activeCategory === cat ? '#22d3ee' : 'rgba(240,240,245,0.45)',
+-                  border: `1px solid ${activeCategory === cat ? 'rgba(6,182,212,0.3)' : 'rgba(255,255,255,0.06)'}`,
++                  background: activeCategory === cat ? 'color-mix(in srgb, var(--accent-cyan) 15%, transparent)' : 'var(--bg-card)',
++                  color: activeCategory === cat ? 'var(--tint-cyan-text)' : 'var(--text-secondary)',
++                  border: `1px solid ${activeCategory === cat ? 'color-mix(in srgb, var(--accent-cyan) 30%, transparent)' : 'var(--border)'}`,
+                 }}>
+                 {cat} {cat !== 'All' && <span className="ml-1 opacity-60">{questions.filter(q => categoryNameFor(q) === cat).length}</span>}
+               </button>
+@@ -443,14 +443,14 @@ const ManageMCQ: React.FC = () => {
+           <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-32 rounded-2xl skeleton" />)}</div>
+         ) : filteredQuestions.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-24">
+-            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.15)' }}>
+-              <ListChecks size={32} style={{ color: 'rgba(6,182,212,0.4)' }} />
++            <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'color-mix(in srgb, var(--accent-cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-cyan) 15%, transparent)' }}>
++              <ListChecks size={32} style={{ color: 'color-mix(in srgb, var(--accent-cyan) 40%, transparent)' }} />
+             </div>
+-            <h3 className="text-lg font-bold text-white mb-2">{searchQuery ? 'No results found' : 'No MCQ questions yet'}</h3>
+-            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{searchQuery ? `No matches for "${searchQuery}"` : 'Start building your question bank'}</p>
++            <h3 className="text-lg font-bold text-heading mb-2">{searchQuery ? 'No results found' : 'No MCQ questions yet'}</h3>
++            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{searchQuery ? `No matches for "${searchQuery}"` : 'Start building your question bank'}</p>
+             {!searchQuery && (
+               <Link to="/teacher/create-question" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+-                style={{ background: 'linear-gradient(135deg, #06b6d4, #6366f1)' }}>
++                style={{ background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo))' }}>
+                 <Plus size={15} /> Create First Question
+               </Link>
+             )}
+@@ -460,34 +460,34 @@ const ManageMCQ: React.FC = () => {
+             {Object.entries(groupedQuestions).map(([catName, qs]) => {
+               const isCollapsed = collapsed[catName];
+               return (
+-                <div key={catName} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
++                <div key={catName} className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                   {/* Category header */}
+                   <button
+                     onClick={() => setCollapsed(prev => ({ ...prev, [catName]: !prev[catName] }))}
+                     className="w-full px-5 py-4 flex items-center justify-between transition-colors"
+-                    style={{ background: 'rgba(255,255,255,0.02)' }}
+-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)'}
+-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
++                    style={{ background: 'var(--bg-card)' }}
++                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
++                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
+                   >
+                     <div className="flex items-center gap-3">
+-                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.2)' }}>
+-                        <BookOpen size={14} style={{ color: '#22d3ee' }} />
++                      <div className="h-8 w-8 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-cyan) 20%, transparent)' }}>
++                        <BookOpen size={14} style={{ color: 'var(--tint-cyan-text)' }} />
+                       </div>
+-                      <span className="text-sm font-bold text-white">{catName}</span>
+-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(6,182,212,0.12)', color: '#22d3ee' }}>{qs.length}</span>
++                      <span className="text-sm font-bold text-heading">{catName}</span>
++                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--accent-cyan) 12%, transparent)', color: 'var(--tint-cyan-text)' }}>{qs.length}</span>
+                     </div>
+-                    {isCollapsed ? <ChevronRight size={16} style={{ color: 'rgba(240,240,245,0.35)' }} /> : <ChevronDown size={16} style={{ color: 'rgba(240,240,245,0.35)' }} />}
++                    {isCollapsed ? <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+                   </button>
+ 
+                   {!isCollapsed && (
+-                    <div className="divide-y" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.04)' }}>
++                    <div className="divide-y" style={{ borderTop: '1px solid var(--bg-card)', borderColor: 'var(--bg-card)' }}>
+                       {qs.map(q => {
+                         const qId = q._id || q.id || '';
+                         const diff = difficultyStyle(q.difficulty);
+                         return (
+                           <div key={qId} className="px-5 py-4 group transition-colors"
+-                            style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)'}
++                            style={{ borderColor: 'var(--bg-card)' }}
++                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'}
+                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                           >
+                             <div className="flex items-start justify-between gap-4">
+@@ -497,25 +497,25 @@ const ManageMCQ: React.FC = () => {
+                                     {q.difficulty || 'medium'}
+                                   </span>
+                                   {(q as any).marks && (
+-                                    <span className="text-[11px] font-semibold" style={{ color: 'rgba(240,240,245,0.35)' }}>{(q as any).marks} marks</span>
++                                    <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>{(q as any).marks} marks</span>
+                                   )}
+                                 </div>
+-                                <p className="text-sm font-semibold text-white mb-3 leading-relaxed">{q.question}</p>
++                                <p className="text-sm font-semibold text-heading mb-3 leading-relaxed">{q.question}</p>
+                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                   {(q.options || []).map((opt, idx) => {
+                                     const isCorrect = opt === q.answer;
+                                     return (
+                                       <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                                         style={{
+-                                          background: isCorrect ? 'rgba(16,185,129,0.08)' : 'rgba(255,255,255,0.02)',
+-                                          border: `1px solid ${isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
++                                          background: isCorrect ? 'color-mix(in srgb, var(--accent-emerald) 8%, transparent)' : 'var(--bg-card)',
++                                          border: `1px solid ${isCorrect ? 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' : 'var(--bg-card)'}`,
+                                         }}>
+                                         <div className="h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold"
+-                                          style={{ background: isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.06)', color: isCorrect ? '#34d399' : 'rgba(240,240,245,0.35)' }}>
++                                          style={{ background: isCorrect ? 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' : 'var(--border)', color: isCorrect ? 'var(--tint-emerald-text)' : 'var(--text-muted)' }}>
+                                           {String.fromCharCode(65 + idx)}
+                                         </div>
+-                                        <span className="text-xs" style={{ color: isCorrect ? '#34d399' : 'rgba(240,240,245,0.55)' }}>{opt}</span>
+-                                        {isCorrect && <CheckCircle2 size={12} className="ml-auto flex-shrink-0" style={{ color: '#34d399' }} />}
++                                        <span className="text-xs" style={{ color: isCorrect ? 'var(--tint-emerald-text)' : 'var(--text-secondary)' }}>{opt}</span>
++                                        {isCorrect && <CheckCircle2 size={12} className="ml-auto flex-shrink-0" style={{ color: 'var(--tint-emerald-text)' }} />}
+                                       </div>
+                                     );
+                                   })}
+@@ -524,9 +524,9 @@ const ManageMCQ: React.FC = () => {
+                               <button
+                                 onClick={() => setDeleteQuestion(q)}
+                                 className="p-2 rounded-lg flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+-                                style={{ color: 'rgba(240,240,245,0.3)' }}
+-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.1)'; }}
+-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                                style={{ color: 'var(--text-muted)' }}
++                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 10%, transparent)'; }}
++                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                               >
+                                 <Trash2 size={15} />
+                               </button>
+diff --git a/frontend/src/pages/teacher/SubjectiveQuestions.tsx b/frontend/src/pages/teacher/SubjectiveQuestions.tsx
+index 218a6f4..1d292e9 100644
+--- a/frontend/src/pages/teacher/SubjectiveQuestions.tsx
++++ b/frontend/src/pages/teacher/SubjectiveQuestions.tsx
+@@ -8,9 +8,9 @@ import type { SubjectiveQuestion } from '../../types';
+ 
+ const difficultyStyle = (diff?: string) => {
+   const d = (diff || 'medium').toLowerCase();
+-  if (d === 'easy') return { bg: 'rgba(16,185,129,0.1)', color: '#34d399', border: 'rgba(16,185,129,0.2)' };
+-  if (d === 'hard') return { bg: 'rgba(244,63,94,0.1)', color: '#fb7185', border: 'rgba(244,63,94,0.2)' };
+-  return { bg: 'rgba(245,158,11,0.1)', color: '#fbbf24', border: 'rgba(245,158,11,0.2)' };
++  if (d === 'easy') return { bg: 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)', color: 'var(--tint-emerald-text)', border: 'color-mix(in srgb, var(--accent-emerald) 20%, transparent)' };
++  if (d === 'hard') return { bg: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', color: 'var(--tint-rose-text)', border: 'color-mix(in srgb, var(--accent-rose) 20%, transparent)' };
++  return { bg: 'color-mix(in srgb, var(--accent-amber) 10%, transparent)', color: 'var(--tint-amber-text)', border: 'color-mix(in srgb, var(--accent-amber) 20%, transparent)' };
+ };
+ 
+ const SubjectiveQuestions: React.FC = () => {
+@@ -64,18 +64,18 @@ const SubjectiveQuestions: React.FC = () => {
+         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+           <div>
+             <div className="flex items-center gap-3 mb-2">
+-              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, #a78bfa, #c084fc)' }} />
+-              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#a78bfa' }}>Subjective Questions</span>
++              <div className="h-1.5 w-8 rounded-full" style={{ background: 'linear-gradient(90deg, var(--tint-purple-text), #c084fc)' }} />
++              <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--tint-purple-text)' }}>Subjective Questions</span>
+             </div>
+-            <h1 className="text-2xl font-black text-white">Descriptive Q&A Bank</h1>
+-            <p className="text-sm mt-1" style={{ color: 'rgba(240,240,245,0.4)' }}>
++            <h1 className="text-2xl font-black text-heading">Descriptive Q&A Bank</h1>
++            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+               Open-ended questions graded manually after the exam
+             </p>
+           </div>
+           <Link
+             to="/teacher/subjective-questions/create"
+             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white self-start"
+-            style={{ background: 'linear-gradient(135deg, #a78bfa, #c084fc)', boxShadow: '0 4px 24px rgba(167,139,250,0.25)' }}
++            style={{ background: 'linear-gradient(135deg, var(--tint-purple-text), #c084fc)', boxShadow: '0 4px 24px rgba(167,139,250,0.25)' }}
+           >
+             <Plus size={15} /> Create Question
+           </Link>
+@@ -84,7 +84,7 @@ const SubjectiveQuestions: React.FC = () => {
+         {/* Filters */}
+         <div className="flex flex-col sm:flex-row gap-3 mb-6">
+           <div className="relative flex-1">
+-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" style={{ color: 'rgba(240,240,245,0.3)' }} />
++            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" style={{ color: 'var(--text-muted)' }} />
+             <input
+               type="text"
+               placeholder="Search questions..."
+@@ -97,7 +97,7 @@ const SubjectiveQuestions: React.FC = () => {
+             value={difficultyFilter}
+             onChange={e => setDifficultyFilter(e.target.value)}
+             className="px-3.5 py-2 text-sm rounded-xl focus:outline-none transition-all duration-200"
+-            style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(240,240,245,0.8)', border: '1px solid rgba(255,255,255,0.06)' }}
++            style={{ background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }}
+           >
+             <option value="" className="bg-gray-900 text-white">All Difficulties</option>
+             <option value="easy" className="bg-gray-900 text-white">Easy</option>
+@@ -108,7 +108,7 @@ const SubjectiveQuestions: React.FC = () => {
+ 
+         {/* Error */}
+         {error && (
+-          <div className="flex items-center gap-2 p-4 rounded-xl text-sm mb-4" style={{ background: 'rgba(244,63,94,0.1)', color: '#fb7185', border: '1px solid rgba(244,63,94,0.2)' }}>
++          <div className="flex items-center gap-2 p-4 rounded-xl text-sm mb-4" style={{ background: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)', color: 'var(--tint-rose-text)', border: '1px solid color-mix(in srgb, var(--accent-rose) 20%, transparent)' }}>
+             <AlertCircle size={15} />
+             {error}
+           </div>
+@@ -126,11 +126,11 @@ const SubjectiveQuestions: React.FC = () => {
+             <div className="h-20 w-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.15)' }}>
+               <BookOpen size={32} style={{ color: 'rgba(167,139,250,0.4)' }} />
+             </div>
+-            <h3 className="text-lg font-bold text-white mb-2">{search ? 'No results found' : 'No subjective questions yet'}</h3>
+-            <p className="text-sm mb-6" style={{ color: 'rgba(240,240,245,0.4)' }}>{search ? `No matches for "${search}"` : 'Create your first open-ended question to get started.'}</p>
++            <h3 className="text-lg font-bold text-heading mb-2">{search ? 'No results found' : 'No subjective questions yet'}</h3>
++            <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>{search ? `No matches for "${search}"` : 'Create your first open-ended question to get started.'}</p>
+             {!search && (
+               <Link to="/teacher/subjective-questions/create" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+-                style={{ background: 'linear-gradient(135deg, #a78bfa, #c084fc)' }}>
++                style={{ background: 'linear-gradient(135deg, var(--tint-purple-text), #c084fc)' }}>
+                 <Plus size={15} /> Create Question
+               </Link>
+             )}
+@@ -144,9 +144,9 @@ const SubjectiveQuestions: React.FC = () => {
+                 <div
+                   key={id}
+                   className="group rounded-2xl p-5 flex items-start justify-between gap-4 transition-all duration-200"
+-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
+-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'; }}
++                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
++                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-card-hover)'; }}
++                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'; }}
+                 >
+                   <div className="flex-1 min-w-0">
+                     <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+@@ -154,11 +154,11 @@ const SubjectiveQuestions: React.FC = () => {
+                         {q.difficulty || 'medium'}
+                       </span>
+                       {q.category && (
+-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
++                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
+                           {q.category}
+                         </span>
+                       )}
+-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(240,240,245,0.5)' }}>
++                      <span className="text-xs font-semibold px-2 py-0.5 rounded-lg" style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
+                         🎯 {q.maxMarks} marks
+                       </span>
+                       {q.wordLimit ? (
+@@ -167,20 +167,20 @@ const SubjectiveQuestions: React.FC = () => {
+                         </span>
+                       ) : null}
+                       {!q.isActive && (
+-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'rgba(240,240,245,0.1)', color: 'rgba(240,240,245,0.6)' }}>
++                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--text-muted)', color: 'var(--text-secondary)' }}>
+                           Inactive
+                         </span>
+                       )}
+                     </div>
+-                    <h3 className="text-base font-bold text-white mb-1.5 transition-colors group-hover:text-purple-400 truncate">{q.title}</h3>
+-                    <p className="text-sm line-clamp-2 leading-relaxed" style={{ color: 'rgba(240,240,245,0.6)' }}>{q.description}</p>
++                    <h3 className="text-base font-bold text-heading mb-1.5 transition-colors group-hover:text-purple-400 truncate">{q.title}</h3>
++                    <p className="text-sm line-clamp-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{q.description}</p>
+                   </div>
+                   <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                     <Link to={`/teacher/subjective-questions/edit/${id}`}>
+                       <button className="p-2 rounded-xl transition-all"
+-                        style={{ color: 'rgba(240,240,245,0.5)' }}
++                        style={{ color: 'var(--text-secondary)' }}
+                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c084fc'; (e.currentTarget as HTMLElement).style.background = 'rgba(167,139,250,0.15)'; }}
+-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                       >
+                         <Edit2 size={16} />
+                       </button>
+@@ -189,12 +189,12 @@ const SubjectiveQuestions: React.FC = () => {
+                       onClick={() => handleDelete(id)}
+                       disabled={deletingId === id}
+                       className="p-2 rounded-xl transition-all disabled:opacity-50"
+-                      style={{ color: 'rgba(240,240,245,0.5)' }}
+-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fb7185'; (e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.15)'; }}
+-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.5)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
++                      style={{ color: 'var(--text-secondary)' }}
++                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--tint-rose-text)'; (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-rose) 15%, transparent)'; }}
++                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                     >
+                       {deletingId === id ? (
+-                        <div className="h-4 w-4 border-2 border-[#fb7185] border-t-transparent rounded-full animate-spin" />
++                        <div className="h-4 w-4 border-2 border-[var(--tint-rose-text)] border-t-transparent rounded-full animate-spin" />
+                       ) : (
+                         <Trash2 size={16} />
+                       )}
+@@ -208,7 +208,7 @@ const SubjectiveQuestions: React.FC = () => {
+ 
+         {/* Summary Footer */}
+         {!loading && questions.length > 0 && (
+-          <p className="text-xs mt-4 text-center" style={{ color: 'rgba(240,240,245,0.4)' }}>
++          <p className="text-xs mt-4 text-center" style={{ color: 'var(--text-muted)' }}>
+             Showing {questions.length} question{questions.length !== 1 ? 's' : ''}
+           </p>
+         )}

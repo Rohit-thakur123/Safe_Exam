@@ -6,6 +6,7 @@ import DescriptiveQuestion from '../models/descriptive/descriptiveQuestion.js';
 import mongoose from 'mongoose';
 import { buildStudentExamQuestions, resolveMcqMark, resolveOverrideMark } from '../utils/examQuestionUtils.js';
 import Submission from '../models/exam/submissions.js';
+import { processViolation } from '../services/securityService.js';
 
 // Start exam attempt (CRITICAL - TAKE EXAM)
 export const startExamAttempt = async (req, res) => {
@@ -98,9 +99,10 @@ export const startExamAttempt = async (req, res) => {
 
             // If time window expired by > 1 minute grace period, mark THIS document as abandoned
             if (now.getTime() > computedEndTime.getTime() + 60000) {
-                attempt.status = 'abandoned';
-                attempt.endTime = now;
-                await attempt.save();
+                await ExamAttempt.updateOne(
+                    { _id: attempt._id },
+                    { $set: { status: 'abandoned', endTime: now } }
+                );
 
                 return res.status(409).json({
                     success: false,
@@ -342,8 +344,10 @@ export const submitExamAttempt = async (req, res) => {
         const GRACE_PERIOD_MS = 60 * 1000; // 1 minute grace
 
         if (Date.now() > deadline.getTime() + GRACE_PERIOD_MS) {
-            attempt.status = 'abandoned';
-            await attempt.save();
+            await ExamAttempt.updateOne(
+                { _id: attempt._id },
+                { $set: { status: 'abandoned' } }
+            );
             return res.status(410).json({
                 success: false,
                 error: 'Attempt time expired'
@@ -431,26 +435,59 @@ export const submitExamAttempt = async (req, res) => {
         // Determine subjective status
         const subjectiveStatus = hasDescriptiveQuestions ? 'pending_evaluation' : 'not_applicable';
 
-        // Update attempt — score EXCLUDES subjective marks (awarded later by teacher)
-        attempt.answers = answersMap;
-        attempt.score = Math.round(score * 100) / 100; // Round to 2 decimals
-        attempt.percentage = exam.totalMarks > 0
-            ? Math.round((score / exam.totalMarks) * 100 * 100) / 100
-            : 0;
-        attempt.passed = score >= (exam.passingMarks || 0);
-        attempt.endTime = new Date();
-        attempt.timeSpent = timeSpent || Math.floor(elapsedTime / 1000);
-        attempt.status = 'completed';
-        attempt.subjectiveStatus = subjectiveStatus;
-        attempt.subjectiveScore = 0;
+        const finalScore = Math.round(score * 100) / 100;
+        const finalPercentage = exam.totalMarks > 0 ? Math.round((score / exam.totalMarks) * 100 * 100) / 100 : 0;
+        const finalPassed = score >= (exam.passingMarks || 0);
+        const finalEndTime = new Date();
+        const finalTimeSpent = timeSpent || Math.floor(elapsedTime / 1000);
 
-        await attempt.save();
+        console.log(`[Exam Submit] Attempting to atomically transition attempt ${attemptId} to completed (or retain terminated).`);
+
+        // Check if it's already terminated
+        const preUpdateAttempt = await ExamAttempt.findById(attemptId);
+        const finalStatus = (preUpdateAttempt && preUpdateAttempt.status === 'terminated') ? 'terminated' : 'completed';
+
+        // Atomic update for the attempt document
+        const updatedAttempt = await ExamAttempt.findOneAndUpdate(
+            { _id: attemptId, status: { $in: ['in_progress', 'started', 'terminated'] } },
+            {
+                $set: {
+                    answers: answersMap,
+                    score: finalScore,
+                    percentage: finalPercentage,
+                    passed: finalPassed,
+                    endTime: finalEndTime,
+                    timeSpent: finalTimeSpent,
+                    status: finalStatus,
+                    subjectiveStatus: subjectiveStatus,
+                    subjectiveScore: 0
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedAttempt) {
+            console.error(`[Exam Submit] Failed to update attempt ${attemptId}. It might have already been completed or not found.`);
+            // Check if it's already completed to prevent duplicate submissions failing with 500
+            if (preUpdateAttempt && preUpdateAttempt.status === 'completed') {
+                return res.status(409).json({
+                    success: false,
+                    error: 'Exam Already Submitted',
+                    code: 'ALREADY_SUBMITTED',
+                    submittedAt: existing.endTime
+                });
+            }
+            return res.status(500).json({ success: false, error: 'Failed to atomically update exam attempt' });
+        }
+
+        console.log(`[Exam Submit] Successfully transitioned attempt ${attemptId} to completed. Score: ${finalScore}`);
 
         // ── Save subjective answers to DescriptiveAnswer collection ──────────
         // The SEB frontend stores ALL answers (MCQ + subjective) in attempt.answers.
         // The grading page reads from DescriptiveAnswer — so we extract and save them here.
         if (hasDescriptiveQuestions && exam.descriptiveQuestions?.length > 0) {
             try {
+                console.log(`[Exam Submit] Processing ${exam.descriptiveQuestions.length} descriptive questions for ${attemptId}`);
                 const DescriptiveAnswer = (await import('../models/descriptive/descriptiveAnswer.js')).default;
                 const upsertOps = exam.descriptiveQuestions.map(dq => {
                     const questionId = dq._id.toString();
@@ -490,37 +527,45 @@ export const submitExamAttempt = async (req, res) => {
 
         // Update student's examAttempts array
         const User = (await import('../models/User/user.js')).default;
-        await User.findOneAndUpdate(
+        console.log(`[Exam Submit] Atomically updating user ${req.user._id} examAttempts array for attempt ${attemptId}`);
+        const userUpdateResult = await User.findOneAndUpdate(
             {
                 _id: req.user._id,
                 'examAttempts.attemptId': attempt._id
             },
             {
                 $set: {
-                    'examAttempts.$.status': 'completed',
-                    'examAttempts.$.score': attempt.score,
-                    'examAttempts.$.percentage': attempt.percentage,
-                    'examAttempts.$.passed': attempt.passed,
-                    'examAttempts.$.completedAt': attempt.endTime
+                    'examAttempts.$.status': finalStatus,
+                    'examAttempts.$.score': finalScore,
+                    'examAttempts.$.percentage': finalPercentage,
+                    'examAttempts.$.passed': finalPassed,
+                    'examAttempts.$.completedAt': finalEndTime
                 }
-            }
+            },
+            { new: true }
         );
+        
+        if (userUpdateResult) {
+            console.log(`[Exam Submit] Successfully updated user examAttempts array for attempt ${attemptId}`);
+        } else {
+            console.warn(`[Exam Submit] Failed to update user examAttempts array for attempt ${attemptId}. The array element might not exist.`);
+        }
 
         res.status(200).json({
             success: true,
             message: 'Exam submitted successfully',
             result: {
-                attemptId: attempt._id.toString(),
-                mcqScore: Math.round((score - (attempt.score - (attempt.score))) * 100) / 100,
+                attemptId: updatedAttempt._id.toString(),
+                mcqScore: Math.round((score - (updatedAttempt.score - (updatedAttempt.score))) * 100) / 100,
                 codingScore: 0, // Individual coding scores are per-submission
                 subjectiveStatus,
-                score: attempt.score,
+                score: updatedAttempt.score,
                 totalMarks: exam.totalMarks,
-                percentage: attempt.percentage,
-                passed: attempt.passed,
+                percentage: updatedAttempt.percentage,
+                passed: updatedAttempt.passed,
                 correctAnswers,
                 totalQuestions: exam.questions.length + exam.codingQuestions.length + (exam.descriptiveQuestions?.length || 0),
-                timeSpent: attempt.timeSpent,
+                timeSpent: updatedAttempt.timeSpent,
                 detailedResults
             }
         });
@@ -724,11 +769,12 @@ export const saveAnswers = async (req, res) => {
         }
 
         // Merge rather than overwrite, so a stale client can't wipe newer answers.
+        const updateFields = { lastActivity: new Date() };
         for (const [questionId, answer] of Object.entries(answers)) {
-            attempt.answers.set(questionId, answer);
+            updateFields[`answers.${questionId}`] = answer;
+            attempt.answers.set(questionId, answer); // update memory model for the size calculation below
         }
-        attempt.lastActivity = new Date();
-        await attempt.save();
+        await ExamAttempt.updateOne({ _id: attemptId }, { $set: updateFields });
 
         res.status(200).json({
             success: true,
@@ -775,8 +821,7 @@ export const heartbeat = async (req, res) => {
             });
         }
 
-        attempt.lastActivity = new Date();
-        await attempt.save();
+        await ExamAttempt.updateOne({ _id: attemptId }, { $set: { lastActivity: new Date() } });
 
         // Use attempt.expectedEndTime as the authoritative deadline for time remaining.
         // This is consistent with what the frontend timer uses.
@@ -1085,24 +1130,35 @@ export const reportViolation = async (req, res) => {
             return res.status(403).json({ success: false, error: 'Unauthorized' });
         }
 
-        // Append violation record
-        attempt.violations.push({ type, metadata: metadata || {} });
-
-        // Update summary counters
-        if (!attempt.violationSummary) {
-            attempt.violationSummary = { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, totalViolations: 0 };
+        const exam = await Exam.findById(attempt.examId);
+        if (!exam) {
+            return res.status(404).json({ success: false, error: 'Exam not found' });
         }
-        const s = attempt.violationSummary;
-        if (type === 'tab_switch') s.tabSwitches += 1;
-        else if (type === 'window_blur') s.windowBlurs += 1;
-        else if (type === 'copy_attempt') s.copyAttempts += 1;
-        else if (type === 'paste_attempt') s.pasteAttempts += 1;
-        else if (type === 'devtools_open') s.devToolsAttempts += 1;
-        s.totalViolations += 1;
 
-        await attempt.save();
+        // Process violation through security service
+        const enforcement = await processViolation(attempt, exam, type);
 
-        res.status(200).json({ success: true });
+        // Update summary based on processViolation incrementing it manually or let it save
+        // We already incremented in processViolation, so we just append the type array:
+        const updateDoc = {
+            $push: { violations: { type, metadata: metadata || {} } },
+            $inc: { [`violationSummary.${type === 'tab_switch' ? 'tabSwitches' : type === 'window_blur' ? 'windowBlurs' : type.includes('copy') ? 'copyAttempts' : type.includes('paste') ? 'pasteAttempts' : type === 'fullscreen_exit' ? 'fullscreenExits' : type === 'right_click' ? 'rightClicks' : 'totalViolations'}`]: 1, 'violationSummary.totalViolations': 1 }
+        };
+
+        let resultAction = enforcement.action;
+
+        // Apply action
+        if (enforcement.action === 'TERMINATE') {
+            updateDoc.$set = {
+                status: 'terminated',
+                terminationReason: enforcement.reason,
+                endTime: new Date()
+            };
+        }
+
+        await ExamAttempt.updateOne({ _id: attemptId }, updateDoc);
+
+        res.status(200).json({ success: true, action: resultAction, reason: enforcement.reason });
     } catch (error) {
         console.error('Report violation error:', error);
         res.status(500).json({ success: false, error: error.message || 'Server error reporting violation' });
