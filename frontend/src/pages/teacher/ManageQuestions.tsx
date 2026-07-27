@@ -10,17 +10,17 @@ import type { Question } from '../../types';
 const TeacherNavbar: React.FC = () => {
   const { user, logout } = useAuth();
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">SecureExam</h1>
+              <h1 className="text-xl font-bold text-heading">SecureExam</h1>
               <span className="ml-2 text-sm text-gray-500">Teacher Portal</span>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
+            <span className="text-sm ">Welcome, {user?.name}</span>
             <Button variant="ghost" size="sm" onClick={logout}>
               Logout
             </Button>
@@ -78,7 +78,7 @@ const ManageQuestions: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <TeacherNavbar />
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
@@ -89,7 +89,7 @@ const ManageQuestions: React.FC = () => {
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Back to Dashboard
               </Link>
-              <h2 className="text-2xl font-bold text-gray-900">Manage Questions</h2>
+              <h2 className="text-2xl font-bold text-heading">Manage Questions</h2>
               <p className="text-gray-600">View, edit, and delete your questions</p>
             </div>
             <Link to="/teacher/create-question">
@@ -115,7 +115,7 @@ const ManageQuestions: React.FC = () => {
             <Card>
               <CardContent className="text-center py-12">
                 <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-4 text-lg font-medium text-gray-900">No questions yet</h3>
+                <h3 className="mt-4 text-lg font-medium text-heading">No questions yet</h3>
                 <p className="mt-2 text-gray-500">Get started by creating your first question</p>
                 <Link to="/teacher/create-question">
                   <Button className="mt-4">
@@ -132,7 +132,7 @@ const ManageQuestions: React.FC = () => {
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900 mb-3">
+                        <h3 className="text-lg font-medium text-heading mb-3">
                           {question.question}
                         </h3>
                         
@@ -143,7 +143,7 @@ const ManageQuestions: React.FC = () => {
                               className={`p-2 rounded text-sm ${
                                 option === question.answer 
                                   ? 'bg-green-50 border border-green-200 text-green-800 font-medium' 
-                                  : 'bg-gray-50 border border-gray-200'
+                                  : 'card-surface'
                               }`}
                             >
                               {String.fromCharCode(65 + i)}. {option}
@@ -153,7 +153,7 @@ const ManageQuestions: React.FC = () => {
                         </div>
 
                         {question.explanation && (
-                          <p className="text-sm text-gray-600 mb-3">
+                          <p className="text-sm" style={{color:"var(--text-secondary)" mb-3">
                             <span className="font-medium">Explanation:</span> {question.explanation}
                           </p>
                         )}

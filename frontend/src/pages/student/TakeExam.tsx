@@ -14,7 +14,7 @@ const TakeExam: React.FC = () => {
   const { examId } = useParams<{ examId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [attempt, setAttempt] = useState<ExamAttempt | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -24,8 +24,8 @@ const TakeExam: React.FC = () => {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const { securityState, dismissWarning } = useSecurityManager(
-    attempt?.id || null, 
+  const { securityState, dismissWarning, requestFullscreen } = useSecurityManager(
+    attempt?.id || null,
     attempt?.exam?.securityPolicy
   );
 
@@ -44,13 +44,13 @@ const TakeExam: React.FC = () => {
 
         return;
       }
-      
+
       try {
         setLoading(true);
         const response = await examAttemptAPI.start(examId);
         setAttempt(response.attempt);
         setQuestions(response.attempt.exam?.questions || []);
-        
+
         let initialSeconds = (response.attempt.exam?.duration || 0) * 60;
         if (response.attempt.expectedEndTime) {
           const endMs = new Date(response.attempt.expectedEndTime).getTime();
@@ -61,12 +61,12 @@ const TakeExam: React.FC = () => {
       } catch (err: unknown) {
         console.error('Error starting exam:', err);
         const requestError = err as { response?: { status?: number; data?: { error?: string; attemptId?: string } } };
-        
+
         // Handle specific error cases
         if (requestError.response?.status === 409) {
           const errorMsg = requestError.response?.data?.error || 'You have already started this exam.';
           const attemptId = requestError.response?.data?.attemptId;
-          
+
           if (attemptId) {
             setError(`${errorMsg} Redirecting to your existing attempt...`);
             // Redirect to the existing attempt after 2 seconds
@@ -93,15 +93,15 @@ const TakeExam: React.FC = () => {
 
   const handleSubmit = useCallback(async () => {
     if (!attempt || !attempt.exam || submitting) return;
-    
+
     setSubmitting(true);
     try {
       const timeSpent = (attempt.exam.duration * 60) - (timeLeft || 0);
       const result = await examAttemptAPI.submit(attempt.id, answers, Math.max(0, timeSpent));
-      
+
       // Navigate to results page
-      navigate(`/student/result/${attempt.id}`, { 
-        state: { result: result.result } 
+      navigate(`/student/result/${attempt.id}`, {
+        state: { result: result.result }
       });
     } catch (err: unknown) {
       console.error('Error submitting exam:', err);
@@ -153,7 +153,7 @@ const TakeExam: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <div className="text-lg">Starting exam...</div>
       </div>
     );
@@ -161,7 +161,7 @@ const TakeExam: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <Card className="max-w-md">
           <CardContent className="p-6">
             <div className="text-center mb-6">
@@ -170,19 +170,19 @@ const TakeExam: React.FC = () => {
               </div>
               <p className="text-gray-700">{error}</p>
             </div>
-            
+
             <div className="space-y-3">
-              <Button 
-                onClick={() => navigate('/student')} 
+              <Button
+                onClick={() => navigate('/student')}
                 className="w-full"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Button>
-              
+
               {error.includes('already started') && (
-                <Button 
-                  onClick={() => navigate('/student')} 
+                <Button
+                  onClick={() => navigate('/student')}
                   className="w-full"
                   variant="outline"
                 >
@@ -190,8 +190,8 @@ const TakeExam: React.FC = () => {
                 </Button>
               )}
             </div>
-            
-            <div className="mt-4 p-3 bg-blue-50 rounded text-sm text-gray-600">
+
+            <div className="mt-4 p-3 bg-blue-50 rounded text-sm" style={{color:"var(--text-secondary)"">
               <p><strong>Note:</strong> If you have an incomplete exam, you may need to complete or abandon it before starting a new attempt.</p>
             </div>
           </CardContent>
@@ -202,43 +202,44 @@ const TakeExam: React.FC = () => {
 
   if (!attempt || !attempt.exam || !currentQ) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <div className="text-lg">Loading exam...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SecurityOverlay 
-        securityState={securityState} 
-        onDismissWarning={dismissWarning} 
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+      <SecurityOverlay
+        securityState={securityState}
+        onDismissWarning={dismissWarning}
+        onRequestFullscreen={requestFullscreen}
         requireFullscreen={!!attempt?.exam?.securityPolicy?.requireFullscreen}
       />
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{attempt.exam.title}</h1>
-              <p className="text-sm text-gray-500">
+              <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"">{attempt.exam.title}</h1>
+              <p className="text-sm text-muted">
                 Question {currentQuestion + 1} of {questions.length}
               </p>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center text-lg font-semibold">
                 <Clock className="w-5 h-5 mr-2 text-red-600" />
-                <span className={timeLeft !== null && timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}>
+                <span className={timeLeft !== null && timeLeft < 300 ? 'text-red-600' : 'text-heading'}>
                   {formatTime(timeLeft)}
                 </span>
               </div>
             </div>
           </div>
-          
+
           {/* Progress Bar */}
           <div className="mt-4">
             <div className="bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
@@ -253,13 +254,12 @@ const TakeExam: React.FC = () => {
                   key={questionId}
                   type="button"
                   onClick={() => setCurrentQuestion(index)}
-                  className={`h-9 min-w-9 rounded-md border px-2 text-sm font-medium ${
-                    index === currentQuestion
+                  className={`h-9 min-w-9 rounded-md border px-2 text-sm font-medium ${index === currentQuestion
                       ? 'border-blue-600 bg-blue-600 text-white'
                       : isAnswered
                         ? 'border-green-300 bg-green-50 text-green-700'
-                        : 'border-gray-300 bg-white text-gray-600'
-                  }`}
+                        : 'border-gray-300 card-surface text-gray-600'
+                    }`}
                   title={question.type === 'coding' ? `Coding question ${index + 1}` : `Question ${index + 1}`}
                 >
                   {index + 1}
@@ -302,9 +302,9 @@ const TakeExam: React.FC = () => {
                   ) : (
                     <div className="space-y-3 mb-6">
                       {(mcqQ.options || []).map((option: string, index: number) => (
-                        <label 
-                          key={index} 
-                          className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        <label
+                          key={index}
+                          className="flex items-start space-x-3 p-3 border rounded-lg hover: cursor-pointer"
                         >
                           <input
                             type="radio"
@@ -325,43 +325,43 @@ const TakeExam: React.FC = () => {
           })()
         )}
 
-            {/* Navigation Buttons */}
-            <div className="mt-6 flex justify-between items-center rounded-lg border bg-white p-4">
-              <Button
-                onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
-                disabled={currentQuestion === 0}
-                variant="outline"
-              >
-                Previous
-              </Button>
-              
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span>Answered: {Object.keys(answers).length}/{questions.length}</span>
-              </div>
-              
-              {currentQuestion === questions.length - 1 ? (
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {submitting ? (
-                    'Submitting...'
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Submit Exam
-                    </>
-                  )}
-                </Button>
+        {/* Navigation Buttons */}
+        <div className="mt-6 flex justify-between items-center rounded-lg border card-surface p-4">
+          <Button
+            onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+            disabled={currentQuestion === 0}
+            variant="outline"
+          >
+            Previous
+          </Button>
+
+          <div className="flex items-center space-x-2 text-sm" style={{color:"var(--text-secondary)"">
+            <span>Answered: {Object.keys(answers).length}/{questions.length}</span>
+          </div>
+
+          {currentQuestion === questions.length - 1 ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {submitting ? (
+                'Submitting...'
               ) : (
-                <Button
-                  onClick={() => setCurrentQuestion(currentQuestion + 1)}
-                >
-                  Next
-                </Button>
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Submit Exam
+                </>
               )}
-            </div>
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setCurrentQuestion(currentQuestion + 1)}
+            >
+              Next
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

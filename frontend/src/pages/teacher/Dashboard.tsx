@@ -48,18 +48,19 @@ const MetricCard: React.FC<{
       <div
         className="relative rounded-2xl p-6 transition-all duration-300 overflow-hidden h-full"
         style={{
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-card)',
         }}
         onMouseEnter={e => {
-          (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.055)';
-          (e.currentTarget as HTMLElement).style.borderColor = `${accent}44`;
-          (e.currentTarget as HTMLElement).style.boxShadow = `0 0 40px ${glow}`;
+          (e.currentTarget as HTMLElement).style.background = 'var(--bg-card-hover)';
+          (e.currentTarget as HTMLElement).style.borderColor = `color-mix(in srgb, ${accent} 35%, var(--border))`;
+          (e.currentTarget as HTMLElement).style.boxShadow = `var(--shadow-md), 0 0 30px ${glow}`;
         }}
         onMouseLeave={e => {
-          (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
-          (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+          (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)';
+          (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
+          (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-card)';
         }}
       >
         {/* Top glow */}
@@ -92,8 +93,8 @@ const MetricCard: React.FC<{
         <div className="text-4xl font-black text-heading tabular-nums tracking-tight mb-1.5">
           {count}
         </div>
-        <div className="text-sm font-semibold" style={{ color: 'rgba(240,240,245,0.7)' }}>{label}</div>
-        <div className="text-xs mt-1" style={{ color: 'rgba(240,240,245,0.35)' }}>{sub}</div>
+        <div className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+        <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{sub}</div>
 
         <div
           className="flex items-center gap-1 mt-4 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -108,11 +109,11 @@ const MetricCard: React.FC<{
 
 // Skeleton
 const SkeletonMetric = () => (
-  <div className="rounded-2xl p-6 h-44 skeleton" style={{ border: '1px solid rgba(255,255,255,0.04)' }} />
+  <div className="rounded-2xl p-6 h-44 skeleton" style={{ border: '1px solid var(--border)' }} />
 );
 
 const SkeletonRow = () => (
-  <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)' }}>
+  <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'var(--bg-card)' }}>
     <div className="h-10 w-10 rounded-xl skeleton flex-shrink-0" />
     <div className="flex-1 space-y-2">
       <div className="h-3.5 skeleton rounded-lg w-2/3" />
@@ -205,7 +206,7 @@ const Dashboard: React.FC = () => {
                 {greeting},{' '}
                 <span className="gradient-text">{firstName}</span>
               </h1>
-              <p className="text-sm mt-2" style={{ color: 'rgba(240,240,245,0.4)' }}>
+              <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 {activeExams.length > 0 && (
                   <span style={{ color: 'var(--tint-emerald-text)' }}> · {activeExams.length} exam{activeExams.length > 1 ? 's' : ''} live now</span>
@@ -219,9 +220,9 @@ const Dashboard: React.FC = () => {
                 disabled={refreshing}
                 className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
                 style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: refreshing ? 'var(--accent-purple)' : 'rgba(240,240,245,0.6)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  color: refreshing ? 'var(--accent-purple)' : 'var(--text-secondary)',
                 }}
               >
                 <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
@@ -316,12 +317,12 @@ const Dashboard: React.FC = () => {
           {/* Active Exam Monitor */}
           <div
             className="lg:col-span-2 rounded-2xl overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}
           >
             {/* Header */}
             <div
               className="px-6 py-4 flex items-center justify-between"
-              style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}
+              style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-elevated)' }}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -361,7 +362,7 @@ const Dashboard: React.FC = () => {
                     <CheckCircle2 size={28} style={{ color: 'var(--accent-purple)' }} />
                   </div>
                   <h3 className="text-sm font-bold text-heading mb-1">No live exams right now</h3>
-                  <p className="text-xs text-center max-w-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                  <p className="text-xs text-center max-w-xs" style={{ color: 'var(--text-muted)' }}>
                     Activate an existing assessment or create a new one to begin.
                   </p>
                   <Link
@@ -380,14 +381,14 @@ const Dashboard: React.FC = () => {
                       <div
                         key={id}
                         className="group flex items-center justify-between p-4 rounded-xl transition-all duration-200 cursor-pointer"
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+                        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
                         onMouseEnter={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 6%, transparent)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'color-mix(in srgb, var(--accent-purple) 20%, transparent)';
+                          (e.currentTarget as HTMLElement).style.background = 'color-mix(in srgb, var(--accent-purple) 8%, var(--bg-card))';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'color-mix(in srgb, var(--accent-purple) 30%, var(--border))';
                         }}
                         onMouseLeave={e => {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)';
+                          (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
                         }}
                         onClick={() => navigate(`/teacher/exams/${id}/results`)}
                       >
@@ -401,13 +402,13 @@ const Dashboard: React.FC = () => {
                           <div>
                             <div className="text-sm font-bold text-heading">{exam.title}</div>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                 <Clock size={11} className="inline mr-1" />{exam.duration}m
                               </span>
-                              <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                 {exam.totalMarks} marks
                               </span>
-                              <span className="text-xs" style={{ color: 'rgba(240,240,245,0.4)' }}>
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                 {(exam as any).questionsCount || exam.questions?.length || 0} questions
                               </span>
                             </div>
@@ -453,7 +454,7 @@ const Dashboard: React.FC = () => {
                 <h3 className="text-base font-bold text-heading mb-2 leading-snug">
                   Safe Exam Browser Active
                 </h3>
-                <p className="text-xs leading-relaxed mb-5" style={{ color: 'rgba(240,240,245,0.55)' }}>
+                <p className="text-xs leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
                   Full-screen enforcement, tab-switch logging, copy-paste detection, and back-button traps are active for all candidates.
                 </p>
                 <Link
@@ -469,11 +470,11 @@ const Dashboard: React.FC = () => {
             {/* Quick Links */}
             <div
               className="rounded-2xl overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}
             >
               <div
                 className="px-5 py-4"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                style={{ borderBottom: '1px solid var(--border)' }}
               >
                 <h3 className="text-sm font-bold text-heading">Quick Access</h3>
               </div>
@@ -487,15 +488,13 @@ const Dashboard: React.FC = () => {
                   <Link
                     key={to}
                     to={to}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group"
-                    style={{ color: 'rgba(240,240,245,0.6)' }}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 group hover-row"
+                    style={{ color: 'var(--text-secondary)' }}
                     onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)';
-                      (e.currentTarget as HTMLElement).style.color = '#fff';
+                      (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.background = 'transparent';
-                      (e.currentTarget as HTMLElement).style.color = 'rgba(240,240,245,0.6)';
+                      (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
                     }}
                   >
                     <span className="flex items-center gap-2.5 text-sm font-medium">
@@ -516,7 +515,7 @@ const Dashboard: React.FC = () => {
             {/* Create CTA */}
             <div
               className="rounded-2xl p-5"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}
             >
               <h3 className="text-sm font-bold text-heading mb-3">Start Building</h3>
               <div className="space-y-2">
@@ -531,9 +530,9 @@ const Dashboard: React.FC = () => {
                   to="/teacher/create-question"
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all"
                   style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'rgba(240,240,245,0.7)'
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-secondary)'
                   }}
                 >
                   <Plus size={13} /> Add MCQ Question
@@ -542,9 +541,9 @@ const Dashboard: React.FC = () => {
                   to="/teacher/coding-questions/create"
                   className="flex items-center gap-2.5 w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all"
                   style={{
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: 'rgba(240,240,245,0.7)'
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-secondary)'
                   }}
                 >
                   <Code2 size={13} /> Add Coding Challenge

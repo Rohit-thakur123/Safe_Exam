@@ -43,7 +43,7 @@ const StatPill: React.FC<{ icon: React.ReactNode; label: string }> = ({
   icon,
   label,
 }) => (
-  <span className="flex items-center gap-1.5 text-xs font-medium text-slate-300 bg-white/[0.04] border border-white/10 rounded-full px-2.5 py-1">
+  <span className="flex items-center gap-1.5 text-xs font-medium text-slate-300 card-surface/[0.04] border border-white/10 rounded-full px-2.5 py-1">
     {icon}
     {label}
   </span>
@@ -173,7 +173,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1.5 rounded-t-lg px-3.5 py-2 text-xs font-semibold transition-colors border-b-2 ${
               activeTab === tab.id
-                ? "text-violet-300 border-violet-400 bg-white/[0.03]"
+                ? "text-violet-300 border-violet-400 card-surface/[0.03]"
                 : "text-slate-500 border-transparent hover:text-slate-300"
             }`}
           >
@@ -336,7 +336,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({
 
             {submitResult && (
               <>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col gap-3">
+                <div className="rounded-2xl border border-white/10 card-surface/[0.03] p-5 flex flex-col gap-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span
                       className={`text-sm font-bold uppercase tracking-wide rounded-full border px-3 py-1 ${verdictStyles[submitResult.verdict]}`}
@@ -352,7 +352,7 @@ const ConsolePanel: React.FC<ConsolePanelProps> = ({
                     </span>
                   </div>
 
-                  <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                  <div className="w-full h-2 rounded-full card-surface/5 overflow-hidden">
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-700"
                       style={{

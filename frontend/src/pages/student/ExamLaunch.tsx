@@ -99,10 +99,10 @@ const ExamLaunch: React.FC = () => {
 
   if (state === 'verifying') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)" p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
-            <h1 className="text-xl font-semibold text-gray-900 mb-3">Checking your exam access…</h1>
+            <h1 className="text-xl font-semibold text-heading mb-3">Checking your exam access…</h1>
             <p className="text-gray-700">This will only take a moment.</p>
           </CardContent>
         </Card>
@@ -112,7 +112,7 @@ const ExamLaunch: React.FC = () => {
 
   if (state === 'error') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)" p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
             <h1 className="text-xl font-semibold text-red-600 mb-3">Unable to Start Exam</h1>
@@ -124,10 +124,10 @@ const ExamLaunch: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)" p-4">
       <Card className="max-w-md w-full">
         <CardContent className="p-6 text-center space-y-4">
-          <h1 className="text-xl font-semibold text-gray-900">Opening Safe Exam Browser</h1>
+          <h1 className="text-xl font-semibold text-heading">Opening Safe Exam Browser</h1>
           <p className="text-gray-700">
             If Safe Exam Browser did not open automatically, click below.
           </p>

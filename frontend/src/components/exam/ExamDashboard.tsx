@@ -61,12 +61,12 @@ const ExamDashboard: React.FC<ExamDashboardProps> = ({
     descriptiveCompleted;
 
   const connectorColorClass = useMemo(
-    () => (mcqCompleted ? "bg-emerald-500/40" : "bg-white/10"),
+    () => (mcqCompleted ? "bg-emerald-500/40" : "card-surface/10"),
     [mcqCompleted]
   );
 
   const connectorColorClass2 = useMemo(
-    () => (codingCompleted ? "bg-emerald-500/40" : "bg-white/10"),
+    () => (codingCompleted ? "bg-emerald-500/40" : "card-surface/10"),
     [codingCompleted]
   );
 

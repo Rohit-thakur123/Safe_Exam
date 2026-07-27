@@ -16,45 +16,98 @@ interface ToastProps {
   onClose: () => void;
 }
 
+// Theme-aware color tokens per toast type
+const toastConfig: Record<ToastType, {
+  icon: React.ReactNode;
+  accentVar: string;
+  tintVar: string;
+}> = {
+  success: {
+    icon: <CheckCircle2 size={16} />,
+    accentVar: 'var(--accent-emerald)',
+    tintVar: 'var(--tint-emerald-text)',
+  },
+  error: {
+    icon: <XCircle size={16} />,
+    accentVar: 'var(--accent-rose)',
+    tintVar: 'var(--tint-rose-text)',
+  },
+  warning: {
+    icon: <AlertTriangle size={16} />,
+    accentVar: 'var(--accent-amber)',
+    tintVar: 'var(--tint-amber-text)',
+  },
+  info: {
+    icon: <Info size={16} />,
+    accentVar: 'var(--accent-indigo)',
+    tintVar: 'var(--tint-indigo-text)',
+  },
+};
+
 export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
   useEffect(() => {
     if (!toast) return;
     const duration = toast.duration || 4000;
-    const timer = setTimeout(() => {
-      onClose();
-    }, duration);
+    const timer = setTimeout(() => { onClose(); }, duration);
     return () => clearTimeout(timer);
   }, [toast, onClose]);
 
   if (!toast) return null;
 
-  const icons: Record<ToastType, React.ReactNode> = {
-    success: <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />,
-    error: <XCircle className="h-5 w-5 text-rose-500 flex-shrink-0" />,
-    warning: <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0" />,
-    info: <Info className="h-5 w-5 text-blue-500 flex-shrink-0" />
-  };
-
-  const bgStyles: Record<ToastType, string> = {
-    success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-    error: 'bg-rose-50 border-rose-200 text-rose-900',
-    warning: 'bg-amber-50 border-amber-200 text-amber-900',
-    info: 'bg-blue-50 border-blue-200 text-blue-900'
-  };
+  const config = toastConfig[toast.type];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-200">
-      <div className={`flex items-start gap-3 max-w-md p-4 rounded-xl border shadow-lg ${bgStyles[toast.type]}`}>
-        {icons[toast.type]}
-        <div className="flex-1 text-sm">
-          {toast.title && <h4 className="font-semibold mb-0.5">{toast.title}</h4>}
-          <p className="leading-snug">{toast.message}</p>
+    <div
+      className="fixed bottom-6 right-6 z-50"
+      style={{ animation: 'fadeSlideIn 0.2s ease forwards' }}
+    >
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(12px) scale(0.97); }
+          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+        }
+      `}</style>
+      <div
+        className="flex items-start gap-3 max-w-sm p-4 rounded-2xl"
+        style={{
+          background: 'var(--surface-elevated)',
+          border: `1px solid color-mix(in srgb, ${config.accentVar} 30%, var(--border))`,
+          boxShadow: `var(--shadow-lg), 0 0 0 1px color-mix(in srgb, ${config.accentVar} 15%, transparent)`,
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+        }}
+      >
+        {/* Icon */}
+        <div
+          className="flex-shrink-0 h-8 w-8 rounded-xl flex items-center justify-center mt-0.5"
+          style={{
+            background: `color-mix(in srgb, ${config.accentVar} 15%, transparent)`,
+            color: config.tintVar,
+          }}
+        >
+          {config.icon}
         </div>
+
+        {/* Content */}
+        <div className="flex-1 pt-0.5">
+          {toast.title && (
+            <h4 className="text-sm font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+              {toast.title}
+            </h4>
+          )}
+          <p className="text-xs leading-snug" style={{ color: 'var(--text-secondary)' }}>
+            {toast.message}
+          </p>
+        </div>
+
+        {/* Close */}
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 p-0.5 rounded-lg transition-colors"
+          className="flex-shrink-0 p-1 rounded-lg transition-all duration-150 icon-btn"
+          style={{ color: 'var(--text-muted)' }}
+          aria-label="Dismiss notification"
         >
-          <X className="h-4 w-4" />
+          <X size={14} />
         </button>
       </div>
     </div>

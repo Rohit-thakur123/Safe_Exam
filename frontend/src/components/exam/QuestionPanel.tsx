@@ -50,11 +50,11 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   const [open, setOpen] = useState<boolean>(defaultOpen);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm overflow-hidden transition-all duration-300">
+    <div className="rounded-2xl border border-white/10 card-surface/[0.03] backdrop-blur-sm overflow-hidden transition-all duration-300">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="w-full flex items-center justify-between px-5 py-4 group hover:bg-white/[0.04] transition-colors duration-200"
+        className="w-full flex items-center justify-between px-5 py-4 group hover:card-surface/[0.04] transition-colors duration-200"
       >
         <div className="flex items-center gap-2.5">
           <span className="text-violet-400">{icon}</span>
@@ -94,7 +94,7 @@ const MetaStat: React.FC<{ icon: ReactNode; label: string; value: string }> = ({
   label,
   value,
 }) => (
-  <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
+  <div className="flex items-center gap-2.5 rounded-xl border border-white/10 card-surface/[0.03] px-3.5 py-2.5">
     <span className="text-violet-400">{icon}</span>
     <div className="flex flex-col leading-tight">
       <span className="text-[11px] uppercase tracking-wider text-slate-500">
@@ -145,7 +145,7 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
           >
             {capitalize(question.difficulty as Difficulty)}
           </span>
-          <span className="flex items-center gap-1 text-xs font-medium text-slate-400 bg-white/5 border border-white/10 rounded-full px-2.5 py-1">
+          <span className="flex items-center gap-1 text-xs font-medium text-slate-400 card-surface/5 border border-white/10 rounded-full px-2.5 py-1">
             <Award size={12} className="text-violet-400" />
             {question.marks} marks
           </span>
@@ -222,7 +222,7 @@ const QuestionPanel: React.FC<QuestionPanelProps> = ({ question }) => {
                 key={idx}
                 className="rounded-xl border border-white/10 bg-black/30 overflow-hidden"
               >
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10 bg-white/[0.02]">
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/10 card-surface/[0.02]">
                   <CheckCircle2 size={13} className="text-violet-400" />
                   <span className="text-xs font-semibold text-slate-300">
                     Example {idx + 1}

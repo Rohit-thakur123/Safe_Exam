@@ -24,7 +24,7 @@ const ReviewScreen: React.FC<ReviewScreenProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow rounded-xl p-6">
+    <div className="max-w-4xl mx-auto card-surface shadow rounded-xl p-6">
 
       <h2 className="text-2xl font-bold mb-6">
         Review Your Answers

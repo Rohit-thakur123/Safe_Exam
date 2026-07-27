@@ -19,7 +19,7 @@ interface CandidateAttempt {
   student: { id: string; name: string; email: string; };
   score: number; totalMarks: number; percentage: number; passed: boolean;
   submittedAt: string; startTime?: string; timeSpent: number;
-  violationSummary: { tabSwitches: number; windowBlurs: number; copyAttempts: number; pasteAttempts: number; devToolsAttempts: number; totalViolations: number; };
+  violationSummary: { tabSwitches: number; windowBlurs: number; copyAttempts: number; pasteAttempts: number; cutAttempts: number; devToolsAttempts: number; fullscreenExits: number; rightClicks: number; offlineCount: number; totalViolations: number; };
   violations?: Array<{ type: string; timestamp: string; details?: string }>;
 }
 
@@ -175,7 +175,7 @@ const ExamResults: React.FC = () => {
 
           {loading ? (
             <div className="p-4 space-y-3">
-              {[1,2,3,4].map(i => <div key={i} className="h-14 rounded-xl skeleton" />)}
+              {[1, 2, 3, 4].map(i => <div key={i} className="h-14 rounded-xl skeleton" />)}
             </div>
           ) : filteredAttempts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
@@ -199,7 +199,7 @@ const ExamResults: React.FC = () => {
                   <div className="col-span-4 flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
                       style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}>
-                      {attempt.student.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                      {attempt.student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-heading truncate">{attempt.student.name}</div>
@@ -210,12 +210,35 @@ const ExamResults: React.FC = () => {
                   <div className="col-span-2">
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
                       style={{
-                        background: attempt.status === 'completed' ? 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 10%, transparent)',
-                        color: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : 'var(--tint-amber-text)',
-                        border: `1px solid ${attempt.status === 'completed' ? 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)' : 'color-mix(in srgb, var(--accent-amber) 25%, transparent)'}`,
+                        background: attempt.status === 'completed' || attempt.status === 'evaluated'
+                          ? 'color-mix(in srgb, var(--accent-emerald) 10%, transparent)'
+                          : attempt.status === 'terminated'
+                            ? 'color-mix(in srgb, #ef4444 10%, transparent)'
+                            : 'color-mix(in srgb, var(--accent-amber) 10%, transparent)',
+                        color: attempt.status === 'completed' || attempt.status === 'evaluated'
+                          ? 'var(--tint-emerald-text)'
+                          : attempt.status === 'terminated'
+                            ? '#dc2626'
+                            : 'var(--tint-amber-text)',
+                        border: `1px solid ${attempt.status === 'completed' || attempt.status === 'evaluated'
+                            ? 'color-mix(in srgb, var(--accent-emerald) 25%, transparent)'
+                            : attempt.status === 'terminated'
+                              ? 'color-mix(in srgb, #ef4444 25%, transparent)'
+                              : 'color-mix(in srgb, var(--accent-amber) 25%, transparent)'
+                          }`,
                       }}>
-                      <div className="h-1.5 w-1.5 rounded-full" style={{ background: attempt.status === 'completed' ? 'var(--tint-emerald-text)' : attempt.status === 'terminated' ? 'var(--tint-rose-text)' : 'var(--tint-amber-text)' }} />
-                      {attempt.status === 'completed' ? 'Completed' : attempt.status === 'terminated' ? 'Terminated' : 'In Progress'}
+                      <div className="h-1.5 w-1.5 rounded-full" style={{
+                        background: attempt.status === 'completed' || attempt.status === 'evaluated'
+                          ? 'var(--tint-emerald-text)'
+                          : attempt.status === 'terminated'
+                            ? '#dc2626'
+                            : 'var(--tint-amber-text)'
+                      }} />
+                      {attempt.status === 'completed' || attempt.status === 'evaluated'
+                        ? 'Completed'
+                        : attempt.status === 'terminated'
+                          ? '⚠ Terminated'
+                          : 'In Progress'}
                     </span>
                     {attempt.subjectiveStatus === 'pending_evaluation' && (
                       <span className="mt-1 inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -280,7 +303,7 @@ const ExamResults: React.FC = () => {
                 <div className="flex items-center gap-3 mb-1">
                   <div className="h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))' }}>
-                    {selectedCandidate.student.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                    {selectedCandidate.student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
                   <div>
                     <div className="text-sm font-bold text-heading">{selectedCandidate.student.name}</div>
@@ -355,7 +378,7 @@ const ExamResults: React.FC = () => {
                           <span className="text-xs font-semibold w-20 flex-shrink-0" style={{ color: 'var(--text-secondary)' }}>{row.label}</span>
                           <div className="flex-1 rounded-full h-2 overflow-hidden" style={{ background: 'var(--border)' }}>
                             <div className="h-2 rounded-full transition-all duration-700"
-                              style={{ width: row.total > 0 ? `${Math.min(100,(row.earned/row.total)*100)}%` : '0%', backgroundColor: row.bar }} />
+                              style={{ width: row.total > 0 ? `${Math.min(100, (row.earned / row.total) * 100)}%` : '0%', backgroundColor: row.bar }} />
                           </div>
                           <span className="text-xs font-bold w-16 text-right flex-shrink-0" style={{ color: row.text }}>
                             {row.earned} / {row.total}
@@ -372,7 +395,29 @@ const ExamResults: React.FC = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
                   <Shield size={13} style={{ color: 'var(--tint-rose-text)' }} /> Security Violation Log
                 </h4>
-                <div className="grid grid-cols-3 gap-3">
+
+                {/* Termination reason banner */}
+                {selectedCandidate.status === 'terminated' && selectedCandidate.terminationReason && (
+                  <div style={{
+                    background: 'color-mix(in srgb, var(--accent-rose) 10%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--accent-rose) 25%, transparent)',
+                    borderRadius: '0.75rem', padding: '0.875rem 1rem',
+                    marginBottom: '1rem', display: 'flex', alignItems: 'flex-start', gap: 10,
+                  }}>
+                    <AlertTriangle size={15} style={{ color: 'var(--tint-rose-text)', flexShrink: 0, marginTop: 1 }} />
+                    <div>
+                      <p style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--tint-rose-text)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>
+                        Exam Terminated
+                      </p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                        {selectedCandidate.terminationReason}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Violation summary counters */}
+                <div className="grid grid-cols-3 gap-3" style={{ marginBottom: '1rem' }}>
                   {[
                     { label: 'Tab Switches', value: selectedCandidate.violationSummary?.tabSwitches || 0 },
                     { label: 'Window Blurs', value: selectedCandidate.violationSummary?.windowBlurs || 0 },
@@ -390,7 +435,42 @@ const ExamResults: React.FC = () => {
                     </div>
                   ))}
                 </div>
+
+                {/* Violation event timeline */}
+                {selectedCandidate.violations && selectedCandidate.violations.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.5rem' }}>
+                      Event Timeline ({selectedCandidate.violations.length} events)
+                    </p>
+                    <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }} className="custom-scrollbar">
+                      {selectedCandidate.violations.map((v, i) => (
+                        <div key={i} style={{
+                          display: 'flex', alignItems: 'center', gap: 8, padding: '0.375rem 0.75rem',
+                          borderRadius: '0.5rem',
+                          background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+                          fontSize: '0.75rem',
+                        }}>
+                          <span style={{
+                            fontWeight: 700, fontSize: '0.625rem', padding: '2px 6px',
+                            borderRadius: 4, textTransform: 'uppercase', letterSpacing: '0.05em',
+                            background: 'color-mix(in srgb, var(--accent-rose) 12%, transparent)',
+                            color: 'var(--tint-rose-text)', flexShrink: 0,
+                          }}>
+                            {v.type.replace(/_/g, ' ')}
+                          </span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.6875rem' }}>
+                            {new Date(v.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </span>
+                          {v.details && (
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.6875rem', marginLeft: 'auto' }}>{v.details}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
 
               {/* Coding Submissions */}
               {candidateSubmissions.length > 0 && (

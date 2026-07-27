@@ -1,4 +1,4 @@
-// Generic Modal component used by SubmitButton and other exam components
+// Generic Modal component — theme-aware via CSS design tokens
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../utils/cn';
@@ -36,17 +36,13 @@ export const Modal: React.FC<ModalProps> = ({
     } else {
       document.body.style.overflow = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
@@ -61,28 +57,38 @@ export const Modal: React.FC<ModalProps> = ({
     >
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ background: 'rgba(0,0,0,0.6)' }}
         onClick={closeOnOverlayClick ? onClose : undefined}
       />
 
       {/* Panel */}
       <div
-        className={cn(
-          'relative w-full rounded-xl bg-white shadow-2xl flex flex-col',
-          sizeClasses[size] ?? sizeClasses.md
-        )}
+        className={cn('relative w-full rounded-2xl flex flex-col', sizeClasses[size] ?? sizeClasses.md)}
+        style={{
+          background: 'var(--surface-elevated)',
+          border: '1px solid var(--border-hover)',
+          boxShadow: 'var(--shadow-lg)',
+          color: 'var(--text-primary)',
+        }}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div
+            className="flex items-center justify-between px-6 py-4"
+            style={{ borderBottom: '1px solid var(--border)' }}
+          >
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h2>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              className="rounded-lg p-1.5 transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'}
               aria-label="Close modal"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         )}
@@ -92,7 +98,10 @@ export const Modal: React.FC<ModalProps> = ({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+          <div
+            className="flex items-center justify-end gap-3 px-6 py-4"
+            style={{ borderTop: '1px solid var(--border)' }}
+          >
             {footer}
           </div>
         )}

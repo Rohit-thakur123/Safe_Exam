@@ -21,8 +21,8 @@ interface SectionCardProps {
 }
 
 const statusPillStyles: Record<SectionStatus, string> = {
-  locked: "text-slate-400 bg-white/[0.04] border-white/10",
-  not_started: "text-slate-300 bg-white/[0.04] border-white/10",
+  locked: "text-slate-400 card-surface/[0.04] border-white/10",
+  not_started: "text-slate-300 card-surface/[0.04] border-white/10",
   in_progress: "text-amber-300 bg-amber-400/10 border-amber-400/25",
   completed: "text-emerald-300 bg-emerald-400/10 border-emerald-400/25",
 };
@@ -35,8 +35,8 @@ const statusPillLabel: Record<SectionStatus, string> = {
 };
 
 const iconBadgeStyles: Record<SectionStatus, string> = {
-  locked: "bg-white/[0.04] text-slate-500",
-  not_started: "bg-white/[0.04] text-slate-300",
+  locked: "card-surface/[0.04] text-slate-500",
+  not_started: "card-surface/[0.04] text-slate-300",
   in_progress: "bg-amber-400/10 text-amber-300",
   completed: "bg-emerald-400/10 text-emerald-300",
 };
@@ -61,7 +61,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
   const isCompleted = status === "completed";
 
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/[0.02] px-6 py-5">
+    <div className="flex items-center gap-4 rounded-xl border border-white/10 card-surface/[0.02] px-6 py-5">
       <div
         className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[10px] ${iconBadgeStyles[status]}`}
       >
@@ -94,7 +94,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
           <button
             type="button"
             onClick={onPrimaryAction}
-            className="rounded-lg border border-white/15 px-3.5 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-white/[0.06]"
+            className="rounded-lg border border-white/15 px-3.5 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:card-surface/[0.06]"
           >
             {primaryButtonLabel[status]} {title.split(" ")[0]}
           </button>

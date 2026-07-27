@@ -154,7 +154,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               type="button"
               onClick={() => setIsLangMenuOpen((prev) => !prev)}
               disabled={isBusy}
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors px-3 py-1.5 text-sm font-medium text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 rounded-lg border border-white/10 card-surface/[0.04] hover:card-surface/[0.08] transition-colors px-3 py-1.5 text-sm font-medium text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_8px_2px_rgba(139,92,246,0.6)]" />
               {getLanguageDisplayName(language)}
@@ -183,7 +183,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
                       className={`w-full text-left flex items-center justify-between px-3.5 py-2 text-sm transition-colors ${
                         lang === language
                           ? "text-violet-300 bg-violet-500/10"
-                          : "text-slate-300 hover:bg-white/[0.06]"
+                          : "text-slate-300 hover:card-surface/[0.06]"
                       }`}
                     >
                       {getLanguageDisplayName(lang)}
@@ -221,7 +221,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
               showResetConfirm
                 ? "border-rose-400/40 bg-rose-400/10 text-rose-300"
-                : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"
+                : "border-white/10 card-surface/[0.04] text-slate-300 hover:card-surface/[0.08]"
             }`}
           >
             <RotateCcw size={14} />
@@ -234,7 +234,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             type="button"
             onClick={() => setIsFullscreen((prev) => !prev)}
             title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition-colors px-2.5 py-1.5 text-slate-300"
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 card-surface/[0.04] hover:card-surface/[0.08] transition-colors px-2.5 py-1.5 text-slate-300"
           >
             {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>

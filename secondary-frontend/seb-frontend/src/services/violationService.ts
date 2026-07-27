@@ -1,38 +1,34 @@
 // violationService.ts
-// Phase 2 — Reports exam integrity violations to the backend.
+// Reports exam integrity violations to the backend.
 // Uses an offline queue so events are not lost on brief network failures.
+// Returns the backend's enforcement decision (action, remaining) to the caller.
 
 import { apiClient } from './api';
+import type { ViolationType, ViolationResponse } from './violationService.types';
 
-export type ViolationType =
-  | 'tab_switch'
-  | 'window_blur'
-  | 'copy_attempt'
-  | 'paste_attempt'
-  | 'devtools_open'
-  | 'refresh_attempt'
-  | 'keyboard_shortcut';
+export type { ViolationType, ViolationResponse };
 
 interface ViolationPayload {
   attemptId: string;
   type: ViolationType;
-  count?: number;
   metadata?: Record<string, unknown>;
 }
 
 // In-memory queue for offline retry
-const queue: ViolationPayload[] = [];
+const queue: Array<{ payload: ViolationPayload; resolve: (r: ViolationResponse) => void; reject: (e: unknown) => void }> = [];
 let isFlushing = false;
 
 const flushQueue = async () => {
   if (isFlushing || queue.length === 0) return;
   isFlushing = true;
   while (queue.length > 0) {
-    const payload = queue[0];
+    const item = queue[0];
     try {
-      await apiClient.post('/api/exam-attempts/report-violation', payload);
+      const res = await apiClient.post<ViolationResponse>('/api/exam-attempts/report-violation', item.payload);
+      item.resolve(res.data);
       queue.shift();
-    } catch {
+    } catch (err) {
+      item.reject(err);
       // Stop flushing on failure — will retry on next reportViolation call
       break;
     }
@@ -41,15 +37,18 @@ const flushQueue = async () => {
 };
 
 /**
- * Report a violation event. Queues the event and attempts delivery immediately.
+ * Report a violation event to the backend.
+ * Returns a promise that resolves with the backend's enforcement decision.
  * Falls back to the offline queue if the network is unavailable.
  */
 export const reportViolation = (
   attemptId: string,
   type: ViolationType,
   metadata?: Record<string, unknown>
-): void => {
-  if (!attemptId) return;
+): Promise<ViolationResponse> => {
+  if (!attemptId) {
+    return Promise.resolve({ success: false, action: 'WARNING' });
+  }
 
   const payload: ViolationPayload = {
     attemptId,
@@ -60,6 +59,8 @@ export const reportViolation = (
     },
   };
 
-  queue.push(payload);
-  flushQueue();
+  return new Promise<ViolationResponse>((resolve, reject) => {
+    queue.push({ payload, resolve, reject });
+    flushQueue();
+  });
 };

@@ -17,6 +17,50 @@
 export type QuestionType = "mcq" | "text" | "file" | "coding" | "descriptive";
 export type Difficulty = "easy" | "medium" | "hard";
 
+// ---- Security Policy (mirrors backend exam.securityPolicy schema) ----
+export type SecurityAction = "WARNING" | "AUTO_SUBMIT" | "TERMINATE";
+
+export interface SecurityPolicy {
+  requireFullscreen: boolean;
+  fullscreenExitLimit: number;
+
+  tabSwitchLimit: number;
+  windowBlurLimit: number;
+
+  copyPasteLimit: number;
+  rightClickLimit: number;
+  devToolsLimit: number;
+
+  networkDisconnectLimit: number;
+  idleLimitSeconds: number;
+
+  cameraRequired: boolean;
+  microphoneRequired: boolean;
+  screenSharingRequired: boolean;
+
+  overallViolationLimit: number;
+  /** Enforcement action when ANY limit is exceeded */
+  action: SecurityAction;
+}
+
+/** Default policy used when the backend omits securityPolicy (fail-safe) */
+export const DEFAULT_SECURITY_POLICY: SecurityPolicy = {
+  requireFullscreen: true,
+  fullscreenExitLimit: 2,
+  tabSwitchLimit: 3,
+  windowBlurLimit: 3,
+  copyPasteLimit: 2,
+  rightClickLimit: 2,
+  devToolsLimit: 1,
+  networkDisconnectLimit: 5,
+  idleLimitSeconds: 300,
+  cameraRequired: false,
+  microphoneRequired: false,
+  screenSharingRequired: false,
+  overallViolationLimit: 8,
+  action: "TERMINATE",
+};
+
 export interface SampleTestCase {
   input: string;
   output: string;
@@ -89,6 +133,8 @@ export interface Exam {
   totalQuestions: number;
   questions: Question[];
   descriptiveQuestions?: SubjectiveQuestion[];
+  /** Teacher-configured security policy — always present (backend sends defaults if not set) */
+  securityPolicy: SecurityPolicy;
 }
 
 export interface Student {

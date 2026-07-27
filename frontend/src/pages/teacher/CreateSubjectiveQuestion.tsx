@@ -121,20 +121,20 @@ const CreateSubjectiveQuestion: React.FC = () => {
 
   if (isFetching) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">Loading question...</p>
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+        <p className="text-muted">Loading question...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
       <TeacherNavbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <Link to="/teacher/subjective-questions" className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+            <Link to="/teacher/subjective-questions" className="flex items-center gap-1 text-sm text-muted hover:text-gray-700 transition-colors">
               <ArrowLeft size={16} />
               Back to Subjective Questions
             </Link>
@@ -154,22 +154,22 @@ const CreateSubjectiveQuestion: React.FC = () => {
             <BookOpen size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"">
               {isEditMode ? 'Edit Subjective Question' : 'Create Subjective Question'}
             </h1>
-            <p className="text-sm text-gray-500">Students write open-ended answers graded manually by you.</p>
+            <p className="text-sm text-muted">Students write open-ended answers graded manually by you.</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Core Question Fields */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="card-surface" style={{borderRadius:"1rem" p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Question Content</h2>
 
             <div className="space-y-4">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="label-theme mb-1">
                   Question Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -177,13 +177,13 @@ const CreateSubjectiveQuestion: React.FC = () => {
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="e.g. Explain the concept of polymorphism in OOP"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
+                  className="w-full input-theme"
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="label-theme mb-1">
                   Full Question Body <span className="text-red-500">*</span>
                 </label>
                 <textarea
@@ -191,31 +191,31 @@ const CreateSubjectiveQuestion: React.FC = () => {
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   placeholder="Write the complete question text that students will see..."
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition resize-none"
+                  className="w-full textarea-theme"
                 />
               </div>
 
               {/* Instructions */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Answering Instructions (optional)</label>
+                <label className="label-theme mb-1">Answering Instructions (optional)</label>
                 <textarea
                   rows={2}
                   value={instructions}
                   onChange={e => setInstructions(e.target.value)}
                   placeholder="e.g. Use examples to support your answer. Avoid bullet points."
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition resize-none"
+                  className="w-full textarea-theme"
                 />
               </div>
             </div>
           </div>
 
           {/* Marks & Limits */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="card-surface" style={{borderRadius:"1rem" p-6">
             <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Marks & Limits</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="label-theme mb-1">
                   Max Marks <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -223,38 +223,38 @@ const CreateSubjectiveQuestion: React.FC = () => {
                   min={1}
                   value={maxMarks}
                   onChange={e => setMaxMarks(Number(e.target.value))}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
+                  className="w-full input-theme"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Word Limit <span className="text-gray-400 text-xs">(0 = no limit)</span></label>
+                <label className="label-theme mb-1">Word Limit <span className="text-muted text-xs">(0 = no limit)</span></label>
                 <input
                   type="number"
                   min={0}
                   value={wordLimit}
                   onChange={e => setWordLimit(Number(e.target.value))}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
+                  className="w-full input-theme"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Words <span className="text-gray-400 text-xs">(0 = no minimum)</span></label>
+                <label className="label-theme mb-1">Min Words <span className="text-muted text-xs">(0 = no minimum)</span></label>
                 <input
                   type="number"
                   min={0}
                   value={minWords}
                   onChange={e => setMinWords(Number(e.target.value))}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
+                  className="w-full input-theme"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                <label className="label-theme mb-1">Difficulty</label>
                 <select
                   value={difficulty}
                   onChange={e => setDifficulty(e.target.value as typeof difficulty)}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
+                  className="w-full input-theme"
                 >
                   {DIFFICULTIES.map(d => (
                     <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
@@ -262,13 +262,13 @@ const CreateSubjectiveQuestion: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category (optional)</label>
+                <label className="label-theme mb-1">Category (optional)</label>
                 <input
                   type="text"
                   value={category}
                   onChange={e => setCategory(e.target.value)}
                   placeholder="e.g. OOP, Data Structures, Database"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition"
+                  className="w-full input-theme"
                 />
               </div>
             </div>
@@ -281,21 +281,21 @@ const CreateSubjectiveQuestion: React.FC = () => {
                   onClick={() => setIsActive(!isActive)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isActive ? 'bg-violet-600' : 'bg-gray-200'}`}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <span className={`inline-block h-4 w-4 transform rounded-full card-surface shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
-                <span className="text-sm text-gray-600">{isActive ? 'Active' : 'Inactive'}</span>
+                <span className="text-sm" style={{color:"var(--text-secondary)"">{isActive ? 'Active' : 'Inactive'}</span>
               </div>
             )}
           </div>
 
           {/* Teacher-only Fields */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <div className="card-surface" style={{borderRadius:"1rem" p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Teacher Notes <span className="text-xs text-gray-400 normal-case">(hidden from students)</span></h2>
+              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Teacher Notes <span className="text-xs text-muted normal-case">(hidden from students)</span></h2>
               <button
                 type="button"
                 onClick={() => setShowReference(!showReference)}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                className="flex items-center gap-1 text-xs text-muted hover:text-gray-700"
               >
                 {showReference ? <><EyeOff size={12} /> Hide</> : <><Eye size={12} /> Show</>}
               </button>
@@ -304,42 +304,42 @@ const CreateSubjectiveQuestion: React.FC = () => {
             {showReference && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reference / Model Answer</label>
+                  <label className="label-theme mb-1">Reference / Model Answer</label>
                   <textarea
                     rows={5}
                     value={referenceAnswer}
                     onChange={e => setReferenceAnswer(e.target.value)}
                     placeholder="Write the ideal answer that you expect students to provide..."
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition resize-none"
+                    className="w-full textarea-theme"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Grading Rubric</label>
+                  <label className="label-theme mb-1">Grading Rubric</label>
                   <textarea
                     rows={3}
                     value={rubric}
                     onChange={e => setRubric(e.target.value)}
                     placeholder="e.g. 5 marks: correct definition + example, 3 marks: definition only, 0 marks: wrong/blank"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition resize-none"
+                    className="w-full textarea-theme"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Private Notes</label>
+                  <label className="label-theme mb-1">Private Notes</label>
                   <textarea
                     rows={2}
                     value={teacherNotes}
                     onChange={e => setTeacherNotes(e.target.value)}
                     placeholder="Any personal notes about this question..."
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition resize-none"
+                    className="w-full textarea-theme"
                   />
                 </div>
               </div>
             )}
 
             {!showReference && (
-              <p className="text-sm text-gray-400 italic">Click "Show" to add reference answer, rubric, and private notes.</p>
+              <p className="text-sm text-muted italic">Click "Show" to add reference answer, rubric, and private notes.</p>
             )}
           </div>
 

@@ -330,7 +330,7 @@ const CreateExam: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/60 font-sans">
+    <div className="min-h-screen /60 font-sans">
       <TeacherNavbar />
       <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -341,7 +341,7 @@ const CreateExam: React.FC = () => {
             <Link to="/teacher/exams" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
               <ArrowLeft size={14} className="mr-1" /> Back to Exams
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            <h1 className="text-2xl font-bold text-heading tracking-tight">
               {isEditMode ? 'Edit Assessment' : 'Create New Assessment'}
             </h1>
             <p className="text-sm text-gray-500 mt-1">Configure evaluation parameters, question set, and candidate assignments</p>
@@ -349,7 +349,7 @@ const CreateExam: React.FC = () => {
         </div>
 
         {/* Step Indicator Toolbar */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-2 mb-8 shadow-xs flex items-center justify-between">
+        <div className="card-surface rounded-2xl border p-2 mb-8 shadow-xs flex items-center justify-between">
           {[
             { num: 1, label: '1. Basic Config & Timing' },
             { num: 2, label: '2. Select Questions' },
@@ -363,7 +363,7 @@ const CreateExam: React.FC = () => {
                 onClick={() => setActiveStep(step.num as any)}
                 className={`flex-1 py-3 px-4 text-xs font-bold rounded-xl transition-all text-center ${isActive
                   ? 'bg-violet-600 text-white shadow-xs'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 hover:'
                   }`}
               >
                 {step.label}
@@ -375,53 +375,53 @@ const CreateExam: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* STEP 1: Basic Config */}
           {activeStep === 1 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-5">
-              <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">Basic Assessment Parameters</h2>
+            <div className="card-surface rounded-2xl border p-6 shadow-xs space-y-5">
+              <h2 className="text-base font-bold text-heading border-b pb-3">Basic Assessment Parameters</h2>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Assessment Title *</label>
+                <label className="label-theme mb-1">Assessment Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Full-Stack Senior Developer Assessment 2026"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                  className="w-full px-4 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Instructions / Description</label>
+                <label className="label-theme mb-1">Instructions / Description</label>
                 <textarea
                   rows={3}
                   placeholder="Enter candidate instructions, rules, and background guidelines..."
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                  className="w-full px-4 py-2.5 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Duration (Minutes) *</label>
+                  <label className="label-theme mb-1">Duration (Minutes) *</label>
                   <input
                     type="number"
                     required
                     min={5}
                     value={duration}
                     onChange={e => setDuration(Number(e.target.value))}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Total Marks *</label>
+                  <label className="label-theme mb-1">Total Marks *</label>
                   <input
                     type="number"
                     required
                     min={1}
                     value={totalMarks}
                     onChange={e => setTotalMarks(Number(e.target.value))}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                   />
                   {computedTotalMarks > 0 && (
                     <p className="text-[11px] text-gray-500 mt-1">
@@ -439,28 +439,28 @@ const CreateExam: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Passing Marks *</label>
+                  <label className="label-theme mb-1">Passing Marks *</label>
                   <input
                     type="number"
                     required
                     min={1}
                     value={passingMarks}
                     onChange={e => setPassingMarks(Number(e.target.value))}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                   />
                 </div>
               </div>
 
               {/* Professional Scheduling & Timezone Configuration */}
-              <div className="border-t border-gray-100 pt-4 space-y-4">
+              <div className="border-t pt-4 space-y-4">
                 <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Exam Schedule & Timezone Settings</h3>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Timezone *</label>
+                  <label className="label-theme mb-1">Timezone *</label>
                   <select
                     value={timezone}
                     onChange={e => setTimezone(e.target.value)}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 bg-white"
+                    className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 card-surface"
                   >
                     <option value="Asia/Kolkata">India Standard Time (IST - UTC+05:30)</option>
                     <option value="UTC">Coordinated Universal Time (UTC)</option>
@@ -475,54 +475,54 @@ const CreateExam: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Start Date</label>
+                    <label className="label-theme mb-1">Start Date</label>
                     <input
                       type="date"
                       value={startDate}
                       onChange={e => setStartDate(e.target.value)}
-                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Start Time (24h format)</label>
+                    <label className="label-theme mb-1">Start Time (24h format)</label>
                     <input
                       type="time"
                       value={startTime}
                       onChange={e => setStartTime(e.target.value)}
-                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">End Date</label>
+                    <label className="label-theme mb-1">End Date</label>
                     <input
                       type="date"
                       value={endDate}
                       onChange={e => setEndDate(e.target.value)}
-                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">End Time (24h format)</label>
+                    <label className="label-theme mb-1">End Time (24h format)</label>
                     <input
                       type="time"
                       value={endTime}
                       onChange={e => setEndTime(e.target.value)}
-                      className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                  <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <div className="flex items-center space-x-3 p-3 rounded-xl border">
                     <input
                       type="checkbox"
                       id="allowLateEntry"
                       checked={allowLateEntry}
                       onChange={e => setAllowLateEntry(e.target.checked)}
-                      className="h-4 w-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500"
+                      className="h-4 w-4 text-violet-600 rounded border focus:ring-2 focus:ring-violet-500"
                     />
                     <label htmlFor="allowLateEntry" className="text-xs font-bold text-gray-700 cursor-pointer">
                       Allow Late Entry
@@ -531,25 +531,25 @@ const CreateExam: React.FC = () => {
 
                   {allowLateEntry && (
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Late Entry Window (Minutes)</label>
+                      <label className="label-theme mb-1">Late Entry Window (Minutes)</label>
                       <input
                         type="number"
                         min={1}
                         max={120}
                         value={lateEntryWindowMinutes}
                         onChange={e => setLateEntryWindowMinutes(Number(e.target.value))}
-                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                        className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                       />
                     </div>
                   )}
 
-                  <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <div className="flex items-center space-x-3 p-3 rounded-xl border">
                     <input
                       type="checkbox"
                       id="autoSubmit"
                       checked={autoSubmit}
                       onChange={e => setAutoSubmit(e.target.checked)}
-                      className="h-4 w-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500"
+                      className="h-4 w-4 text-violet-600 rounded border focus:ring-2 focus:ring-violet-500"
                     />
                     <label htmlFor="autoSubmit" className="text-xs font-bold text-gray-700 cursor-pointer">
                       Auto-Submit when Timer Expires
@@ -557,25 +557,25 @@ const CreateExam: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-3">
+                <div className="border-t pt-3">
                   <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-2">Result Publication Release (Optional)</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Publish Date</label>
+                      <label className="label-theme mb-1">Publish Date</label>
                       <input
                         type="date"
                         value={resultPublishDate}
                         onChange={e => setResultPublishDate(e.target.value)}
-                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                        className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 mb-1">Publish Time</label>
+                      <label className="label-theme mb-1">Publish Time</label>
                       <input
                         type="time"
                         value={resultPublishTime}
                         onChange={e => setResultPublishTime(e.target.value)}
-                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                        className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
                       />
                     </div>
                   </div>
@@ -592,10 +592,10 @@ const CreateExam: React.FC = () => {
           {activeStep === 2 && (
             <div className="space-y-6">
               {/* MCQ Selection */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <div className="card-surface rounded-2xl border p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b pb-3 mb-4">
                   <div>
-                    <h2 className="text-base font-bold text-gray-900">Select Multiple Choice Questions (MCQs)</h2>
+                    <h2 className="text-base font-bold text-heading">Select Multiple Choice Questions (MCQs)</h2>
                     <p className="text-xs text-gray-500 mt-0.5">Selected {selectedQuestions.length} MCQ question(s)</p>
                   </div>
                 </div>
@@ -609,11 +609,11 @@ const CreateExam: React.FC = () => {
                         key={qId}
                         className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-xs ${isSelected
                           ? 'border-violet-300 bg-violet-50/70 text-violet-900 font-medium'
-                          : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                          : ' /50 hover:/50 text-gray-700'
                           }`}
                       >
                         <div className="pr-4 cursor-pointer flex-1" onClick={() => toggleQuestionSelection(qId)}>
-                          <p className="font-bold text-gray-900 mb-0.5">{q.question}</p>
+                          <p className="font-bold text-heading mb-0.5">{q.question}</p>
                           <span className="text-[11px] text-gray-500">Difficulty: {q.difficulty || 'Medium'}</span>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -647,10 +647,10 @@ const CreateExam: React.FC = () => {
               </div>
 
               {/* Coding Challenges Selection */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <div className="card-surface rounded-2xl border p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b pb-3 mb-4">
                   <div>
-                    <h2 className="text-base font-bold text-gray-900">Select Coding Challenges</h2>
+                    <h2 className="text-base font-bold text-heading">Select Coding Challenges</h2>
                     <p className="text-xs text-gray-500 mt-0.5">Selected {selectedCodingQuestions.length} challenge(s)</p>
                   </div>
                 </div>
@@ -664,11 +664,11 @@ const CreateExam: React.FC = () => {
                         key={cqId}
                         className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-xs ${isSelected
                           ? 'border-indigo-300 bg-indigo-50/70 text-indigo-900 font-medium'
-                          : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                          : ' /50 hover:/50 text-gray-700'
                           }`}
                       >
                         <div className="pr-4 cursor-pointer flex-1" onClick={() => toggleCodingSelection(cqId)}>
-                          <p className="font-bold text-gray-900 mb-0.5">{cq.title}</p>
+                          <p className="font-bold text-heading mb-0.5">{cq.title}</p>
                           <span className="text-[11px] text-gray-500 font-medium">Default marks: {cq.marks || 100} · Difficulty: {cq.difficulty || 'Medium'}</span>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -697,10 +697,10 @@ const CreateExam: React.FC = () => {
               </div>
 
               {/* Subjective Questions Selection */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs">
-                <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+              <div className="card-surface rounded-2xl border p-6 shadow-xs">
+                <div className="flex items-center justify-between border-b pb-3 mb-4">
                   <div>
-                    <h2 className="text-base font-bold text-gray-900">Select Subjective Questions</h2>
+                    <h2 className="text-base font-bold text-heading">Select Subjective Questions</h2>
                     <p className="text-xs text-gray-500 mt-0.5">Selected {selectedSubjectiveQuestions.length} subjective question(s)</p>
                   </div>
                 </div>
@@ -717,11 +717,11 @@ const CreateExam: React.FC = () => {
                           key={sqId}
                           className={`p-3.5 rounded-xl border transition-all flex items-center justify-between text-xs ${isSelected
                             ? 'border-purple-300 bg-purple-50/70 text-purple-900 font-medium'
-                            : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                            : ' /50 hover:/50 text-gray-700'
                             }`}
                         >
                           <div className="pr-4 cursor-pointer flex-1" onClick={() => toggleSubjectiveSelection(sqId)}>
-                            <p className="font-bold text-gray-900 mb-0.5">{sq.title}</p>
+                            <p className="font-bold text-heading mb-0.5">{sq.title}</p>
                             <span className="text-[11px] text-gray-500 font-medium">Default max marks: {sq.maxMarks || 10} · Difficulty: {sq.difficulty || 'Medium'}</span>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -759,8 +759,8 @@ const CreateExam: React.FC = () => {
 
           {/* STEP 3: Candidate Selection & Save */}
           {activeStep === 3 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-5">
-              <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">Candidate Directory & Access Permissions</h2>
+            <div className="card-surface rounded-2xl border p-6 shadow-xs space-y-5">
+              <h2 className="text-base font-bold text-heading border-b pb-3">Candidate Directory & Access Permissions</h2>
 
               <p className="text-xs text-gray-500">
                 Select specific candidates to restrict exam eligibility, or leave unselected to allow any student with the token link to take this exam.
@@ -775,7 +775,7 @@ const CreateExam: React.FC = () => {
                       onClick={() => toggleStudentSelection(s.id)}
                       className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between text-xs ${isSelected
                         ? 'border-emerald-300 bg-emerald-50/70 text-emerald-900 font-medium'
-                        : 'border-gray-100 bg-gray-50/50 hover:bg-gray-100/50 text-gray-700'
+                        : ' /50 hover:/50 text-gray-700'
                         }`}
                     >
                       <div>
@@ -801,7 +801,7 @@ const CreateExam: React.FC = () => {
                 </label>
               </div>
 
-              <div className="flex justify-between pt-4 border-t border-gray-100">
+              <div className="flex justify-between pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setActiveStep(2)}>← Back: Questions</Button>
                 <Button type="button" onClick={() => setActiveStep(4)}>Next: Security Policy →</Button>
               </div>
@@ -810,8 +810,8 @@ const CreateExam: React.FC = () => {
 
           {/* STEP 4: Security Policy */}
           {activeStep === 4 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-5">
-              <h2 className="text-base font-bold text-gray-900 border-b border-gray-100 pb-3">Security & Anti-Cheat Policy</h2>
+            <div className="card-surface rounded-2xl border p-6 shadow-xs space-y-5">
+              <h2 className="text-base font-bold text-heading border-b pb-3">Security & Anti-Cheat Policy</h2>
               
               <p className="text-xs text-gray-500 mb-4">
                 Configure limits for different types of security violations. If a candidate exceeds the <b>Overall Violation Limit</b> or a specific limit, the chosen <b>Enforcement Action</b> will be triggered.
@@ -819,11 +819,11 @@ const CreateExam: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Enforcement Action *</label>
+                  <label className="label-theme mb-1">Enforcement Action *</label>
                   <select
                     value={securityPolicy.action}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, action: e.target.value as any })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+                    className="w-full px-4 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 card-surface"
                   >
                     <option value="WARNING">Warning Only (Log but don't terminate)</option>
                     <option value="AUTO_SUBMIT">Auto-Submit Exam</option>
@@ -831,71 +831,71 @@ const CreateExam: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Overall Violation Limit *</label>
+                  <label className="label-theme mb-1">Overall Violation Limit *</label>
                   <input
                     type="number"
                     min={1}
                     value={securityPolicy.overallViolationLimit}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, overallViolationLimit: Number(e.target.value) })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                    className="w-full px-4 py-2 text-sm border rounded-xl"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Tab Switch Limit</label>
+                  <label className="label-theme mb-1">Tab Switch Limit</label>
                   <input
                     type="number"
                     min={0}
                     value={securityPolicy.tabSwitchLimit}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, tabSwitchLimit: Number(e.target.value) })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                    className="w-full px-4 py-2 text-sm border rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Window Blur Limit</label>
+                  <label className="label-theme mb-1">Window Blur Limit</label>
                   <input
                     type="number"
                     min={0}
                     value={securityPolicy.windowBlurLimit}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, windowBlurLimit: Number(e.target.value) })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                    className="w-full px-4 py-2 text-sm border rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Copy/Paste Limit</label>
+                  <label className="label-theme mb-1">Copy/Paste Limit</label>
                   <input
                     type="number"
                     min={0}
                     value={securityPolicy.copyPasteLimit}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, copyPasteLimit: Number(e.target.value) })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                    className="w-full px-4 py-2 text-sm border rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">DevTools Open Limit</label>
+                  <label className="label-theme mb-1">DevTools Open Limit</label>
                   <input
                     type="number"
                     min={0}
                     value={securityPolicy.devToolsLimit}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, devToolsLimit: Number(e.target.value) })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                    className="w-full px-4 py-2 text-sm border rounded-xl"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Fullscreen Exit Limit</label>
+                  <label className="label-theme mb-1">Fullscreen Exit Limit</label>
                   <input
                     type="number"
                     min={0}
                     value={securityPolicy.fullscreenExitLimit}
                     onChange={e => setSecurityPolicy({ ...securityPolicy, fullscreenExitLimit: Number(e.target.value) })}
-                    className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl"
+                    className="w-full px-4 py-2 text-sm border rounded-xl"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-between pt-4 border-t border-gray-100">
+              <div className="flex justify-between pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setActiveStep(3)}>← Back: Candidates</Button>
                 <Button type="submit" disabled={isLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600">
                   {isLoading ? 'Saving Assessment...' : isEditMode ? 'Update Assessment' : 'Save & Publish Assessment'}

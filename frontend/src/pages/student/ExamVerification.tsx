@@ -229,10 +229,10 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
         <Card className="w-full max-w-2xl">
           <CardContent className="p-12 text-center">
             <XCircle className="h-16 w-16 text-red-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Verification Failed</h2>
+            <h2 className="text-2xl font-bold" style={{color:"var(--text-heading)" mb-4">Verification Failed</h2>
             <p className="text-gray-700 mb-6">{error}</p>
             <div className="space-y-3">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm" style={{color:"var(--text-secondary)"">
                 Please check your email for the correct exam link or contact your teacher for assistance.
               </p>
             </div>
@@ -251,13 +251,13 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
             <CardTitle className="text-2xl">Configuration Downloaded Successfully!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-white rounded-lg p-6 space-y-4">
-              <h3 className="font-semibold text-lg text-gray-900 flex items-center">
+            <div className="card-surface rounded-lg p-6 space-y-4">
+              <h3 className="font-semibold text-lg text-heading flex items-center">
                 <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
                 Next Steps:
               </h3>
               <ol className="list-decimal list-inside space-y-3 text-gray-700">
-                <li className="pl-2">Locate the downloaded file: <code className="bg-gray-100 px-2 py-1 rounded text-sm">secure-exam-{examId?.substring(0, 8)}....seb</code></li>
+                <li className="pl-2">Locate the downloaded file: <code className=" px-2 py-1 rounded text-sm">secure-exam-{examId?.substring(0, 8)}....seb</code></li>
                 <li className="pl-2">Double-click the file to open it</li>
                 <li className="pl-2">Safe Exam Browser will launch automatically</li>
                 <li className="pl-2">Your computer will be locked into secure exam mode</li>
@@ -282,7 +282,7 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
             </div>
 
             <div className="bg-blue-50 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <h3 className="font-semibold text-heading mb-3 flex items-center">
                 <Download className="w-5 h-5 mr-2 text-blue-600" />
                 Safe Exam Browser Required
               </h3>
@@ -331,14 +331,14 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
         <CardContent className="space-y-6">
           {/* Student Info */}
           <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Student Information</h3>
+            <h3 className="font-semibold text-heading mb-2">Student Information</h3>
             <p className="text-gray-700"><strong>Name:</strong> {examInfo?.student.name}</p>
             <p className="text-gray-700"><strong>Email:</strong> {examInfo?.student.email}</p>
           </div>
 
           {/* Exam Details */}
-          <div className="bg-white rounded-lg p-6 space-y-4">
-            <h3 className="text-2xl font-bold text-gray-900">{examInfo?.exam.title}</h3>
+          <div className="card-surface rounded-lg p-6 space-y-4">
+            <h3 className="text-2xl font-bold" style={{color:"var(--text-heading)"">{examInfo?.exam.title}</h3>
             {examInfo?.exam.description && (
               <p className="text-gray-700">{examInfo.exam.description}</p>
             )}
@@ -347,32 +347,32 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
               <div className="flex items-start space-x-3">
                 <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="font-semibold text-gray-900">{examInfo?.exam.duration} minutes</p>
+                  <p className="text-sm" style={{color:"var(--text-secondary)"">Duration</p>
+                  <p className="font-semibold text-heading">{examInfo?.exam.duration} minutes</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-3">
                 <BookOpen className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-600">Total Questions</p>
-                  <p className="font-semibold text-gray-900">{examInfo?.exam.questionsCount}</p>
+                  <p className="text-sm" style={{color:"var(--text-secondary)"">Total Questions</p>
+                  <p className="font-semibold text-heading">{examInfo?.exam.questionsCount}</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-600">Total Marks</p>
-                  <p className="font-semibold text-gray-900">{examInfo?.exam.totalMarks}</p>
+                  <p className="text-sm" style={{color:"var(--text-secondary)"">Total Marks</p>
+                  <p className="font-semibold text-heading">{examInfo?.exam.totalMarks}</p>
                 </div>
               </div>
               
               <div className="flex items-start space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-gray-600">Passing Marks</p>
-                  <p className="font-semibold text-gray-900">{examInfo?.exam.passingMarks}</p>
+                  <p className="text-sm" style={{color:"var(--text-secondary)"">Passing Marks</p>
+                  <p className="font-semibold text-heading">{examInfo?.exam.passingMarks}</p>
                 </div>
               </div>
             </div>
@@ -380,15 +380,15 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
             <div className="border-t pt-4 space-y-2">
               <div className="flex items-center space-x-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
-                <span className="text-sm text-gray-600">Start Date:</span>
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm" style={{color:"var(--text-secondary)"">Start Date:</span>
+                <span className="text-sm font-semibold text-heading">
                   {formatDate(examInfo?.exam.startDate || '')}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <Calendar className="w-5 h-5 text-red-600" />
-                <span className="text-sm text-gray-600">End Date:</span>
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm" style={{color:"var(--text-secondary)"">End Date:</span>
+                <span className="text-sm font-semibold text-heading">
                   {formatDate(examInfo?.exam.endDate || '')}
                 </span>
               </div>
@@ -442,8 +442,8 @@ const ExamVerification: React.FC<ExamVerificationProps> = ({ examIdOverride, tok
           ) : null}
 
           {/* Instructions */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-3">📋 Exam Instructions:</h3>
+          <div className=" rounded-lg p-4">
+            <h3 className="font-semibold text-heading mb-3">📋 Exam Instructions:</h3>
             <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
               <li>Ensure you have Safe Exam Browser installed on your computer</li>
               <li>Click the "Launch Secure Exam" button to download the configuration file</li>

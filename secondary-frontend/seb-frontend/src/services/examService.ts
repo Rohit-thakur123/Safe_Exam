@@ -4,6 +4,7 @@ import type {
   ExamSession,
   ExamResult
 } from '../types/exam.types';
+import { DEFAULT_SECURITY_POLICY } from '../types/exam.types';
 import type {
   StartExamRequest,
   StartExamResponse,
@@ -91,7 +92,11 @@ export const startExamSession = async (
           minWords: q.minWords || null,
           difficulty: q.difficulty,
           category: q.category
-        }))
+        })),
+        // Security policy: use backend value; fall back to safe defaults for legacy exams
+        securityPolicy: attemptData.exam.securityPolicy
+          ? { ...DEFAULT_SECURITY_POLICY, ...attemptData.exam.securityPolicy }
+          : DEFAULT_SECURITY_POLICY,
       },
       student: {
         id: attemptData.student.id,

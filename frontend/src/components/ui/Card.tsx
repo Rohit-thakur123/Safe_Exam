@@ -4,13 +4,18 @@ import { cn } from '../../utils/cn';
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        "rounded-lg border border-gray-200 bg-white text-gray-950 shadow-sm",
-        className
-      )}
+      className={cn('rounded-xl', className)}
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-card)',
+        color: 'var(--text-primary)',
+        transition: 'background 0.2s ease, border-color 0.2s ease',
+        ...style,
+      }}
       {...props}
     />
   )

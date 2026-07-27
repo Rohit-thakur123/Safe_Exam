@@ -120,20 +120,20 @@ const CreateQuestion: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link
                 to="/teacher"
-                className="flex items-center text-gray-500 hover:text-gray-700 mr-4"
+                className="flex items-center text-muted hover:text-gray-700 mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Link>
-              <h1 className="text-xl font-bold text-gray-900">Create Question</h1>
+              <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"">Create Question</h1>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
@@ -154,7 +154,7 @@ const CreateQuestion: React.FC = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="question" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="question" className="label-theme">
                   Question *
                 </label>
                 <textarea
@@ -169,7 +169,7 @@ const CreateQuestion: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="label-theme mb-2">
                   Options *
                 </label>
                 {options.map((option, index) => (
@@ -205,7 +205,7 @@ const CreateQuestion: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="answer" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="answer" className="label-theme">
                   Correct Answer *
                 </label>
                 <select
@@ -213,7 +213,7 @@ const CreateQuestion: React.FC = () => {
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   required
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="input-theme"
                 >
                   <option value="">Select correct answer</option>
                   {options.filter(opt => opt.trim() !== '').map((option, index) => (
@@ -225,7 +225,7 @@ const CreateQuestion: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="explanation" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="explanation" className="label-theme">
                   Explanation (Optional)
                 </label>
                 <textarea
@@ -240,14 +240,14 @@ const CreateQuestion: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="difficulty" className="label-theme">
                     Difficulty
                   </label>
                   <select
                     id="difficulty"
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="input-theme"
                   >
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
@@ -256,14 +256,14 @@ const CreateQuestion: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="category" className="label-theme">
                     Category
                   </label>
                   <select
                     id="category"
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="input-theme"
                   >
                     <option value="">General</option>
                     {categories.map(category => (

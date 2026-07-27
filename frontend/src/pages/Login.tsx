@@ -88,30 +88,35 @@ const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Email address</label>
+              <label htmlFor="login-email" className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Email address</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
+                autoComplete="email"
                 className="input-dark"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Password</label>
+              <label htmlFor="login-password" className="block text-xs font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Password</label>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  autoComplete="current-password"
                   className="input-dark pr-12"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   style={{ color: 'var(--text-muted)' }}>
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -119,7 +124,7 @@ const Login: React.FC = () => {
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>
+              <div role="alert" aria-live="assertive" className="p-3 rounded-xl text-xs font-medium" style={{ background: 'rgba(251,113,133,0.1)', border: '1px solid rgba(251,113,133,0.2)', color: 'var(--tint-rose-text)' }}>
                 {error}
               </div>
             )}

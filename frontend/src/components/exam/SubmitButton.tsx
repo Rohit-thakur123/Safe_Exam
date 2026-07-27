@@ -91,12 +91,12 @@ export const SubmitButton: React.FC<SubmitButtonProps> = ({
           )}
           
           {/* Summary */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-3">Submission Summary</h4>
+          <div className=" rounded-lg p-4">
+            <h4 className="font-medium text-heading mb-3">Submission Summary</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Questions:</span>
-                <span className="font-medium text-gray-900">{totalQuestions}</span>
+                <span className="font-medium text-heading">{totalQuestions}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Answered:</span>

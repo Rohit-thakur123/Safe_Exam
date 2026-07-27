@@ -544,7 +544,7 @@ export const submitExamAttempt = async (req, res) => {
             },
             { new: true }
         );
-        
+
         if (userUpdateResult) {
             console.log(`[Exam Submit] Successfully updated user examAttempts array for attempt ${attemptId}`);
         } else {
@@ -794,6 +794,28 @@ export const saveAnswers = async (req, res) => {
 };
 
 // Heartbeat — keeps the attempt marked active and reports remaining time
+/**
+ * Background sweep: marks stale in_progress attempts as abandoned.
+ * Called fire-and-forget from heartbeat — never blocks the response.
+ * Grace period: 5 minutes after expectedEndTime before marking abandoned.
+ */
+const sweepExpiredAttempts = async () => {
+    try {
+        const gracePeriodMs = 5 * 60 * 1000; // 5 minutes
+        const cutoff = new Date(Date.now() - gracePeriodMs);
+        await ExamAttempt.updateMany(
+            {
+                status: 'in_progress',
+                expectedEndTime: { $lt: cutoff }
+            },
+            { $set: { status: 'abandoned', endTime: new Date() } }
+        );
+    } catch (err) {
+        // Non-critical background task — log but never throw
+        console.error('[Sweep] Failed to sweep expired attempts:', err);
+    }
+};
+
 export const heartbeat = async (req, res) => {
     try {
         const { attemptId } = req.body;
@@ -822,6 +844,9 @@ export const heartbeat = async (req, res) => {
         }
 
         await ExamAttempt.updateOne({ _id: attemptId }, { $set: { lastActivity: new Date() } });
+
+        // Fire-and-forget background sweep of expired attempts
+        sweepExpiredAttempts();
 
         // Use attempt.expectedEndTime as the authoritative deadline for time remaining.
         // This is consistent with what the frontend timer uses.
@@ -872,7 +897,12 @@ export const getStudentAttempts = async (req, res) => {
             });
         }
 
-        const attempts = await ExamAttempt.find({ studentId, status: 'completed' })
+        // Include all terminal and in-progress statuses so the student portal
+        // shows abandoned/terminated attempts rather than hiding them.
+        const attempts = await ExamAttempt.find({
+            studentId,
+            status: { $in: ['completed', 'terminated', 'evaluated', 'abandoned'] }
+        })
             .populate('examId', 'title description duration totalMarks passingMarks')
             .sort({ createdAt: -1 });
 
@@ -957,8 +987,9 @@ export const getExamAttempts = async (req, res) => {
         const attempts = Array.from(latestAttemptsMap.values());
 
         // Calculate statistics
-        const completedAttempts = attempts.filter(a => a.status === 'completed');
+        const completedAttempts = attempts.filter(a => a.status === 'completed' || a.status === 'evaluated');
         const inProgressAttempts = attempts.filter(a => a.status === 'in_progress');
+        const terminatedAttempts = attempts.filter(a => a.status === 'terminated');
         const scores = completedAttempts.map(a => a.score || 0);
         const passedCount = completedAttempts.filter(a => a.passed).length;
 
@@ -966,6 +997,7 @@ export const getExamAttempts = async (req, res) => {
             totalAttempts: attempts.length,
             completedAttempts: completedAttempts.length,
             inProgressAttempts: inProgressAttempts.length,
+            terminatedAttempts: terminatedAttempts.length,
             averageScore: scores.length > 0
                 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
                 : 0,
@@ -995,8 +1027,9 @@ export const getExamAttempts = async (req, res) => {
                 submittedAt: a.endTime || a.updatedAt || a.createdAt,
                 startTime: a.startTime,
                 timeSpent: a.timeSpent || 0,
-                violationSummary: a.violationSummary || { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, totalViolations: 0 },
-                violations: a.violations || []
+                violationSummary: a.violationSummary || { tabSwitches: 0, windowBlurs: 0, copyAttempts: 0, pasteAttempts: 0, devToolsAttempts: 0, fullscreenExits: 0, totalViolations: 0 },
+                violations: a.violations || [],
+                terminationReason: a.terminationReason || null
             };
         });
 
@@ -1135,30 +1168,46 @@ export const reportViolation = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Exam not found' });
         }
 
-        // Process violation through security service
+        // processViolation atomically increments the violationSummary counters in DB
+        // and returns the enforcement action. We ONLY need to push the violation event
+        // to the violations array and, if terminating, set status fields.
         const enforcement = await processViolation(attempt, exam, type);
 
-        // Update summary based on processViolation incrementing it manually or let it save
-        // We already incremented in processViolation, so we just append the type array:
-        const updateDoc = {
-            $push: { violations: { type, metadata: metadata || {} } },
-            $inc: { [`violationSummary.${type === 'tab_switch' ? 'tabSwitches' : type === 'window_blur' ? 'windowBlurs' : type.includes('copy') ? 'copyAttempts' : type.includes('paste') ? 'pasteAttempts' : type === 'fullscreen_exit' ? 'fullscreenExits' : type === 'right_click' ? 'rightClicks' : 'totalViolations'}`]: 1, 'violationSummary.totalViolations': 1 }
+        // Push the violation event log entry (read-only audit trail)
+        const pushUpdate = {
+            $push: {
+                violations: {
+                    type,
+                    timestamp: new Date(),
+                    metadata: {
+                        ...(metadata || {}),
+                        userAgent: req.headers['user-agent'],
+                        ip: req.ip,
+                    }
+                }
+            }
         };
 
-        let resultAction = enforcement.action;
-
-        // Apply action
-        if (enforcement.action === 'TERMINATE') {
-            updateDoc.$set = {
-                status: 'terminated',
+        // Apply termination if enforcement demands it
+        if (enforcement.action === 'TERMINATE' || enforcement.action === 'AUTO_SUBMIT') {
+            pushUpdate.$set = {
+                status: enforcement.action === 'TERMINATE' ? 'terminated' : 'completed',
                 terminationReason: enforcement.reason,
                 endTime: new Date()
             };
         }
 
-        await ExamAttempt.updateOne({ _id: attemptId }, updateDoc);
+        await ExamAttempt.updateOne({ _id: attemptId }, pushUpdate);
 
-        res.status(200).json({ success: true, action: resultAction, reason: enforcement.reason });
+        res.status(200).json({
+            success: true,
+            action: enforcement.action,
+            reason: enforcement.reason,
+            message: enforcement.message,
+            remaining: enforcement.remaining,
+            specificCount: enforcement.specificCount,
+            totalCount: enforcement.totalCount,
+        });
     } catch (error) {
         console.error('Report violation error:', error);
         res.status(500).json({ success: false, error: error.message || 'Server error reporting violation' });

@@ -60,7 +60,7 @@ const Result: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <div className="text-lg">Loading results...</div>
       </div>
     );
@@ -68,7 +68,7 @@ const Result: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
             <div className="text-red-600 mb-4">{error}</div>
@@ -84,7 +84,7 @@ const Result: React.FC = () => {
 
   if (!result) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <div className="text-lg">No result found</div>
       </div>
     );
@@ -94,7 +94,7 @@ const Result: React.FC = () => {
   const isPassed = result.passed;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
@@ -106,7 +106,7 @@ const Result: React.FC = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Exam Results</h1>
+          <h1 className="text-3xl font-bold text-heading">Exam Results</h1>
         </div>
 
         {/* Result Summary */}
@@ -123,21 +123,21 @@ const Result: React.FC = () => {
                 <div className={`text-4xl font-bold ${getGradeColor(percentage)}`}>
                   {getGradeLetter(percentage)}
                 </div>
-                <div className="text-sm text-gray-600">Grade</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"">Grade</div>
               </div>
               
               <div className="text-center">
                 <div className={`text-4xl font-bold ${getGradeColor(percentage)}`}>
                   {percentage}%
                 </div>
-                <div className="text-sm text-gray-600">Score</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"">Score</div>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900">
+                <div className="text-4xl font-bold text-heading">
                   {result.score} / {result.totalMarks || result.totalQuestions}
                 </div>
-                <div className="text-sm text-gray-600">Marks Achieved</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"">Marks Achieved</div>
               </div>
               
               <div className="text-center">
@@ -145,7 +145,7 @@ const Result: React.FC = () => {
                   <Clock className="w-8 h-8 mr-2 text-blue-600" />
                   {formatTime(result.timeSpent)}
                 </div>
-                <div className="text-sm text-gray-600">Time Spent</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"">Time Spent</div>
               </div>
             </div>
             
@@ -174,7 +174,7 @@ const Result: React.FC = () => {
           </CardHeader>
           <CardContent>
             {!result.detailed_results || result.detailed_results.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted">
                 <p>Detailed question results are not available.</p>
               </div>
             ) : (
@@ -190,7 +190,7 @@ const Result: React.FC = () => {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-2">
+                        <h4 className="font-semibold text-heading mb-2">
                           Question {index + 1}: {questionResult.question}
                         </h4>
                         

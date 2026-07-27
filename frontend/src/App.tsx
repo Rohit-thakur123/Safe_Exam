@@ -37,8 +37,33 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; role?: 'teacher' | '
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-5"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        {/* Brand mark */}
+        <div
+          className="h-12 w-12 rounded-2xl flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, var(--accent-purple), var(--accent-indigo))',
+            boxShadow: '0 0 40px color-mix(in srgb, var(--accent-purple) 35%, transparent)',
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        {/* Spinner */}
+        <div className="relative h-8 w-8">
+          <div
+            className="absolute inset-0 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: `color-mix(in srgb, var(--accent-purple) 20%, transparent)`, borderTopColor: 'var(--accent-purple)' }}
+          />
+        </div>
+        <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+          Authenticating…
+        </p>
       </div>
     );
   }

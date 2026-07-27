@@ -23,15 +23,10 @@ const SubjectiveGrading: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  // Active student tab
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-
-  // Form states per answerId
   const [marksState, setMarksState] = useState<Record<string, number>>({});
   const [feedbackState, setFeedbackState] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
-
-  // Toggle reference answer view per answerId
   const [showRef, setShowRef] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -45,9 +40,7 @@ const SubjectiveGrading: React.FC = () => {
     try {
       const exam = await examAPI.getById(id);
       setExamTitle(exam.title);
-    } catch {
-      setExamTitle('Exam');
-    }
+    } catch { setExamTitle('Exam'); }
   };
 
   const loadAnswers = async (id: string) => {
@@ -55,48 +48,33 @@ const SubjectiveGrading: React.FC = () => {
       setLoading(true);
       const data = await subjectiveGradingAPI.getExamAnswers(id);
       setAnswers(data);
-
-      // Initialize form states
       const initialMarks: Record<string, number> = {};
       const initialFeedback: Record<string, string> = {};
-      data.forEach(a => {
+      data.forEach((a: SubjectiveAnswer) => {
         initialMarks[a._id] = a.marksAwarded || 0;
         initialFeedback[a._id] = a.feedback || '';
       });
       setMarksState(initialMarks);
       setFeedbackState(initialFeedback);
-
-      // Select first student by default
       if (data.length > 0) {
-        const firstStudent = typeof data[0].student === 'object' ? data[0].student._id : data[0].student;
-        setSelectedStudentId(firstStudent);
+        const first = typeof data[0].student === 'object' ? data[0].student._id : data[0].student;
+        setSelectedStudentId(first);
       }
     } catch {
       setToast({ id: Date.now().toString(), type: 'error', message: 'Failed to load student submissions' });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // Group answers by student
   const groupedStudents = React.useMemo(() => {
     const map = new Map<string, GroupedStudentAnswers>();
-
     answers.forEach(a => {
       const sObj = typeof a.student === 'object' ? a.student : { _id: a.student, name: 'Unknown Student', email: '' };
       const sId = sObj._id;
-
       if (!map.has(sId)) {
-        map.set(sId, {
-          studentId: sId,
-          studentName: sObj.name || 'Unknown Student',
-          studentEmail: sObj.email || '',
-          answers: [],
-        });
+        map.set(sId, { studentId: sId, studentName: sObj.name || 'Unknown Student', studentEmail: sObj.email || '', answers: [] });
       }
       map.get(sId)!.answers.push(a);
     });
-
     return Array.from(map.values());
   }, [answers]);
 
@@ -108,153 +86,145 @@ const SubjectiveGrading: React.FC = () => {
     const feedback = feedbackState[answerId] || '';
     const qObj = typeof answer.question === 'object' ? (answer.question as SubjectiveQuestion) : null;
     const maxMarks = qObj?.maxMarks || 10;
-
     if (marks === undefined || marks < 0 || marks > maxMarks) {
       setToast({ id: Date.now().toString(), type: 'error', message: `Marks must be between 0 and ${maxMarks}` });
       return;
     }
-
     try {
       setSavingId(answerId);
       const res = await subjectiveGradingAPI.evaluateAnswer(answerId, marks, feedback);
-
-      // Update local state
-      setAnswers(prev =>
-        prev.map(a =>
-          a._id === answerId
-            ? { ...a, marksAwarded: marks, feedback, status: 'evaluated' }
-            : a
-        )
-      );
-
+      setAnswers(prev => prev.map(a => a._id === answerId ? { ...a, marksAwarded: marks, feedback, status: 'evaluated' } : a));
       setToast({
-        id: Date.now().toString(),
-        type: 'success',
-        message: res.allEvaluated
-          ? 'Answer graded! All subjective questions for this candidate are now complete.'
-          : 'Grade saved successfully!',
+        id: Date.now().toString(), type: 'success',
+        message: res.allEvaluated ? 'All responses graded for this candidate!' : 'Grade saved successfully!',
       });
     } catch (err: any) {
-      const msg = err?.response?.data?.error || 'Failed to save evaluation';
-      setToast({ id: Date.now().toString(), type: 'error', message: msg });
-    } finally {
-      setSavingId(null);
-    }
+      setToast({ id: Date.now().toString(), type: 'error', message: err?.response?.data?.error || 'Failed to save evaluation' });
+    } finally { setSavingId(null); }
   };
 
-  const toggleRefView = (answerId: string) => {
-    setShowRef(prev => ({ ...prev, [answerId]: !prev[answerId] }));
-  };
+  const toggleRefView = (answerId: string) => setShowRef(prev => ({ ...prev, [answerId]: !prev[answerId] }));
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading student submissions for grading...</p>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading student submissions for grading...</p>
       </div>
     );
   }
 
   const totalSubmitted = answers.length;
   const totalEvaluated = answers.filter(a => a.status === 'evaluated').length;
+  const allDone = totalEvaluated === totalSubmitted && totalSubmitted > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50/60 font-sans">
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
       <TeacherNavbar />
       <Toast toast={toast} onClose={() => setToast(null)} />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Top Header */}
-        <div className="flex items-center justify-between mb-6">
+      <main style={{ maxWidth: 1152, margin: '0 auto', padding: '2rem 1.5rem' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <Link to={`/teacher/exams/${examId}/results`} className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
-              <ArrowLeft size={14} className="mr-1" /> Back to Exam Results
+            <Link
+              to={`/teacher/exams/${examId}/results`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-purple)', marginBottom: '0.5rem', textDecoration: 'none' }}
+            >
+              <ArrowLeft size={13} /> Back to Exam Results
             </Link>
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <BookOpen size={20} className="text-violet-600" />
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BookOpen size={20} style={{ color: 'var(--accent-purple)' }} />
               Manual Evaluation — {examTitle}
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 2 }}>
               Grade open-ended descriptive responses and provide feedback to candidates.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-xs">
-            <span className="text-xs font-semibold text-gray-500">Grading Progress:</span>
-            <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-              totalEvaluated === totalSubmitted && totalSubmitted > 0
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-amber-50 text-amber-700 border border-amber-200'
-            }`}>
+          <div className="card-surface" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Grading Progress:</span>
+            <span className={`badge ${allDone ? 'badge-emerald' : 'badge-amber'}`}>
               {totalEvaluated} / {totalSubmitted} Graded
             </span>
           </div>
         </div>
 
         {groupedStudents.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
-            <BookOpen size={40} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-700 font-bold mb-1">No Subjective Submissions Found</p>
-            <p className="text-sm text-gray-400">Either no student has completed this exam yet, or this exam has no subjective questions.</p>
+          <div style={{
+            background: 'var(--bg-card)', border: '1px dashed var(--border)',
+            borderRadius: '1rem', padding: '3rem', textAlign: 'center',
+          }}>
+            <BookOpen size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem' }} />
+            <p style={{ color: 'var(--text-primary)', fontWeight: 700, marginBottom: 4 }}>No Subjective Submissions Found</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Either no student has completed this exam yet, or this exam has no subjective questions.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Left Sidebar — Candidate List */}
-            <div className="md:col-span-1 space-y-2">
-              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1 mb-2">Candidates</h2>
-              {groupedStudents.map(studentGroup => {
-                const isSelected = studentGroup.studentId === selectedStudentId;
-                const studentEvaluatedCount = studentGroup.answers.filter(a => a.status === 'evaluated').length;
-                const isFullyEvaluated = studentEvaluatedCount === studentGroup.answers.length;
-
-                return (
-                  <button
-                    key={studentGroup.studentId}
-                    onClick={() => setSelectedStudentId(studentGroup.studentId)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      isSelected
-                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-100 hover:border-violet-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                        {studentGroup.studentName}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '1.5rem' }}>
+            {/* Left Sidebar */}
+            <div>
+              <p style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '0.75rem', padding: '0 4px' }}>
+                Candidates
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {groupedStudents.map(sg => {
+                  const isSelected = sg.studentId === selectedStudentId;
+                  const evCount = sg.answers.filter(a => a.status === 'evaluated').length;
+                  const isDone = evCount === sg.answers.length;
+                  return (
+                    <button
+                      key={sg.studentId}
+                      onClick={() => setSelectedStudentId(sg.studentId)}
+                      style={{
+                        width: '100%', textAlign: 'left',
+                        padding: '0.875rem',
+                        borderRadius: '0.75rem',
+                        border: `1px solid ${isSelected ? 'var(--accent-purple)' : 'var(--border)'}`,
+                        background: isSelected ? 'var(--accent-purple)' : 'var(--bg-card)',
+                        cursor: 'pointer', transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <p style={{ fontSize: '0.75rem', fontWeight: 700, color: isSelected ? '#fff' : 'var(--text-primary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {sg.studentName}
+                        </p>
+                        {isDone
+                          ? <CheckCircle2 size={13} style={{ color: isSelected ? '#fff' : 'var(--accent-emerald)', flexShrink: 0 }} />
+                          : <Clock size={13} style={{ color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--accent-amber)', flexShrink: 0 }} />
+                        }
+                      </div>
+                      <p style={{ fontSize: '0.6875rem', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', margin: '2px 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sg.studentEmail}
                       </p>
-                      {isFullyEvaluated ? (
-                        <CheckCircle2 size={14} className={isSelected ? 'text-white' : 'text-emerald-500'} />
-                      ) : (
-                        <Clock size={14} className={isSelected ? 'text-violet-200' : 'text-amber-500'} />
-                      )}
-                    </div>
-                    <p className={`text-[11px] truncate mt-0.5 ${isSelected ? 'text-violet-100' : 'text-gray-400'}`}>
-                      {studentGroup.studentEmail}
-                    </p>
-                    <span className={`inline-block text-[10px] font-semibold mt-2 px-2 py-0.5 rounded-full ${
-                      isSelected
-                        ? 'bg-violet-500 text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {studentEvaluatedCount}/{studentGroup.answers.length} Graded
-                    </span>
-                  </button>
-                );
-              })}
+                      <span style={{
+                        display: 'inline-block', fontSize: '0.625rem', fontWeight: 700,
+                        padding: '2px 8px', borderRadius: '9999px',
+                        background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
+                        color: isSelected ? '#fff' : 'var(--text-secondary)',
+                      }}>
+                        {evCount}/{sg.answers.length} Graded
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Right Main Panel — Grading Area for Selected Candidate */}
-            <div className="md:col-span-3 space-y-6">
+            {/* Right Panel */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {currentStudentGroup && (
                 <>
-                  <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center justify-between shadow-xs">
+                  {/* Student header */}
+                  <div className="card-surface" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>
-                      <h2 className="text-sm font-bold text-gray-900">{currentStudentGroup.studentName}</h2>
-                      <p className="text-xs text-gray-500">{currentStudentGroup.studentEmail}</p>
+                      <h2 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-heading)', margin: 0 }}>{currentStudentGroup.studentName}</h2>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{currentStudentGroup.studentEmail}</p>
                     </div>
-                    <span className="text-xs font-semibold text-gray-400">
-                      {currentStudentGroup.answers.length} Subjective Response(s)
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      {currentStudentGroup.answers.length} Response(s)
                     </span>
                   </div>
 
+                  {/* Answer cards */}
                   {currentStudentGroup.answers.map((ans, idx) => {
                     const qObj = typeof ans.question === 'object' ? (ans.question as SubjectiveQuestion) : null;
                     const qTitle = qObj?.title || `Question ${idx + 1}`;
@@ -264,114 +234,106 @@ const SubjectiveGrading: React.FC = () => {
                     const answerId = ans._id;
 
                     return (
-                      <div key={answerId} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-xs space-y-4">
-                        {/* Question Header */}
-                        <div className="flex items-start justify-between border-b border-gray-100 pb-3">
+                      <div key={answerId} className="card-surface" style={{ padding: '1.5rem' }}>
+                        {/* Question header */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                              <span style={{ fontSize: '0.6875rem', fontWeight: 700, color: 'var(--accent-purple)', background: 'color-mix(in srgb, var(--accent-purple) 12%, transparent)', padding: '2px 8px', borderRadius: 6 }}>
                                 Q{idx + 1}
                               </span>
-                              <span className="text-xs text-gray-400">Max Marks: {maxMarks}</span>
+                              <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Max: {maxMarks} marks</span>
                               {isEvaluated && (
-                                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                  Graded ({ans.marksAwarded}/{maxMarks})
-                                </span>
+                                <span className="badge badge-emerald">Graded ({ans.marksAwarded}/{maxMarks})</span>
                               )}
                             </div>
-                            <h3 className="text-sm font-bold text-gray-900">{qTitle}</h3>
-                            <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{qDesc}</p>
+                            <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-heading)', margin: 0 }}>{qTitle}</h3>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4, whiteSpace: 'pre-wrap' }}>{qDesc}</p>
                           </div>
 
-                          {/* Reference Answer toggle */}
                           {(qObj?.referenceAnswer || qObj?.rubric) && (
                             <button
                               type="button"
                               onClick={() => toggleRefView(answerId)}
-                              className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-semibold bg-violet-50 px-2.5 py-1 rounded-lg transition"
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 4,
+                                fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-purple)',
+                                background: 'color-mix(in srgb, var(--accent-purple) 10%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--accent-purple) 20%, transparent)',
+                                padding: '0.375rem 0.75rem', borderRadius: 8, cursor: 'pointer',
+                                whiteSpace: 'nowrap', flexShrink: 0,
+                              }}
                             >
-                              {showRef[answerId] ? <EyeOff size={13} /> : <Eye size={13} />}
-                              {showRef[answerId] ? 'Hide Answer Key' : 'Show Answer Key'}
+                              {showRef[answerId] ? <EyeOff size={12} /> : <Eye size={12} />}
+                              {showRef[answerId] ? 'Hide Key' : 'Show Key'}
                             </button>
                           )}
                         </div>
 
-                        {/* Collapsible Answer Key / Rubric */}
+                        {/* Reference answer */}
                         {showRef[answerId] && (
-                          <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-4 space-y-3">
+                          <div style={{ background: 'color-mix(in srgb, var(--accent-purple) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-purple) 15%, transparent)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1rem' }}>
                             {qObj?.referenceAnswer && (
-                              <div>
-                                <p className="text-[11px] font-bold text-violet-800 uppercase tracking-wide">Model / Reference Answer</p>
-                                <p className="text-xs text-violet-950 mt-1 whitespace-pre-wrap bg-white p-3 rounded-lg border border-violet-100">
+                              <div style={{ marginBottom: qObj?.rubric ? '0.75rem' : 0 }}>
+                                <p style={{ fontSize: '0.625rem', fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Model Answer</p>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
                                   {qObj.referenceAnswer}
                                 </p>
                               </div>
                             )}
                             {qObj?.rubric && (
                               <div>
-                                <p className="text-[11px] font-bold text-violet-800 uppercase tracking-wide">Grading Rubric</p>
-                                <p className="text-xs text-violet-900 mt-1 whitespace-pre-wrap">
-                                  {qObj.rubric}
-                                </p>
+                                <p style={{ fontSize: '0.625rem', fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>Grading Rubric</p>
+                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{qObj.rubric}</p>
                               </div>
                             )}
                           </div>
                         )}
 
-                        {/* Candidate Submission Box */}
-                        <div>
-                          <div className="flex items-center justify-between mb-1.5">
-                            <label className="text-xs font-bold text-gray-700">Candidate's Response</label>
-                            <span className="text-[11px] text-gray-400">
-                              Word Count: {ans.wordCount || 0}
-                            </span>
+                        {/* Candidate response */}
+                        <div style={{ marginBottom: '1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>Candidate's Response</label>
+                            <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)' }}>Word Count: {ans.wordCount || 0}</span>
                           </div>
-                          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-xs text-gray-900 font-mono leading-relaxed whitespace-pre-wrap min-h-24">
-                            {ans.answer ? ans.answer : <span className="text-gray-400 italic">No response submitted</span>}
+                          <div style={{ padding: '1rem', borderRadius: '0.625rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono, monospace)', lineHeight: 1.7, whiteSpace: 'pre-wrap', minHeight: 80 }}>
+                            {ans.answer || <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No response submitted</span>}
                           </div>
                         </div>
 
-                        {/* Grading Controls */}
-                        <div className="bg-gray-50/60 rounded-xl border border-gray-100 p-4 space-y-3">
-                          <h4 className="text-xs font-bold text-gray-700">Evaluation & Feedback</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* Grading controls */}
+                        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '1rem' }}>
+                          <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Evaluation & Feedback</h4>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
                             <div>
-                              <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                Marks Awarded (Max {maxMarks}) *
-                              </label>
+                              <label className="label-theme">Marks Awarded (Max {maxMarks})</label>
                               <input
-                                type="number"
-                                min={0}
-                                max={maxMarks}
-                                step={0.5}
+                                type="number" min={0} max={maxMarks} step={0.5}
                                 value={marksState[answerId] ?? 0}
                                 onChange={e => setMarksState(prev => ({ ...prev, [answerId]: Number(e.target.value) }))}
-                                className="w-full px-3 py-2 text-xs font-bold border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                className="input-theme"
+                                style={{ fontSize: '0.875rem', fontWeight: 700 }}
                               />
                             </div>
-                            <div className="sm:col-span-2">
-                              <label className="block text-[11px] font-semibold text-gray-600 mb-1">
-                                Feedback / Comments (Visible to Candidate)
-                              </label>
+                            <div>
+                              <label className="label-theme">Feedback (Visible to Candidate)</label>
                               <input
                                 type="text"
-                                placeholder="e.g. Excellent explanation of OOP principles; good use of examples."
+                                placeholder="e.g. Good explanation, needs more examples."
                                 value={feedbackState[answerId] ?? ''}
                                 onChange={e => setFeedbackState(prev => ({ ...prev, [answerId]: e.target.value }))}
-                                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                                className="input-theme"
                               />
                             </div>
                           </div>
-
-                          <div className="flex justify-end pt-1">
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
                             <Button
                               size="sm"
                               disabled={savingId === answerId}
                               onClick={() => handleEvaluate(ans)}
-                              className="flex items-center gap-1.5 text-xs bg-violet-600 hover:bg-violet-700"
                             >
                               <Save size={13} />
-                              {savingId === answerId ? 'Saving Grade...' : isEvaluated ? 'Update Grade' : 'Save Grade'}
+                              {savingId === answerId ? 'Saving...' : isEvaluated ? 'Update Grade' : 'Save Grade'}
                             </Button>
                           </div>
                         </div>

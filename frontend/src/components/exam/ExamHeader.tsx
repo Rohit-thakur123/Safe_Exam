@@ -40,11 +40,11 @@ export const ExamHeader: React.FC<ExamHeaderProps> = ({
   isWarning = false,
 }) => {
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm px-6 py-4">
+    <header className="card-surface border-b shadow-sm px-6 py-4">
       <div className="flex items-center justify-between">
         {/* Left: Exam title and student name */}
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-xl font-bold text-heading">{title}</h1>
           <p className="text-sm text-gray-600">Student: {studentName}</p>
         </div>
         
@@ -148,7 +148,7 @@ const TopBar: React.FC<TopBarProps> = ({
           className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 ${
             isCritical
               ? "border-rose-400/30 bg-rose-400/10"
-              : "border-white/10 bg-white/[0.03]"
+              : "border-white/10 card-surface/[0.03]"
           }`}
         >
           <Clock
@@ -165,7 +165,7 @@ const TopBar: React.FC<TopBarProps> = ({
         </div>
  
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-medium text-slate-300">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full card-surface/[0.06] text-[11px] font-medium text-slate-300">
             {getInitials(candidateName)}
           </div>
           <span className="text-[13px] text-slate-400">{candidateName}</span>

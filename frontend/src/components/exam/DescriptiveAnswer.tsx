@@ -106,7 +106,7 @@ const DescriptiveAnswer = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow border p-6">
+    <div className="card-surface rounded-xl shadow border p-6">
 
       <h2 className="text-2xl font-bold mb-2">
         Question {questionNumber}

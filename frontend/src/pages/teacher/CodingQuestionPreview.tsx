@@ -38,10 +38,10 @@ const CodingQuestionPreview: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-sm text-gray-500">Loading preview...</p>
+          <p className="text-sm text-muted">Loading preview...</p>
         </div>
       </div>
     );
@@ -49,8 +49,8 @@ const CodingQuestionPreview: React.FC = () => {
 
   if (error || !question) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center bg-white rounded-xl border p-8 max-w-sm">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center card-surface rounded-xl border p-8 max-w-sm">
           <EyeOff className="w-10 h-10 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-gray-700 font-medium">{error || 'Question not found'}</p>
           <Link to="/teacher/coding-questions" className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-800">
@@ -77,7 +77,7 @@ const CodingQuestionPreview: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen">
       {/* Preview Banner */}
       <div className="sticky top-0 z-20 bg-indigo-700 text-white">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">

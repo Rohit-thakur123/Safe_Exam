@@ -30,7 +30,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
 
   return (
     <div className="mx-auto mt-8 max-w-[560px] text-center">
-      <div className="mb-5 h-px w-full bg-white/10" />
+      <div className="mb-5 h-px w-full card-surface/10" />
 
       <p className="mb-3.5 text-[13px] text-slate-500">
         {isReady
@@ -45,7 +45,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
         className={`w-full rounded-[10px] py-3.5 text-sm font-medium transition-colors ${
           isReady
             ? "bg-violet-600 text-white hover:bg-violet-500"
-            : "cursor-not-allowed border border-white/10 bg-white/[0.02] text-slate-600"
+            : "cursor-not-allowed border border-white/10 card-surface/[0.02] text-slate-600"
         }`}
       >
         Submit Final Exam
@@ -79,7 +79,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
               Coding, or Descriptive sections.
             </p>
 
-            <div className="mb-5 flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
+            <div className="mb-5 flex flex-col gap-2 rounded-xl border border-white/10 card-surface/[0.02] p-3.5">
 
               <div className="flex justify-between">
                 <span className="text-slate-400">MCQ Assessment</span>
@@ -133,7 +133,7 @@ const SubmitFooter: React.FC<SubmitFooterProps> = ({
 
               <button
                 onClick={() => setIsDialogOpen(false)}
-                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm text-slate-300 hover:bg-white/[0.06]"
+                className="flex-1 rounded-lg border border-white/10 py-2.5 text-sm text-slate-300 hover:card-surface/[0.06]"
               >
                 Cancel
               </button>

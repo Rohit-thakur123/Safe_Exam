@@ -30,9 +30,9 @@ const ExamStart: React.FC = () => {
   // If parameters are missing, show error
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+      <div className="card-surface rounded-lg shadow-lg p-8 max-w-md w-full text-center">
         <div className="text-red-600 text-5xl mb-4">⚠️</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Invalid Exam Link</h2>
+        <h2 className="text-2xl font-bold" style={{color:"var(--text-heading)" mb-4">Invalid Exam Link</h2>
         <p className="text-gray-700 mb-6">
           The exam link you followed is missing required information. Please check your email for the correct link.
         </p>

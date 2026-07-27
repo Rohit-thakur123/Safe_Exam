@@ -13,9 +13,7 @@ export const SessionStatus: React.FC = () => {
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchSessionStatus();
-  }, []);
+  useEffect(() => { fetchSessionStatus(); }, []);
 
   const fetchSessionStatus = async () => {
     try {
@@ -30,75 +28,63 @@ export const SessionStatus: React.FC = () => {
 
   const formatDateTime = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+      return new Date(dateString).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
       });
-    } catch {
-      return dateString;
-    }
+    } catch { return dateString; }
   };
 
   const getSessionDuration = () => {
     if (!session) return '';
-    
     try {
-      const loginTime = new Date(session.loginTime).getTime();
-      const now = Date.now();
-      const diffMs = now - loginTime;
-      const diffMins = Math.floor(diffMs / 60000);
-      
-      if (diffMins < 60) {
-        return `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
-      } else {
-        const hours = Math.floor(diffMins / 60);
-        const mins = diffMins % 60;
-        return `${hours}h ${mins}m`;
-      }
-    } catch {
-      return '';
-    }
+      const diffMins = Math.floor((Date.now() - new Date(session.loginTime).getTime()) / 60000);
+      if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+      const hours = Math.floor(diffMins / 60);
+      return `${hours}h ${diffMins % 60}m`;
+    } catch { return ''; }
   };
 
   if (loading || !session) return null;
 
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', fontSize: '0.8125rem',
+    color: 'var(--text-secondary)', gap: '0.5rem',
+  };
+  const valueStyle: React.CSSProperties = {
+    marginLeft: 'auto', fontWeight: 600, color: 'var(--text-primary)',
+  };
+
   return (
-    <div className="bg-white border rounded-lg p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-gray-900 mb-3">Session Information</h3>
-      
-      <div className="space-y-2 text-sm">
-        <div className="flex items-center text-gray-600">
-          <Clock className="w-4 h-4 mr-2 text-blue-600" />
-          <span className="text-gray-500">Logged in:</span>
-          <span className="ml-auto font-medium text-gray-900">
-            {formatDateTime(session.loginTime)}
-          </span>
+    <div
+      className="card-surface"
+      style={{ padding: '1rem' }}
+    >
+      <h3 style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+        Session Information
+      </h3>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={rowStyle}>
+          <Clock size={14} style={{ color: 'var(--accent-indigo)', flexShrink: 0 }} />
+          <span>Logged in:</span>
+          <span style={valueStyle}>{formatDateTime(session.loginTime)}</span>
         </div>
-        
-        <div className="flex items-center text-gray-600">
-          <Clock className="w-4 h-4 mr-2 text-green-600" />
-          <span className="text-gray-500">Last activity:</span>
-          <span className="ml-auto font-medium text-gray-900">
-            {formatDateTime(session.lastActivity)}
-          </span>
+        <div style={rowStyle}>
+          <Clock size={14} style={{ color: 'var(--accent-emerald)', flexShrink: 0 }} />
+          <span>Last activity:</span>
+          <span style={valueStyle}>{formatDateTime(session.lastActivity)}</span>
         </div>
-        
-        <div className="flex items-center text-gray-600">
-          <MapPin className="w-4 h-4 mr-2 text-purple-600" />
-          <span className="text-gray-500">IP Address:</span>
-          <span className="ml-auto font-medium text-gray-900">
-            {session.ipAddress}
-          </span>
+        <div style={rowStyle}>
+          <MapPin size={14} style={{ color: 'var(--accent-purple)', flexShrink: 0 }} />
+          <span>IP Address:</span>
+          <span style={valueStyle}>{session.ipAddress}</span>
         </div>
       </div>
-      
-      <div className="mt-3 pt-3 border-t">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">Session duration:</span>
-          <span className="font-medium text-gray-900">{getSessionDuration()}</span>
+
+      <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <span>Session duration:</span>
+          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{getSessionDuration()}</span>
         </div>
       </div>
     </div>

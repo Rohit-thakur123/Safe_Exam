@@ -1,7 +1,7 @@
-// Answer input component for different question types
-import React from 'react';
+// Answer input component — theme-aware + React.memo for perf
+import React, { useCallback } from 'react';
 import type { Question } from '../../types/exam.types';
-import type { CodingQuestion } from "../../types/exam.types";
+import type { CodingQuestion } from '../../types/exam.types';
 import CodeEditor from '../codeEditor';
 
 interface AnswerInputProps {
@@ -10,44 +10,56 @@ interface AnswerInputProps {
   onAnswerChange: (answer: string) => void;
 }
 
-export const AnswerInput: React.FC<AnswerInputProps> = ({
-  question,
-  currentAnswer,
-  onAnswerChange,
-}) => {
+const AnswerInput: React.FC<AnswerInputProps> = React.memo(({ question, currentAnswer, onAnswerChange }) => {
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onAnswerChange(e.target.value);
+  }, [onAnswerChange]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onAnswerChange(file.name);
+  }, [onAnswerChange]);
+
   if (question.type === 'mcq' && question.options) {
     return (
-      <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Select your answer:</h3>
-        <div className="space-y-3">
+      <div className="card-surface rounded-xl" style={{ padding: '1.5rem', marginTop: '1rem' }}>
+        <h3 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+          Select your answer:
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {question.options.map((option: string, index: number) => {
-            const optionLabel = String.fromCharCode(65 + index); // A, B, C, D...
+            const optionLabel = String.fromCharCode(65 + index);
             const isSelected = currentAnswer === option;
-
             return (
               <label
                 key={index}
-                className={`
-                  flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
-                  ${isSelected
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }
-                `}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 12,
+                  padding: '0.875rem 1rem', borderRadius: '0.625rem',
+                  border: isSelected
+                    ? '2px solid var(--accent-purple)'
+                    : '1px solid var(--border)',
+                  background: isSelected
+                    ? 'color-mix(in srgb, var(--accent-purple) 8%, transparent)'
+                    : 'var(--bg-secondary)',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.15s, background 0.15s',
+                }}
               >
                 <input
                   type="radio"
                   name={`question-${question.id}`}
                   value={option}
                   checked={isSelected}
-                  onChange={(e) => onAnswerChange(e.target.value)}
-                  className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                  onChange={() => onAnswerChange(option)}
+                  style={{ marginTop: 2, accentColor: 'var(--accent-purple)', width: 16, height: 16 }}
+                  aria-label={`Option ${optionLabel}: ${option}`}
                 />
-                <div className="flex-1">
-                  <span className="font-medium text-gray-700 mr-2">
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 700, color: isSelected ? 'var(--accent-purple)' : 'var(--text-muted)', marginRight: 6, fontSize: '0.8125rem' }}>
                     {optionLabel}.
                   </span>
-                  <span className="text-gray-900">{option}</span>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '0.9375rem' }}>{option}</span>
                 </div>
               </label>
             );
@@ -59,24 +71,28 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
 
   if (question.type === 'text') {
     return (
-      <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Your answer:</h3>
+      <div className="card-surface rounded-xl" style={{ padding: '1.5rem', marginTop: '1rem' }}>
+        <h3 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+          Your answer:
+        </h3>
         <textarea
           value={currentAnswer}
-          onChange={(e) => onAnswerChange(e.target.value)}
-          placeholder="Type your answer here..."
+          onChange={handleTextChange}
+          placeholder="Type your answer here…"
           rows={8}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          className="textarea-theme"
+          aria-label="Answer input"
         />
-        <div className="mt-2 text-sm text-gray-500">
+        <div style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           {currentAnswer.length} characters
         </div>
       </div>
     );
   }
+
   if (question.type === 'coding') {
     return (
-      <div className="mt-6">
+      <div style={{ marginTop: '1rem' }}>
         <CodeEditor
           question={question as CodingQuestion}
           answer={currentAnswer}
@@ -86,35 +102,36 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
       </div>
     );
   }
+
   if (question.type === 'file') {
     return (
-      <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-4">Upload your answer:</h3>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+      <div className="card-surface rounded-xl" style={{ padding: '1.5rem', marginTop: '1rem' }}>
+        <h3 style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+          Upload your answer:
+        </h3>
+        <div style={{
+          border: '2px dashed var(--border-hover)',
+          borderRadius: '0.75rem', padding: '2rem',
+          textAlign: 'center', background: 'var(--bg-secondary)',
+        }}>
           <input
             type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onAnswerChange(file.name);
-              }
-            }}
+            onChange={handleFileChange}
             className="hidden"
             id={`file-upload-${question.id}`}
           />
-          <label
-            htmlFor={`file-upload-${question.id}`}
-            className="cursor-pointer"
-          >
-            <div className="text-gray-600">
-              <p className="text-lg font-medium">Click to upload file</p>
-              <p className="text-sm mt-1">or drag and drop</p>
-            </div>
+          <label htmlFor={`file-upload-${question.id}`} style={{ cursor: 'pointer' }}>
+            <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Click to upload file
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', marginTop: 4 }}>
+              or drag and drop
+            </p>
           </label>
           {currentAnswer && (
-            <div className="mt-4 text-sm text-gray-700">
-              Selected file: <span className="font-medium">{currentAnswer}</span>
-            </div>
+            <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              Selected: <strong>{currentAnswer}</strong>
+            </p>
           )}
         </div>
       </div>
@@ -122,4 +139,8 @@ export const AnswerInput: React.FC<AnswerInputProps> = ({
   }
 
   return null;
-};
+});
+
+AnswerInput.displayName = 'AnswerInput';
+export { AnswerInput };
+export default AnswerInput;

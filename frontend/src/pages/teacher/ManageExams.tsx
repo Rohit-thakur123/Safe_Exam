@@ -65,7 +65,7 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
       <div
         className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
-        style={{ background: 'rgba(15,15,23,0.98)', border: '1px solid var(--border-hover)', maxHeight: '85vh', boxShadow: '0 25px 80px rgba(0,0,0,0.7)' }}
+        style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border-hover)', maxHeight: '85vh', boxShadow: 'var(--shadow-lg)' }}
       >
         {/* Header */}
         <div className="px-6 py-5 flex items-start justify-between" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -74,7 +74,7 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{exam.title}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#fff'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; (e.currentTarget as HTMLElement).style.background = 'var(--border-hover)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
             <X size={16} />
           </button>
@@ -150,7 +150,7 @@ const AssignStudentsModal: React.FC<{ exam: Exam; onClose: () => void; onSuccess
                   style={{ background: sendEmailNotification ? 'var(--accent-purple)' : 'var(--border-hover)' }}
                   onClick={() => setSendEmailNotification(!sendEmailNotification)}
                 >
-                  <div className="absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all" style={{ left: sendEmailNotification ? '17px' : '2px' }} />
+                  <div className="absolute top-0.5 h-4 w-4 rounded-full card-surface shadow transition-all" style={{ left: sendEmailNotification ? '17px' : '2px' }} />
                 </div>
                 <label className="text-xs cursor-pointer" style={{ color: 'var(--text-secondary)' }} onClick={() => setSendEmailNotification(!sendEmailNotification)}>
                   Send email invitations with SEB access links

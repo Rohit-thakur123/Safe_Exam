@@ -238,13 +238,18 @@ body {
 }
 .pulse-dot { animation: pulse-glow 2s infinite; }
 
-/* Shimmer skeleton */
+/* Shimmer skeleton — theme-aware */
 @keyframes shimmer {
   from { background-position: -200% 0; }
   to { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-primary) 4%, transparent) 25%,
+    color-mix(in srgb, var(--text-primary) 9%, transparent) 50%,
+    color-mix(in srgb, var(--text-primary) 4%, transparent) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
 }
@@ -252,21 +257,232 @@ body {
 /* Chart tooltip */
 .recharts-tooltip-wrapper { outline: none !important; }
 
-/* Input styles */
-.input-dark {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #f0f0f5;
+/* ── Unified theme-aware input ─────────────────────────────────────────────── */
+/* Use .input-theme on any <input> / <select> / <textarea> for full theme support */
+.input-theme {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 14px;
-  transition: all 0.2s;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  width: 100%;
+}
+.input-theme:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-purple) 60%, transparent);
+  background: color-mix(in srgb, var(--accent-purple) 5%, var(--bg-card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 12%, transparent);
+}
+.input-theme::placeholder { color: var(--text-muted); }
+.input-theme:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Legacy alias — kept for backward compat, now theme-aware */
+.input-dark {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   width: 100%;
 }
 .input-dark:focus {
   outline: none;
-  border-color: rgba(139,92,246,0.5);
-  background: rgba(139,92,246,0.05);
-  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+  border-color: color-mix(in srgb, var(--accent-purple) 60%, transparent);
+  background: color-mix(in srgb, var(--accent-purple) 5%, var(--bg-card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 12%, transparent);
 }
-.input-dark::placeholder { color: rgba(255,255,255,0.25); }
+.input-dark::placeholder { color: var(--text-muted); }
+
+/* ── Theme-aware card utility ────────────────────────────────────────────────── */
+.card-surface {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 1rem; /* 16px */
+  box-shadow: var(--shadow-card);
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.card-surface:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Status badge utilities ──────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.badge-purple {
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
+  color: var(--tint-purple-text);
+  border: 1px solid color-mix(in srgb, var(--accent-purple) 25%, transparent);
+}
+.badge-emerald {
+  background: color-mix(in srgb, var(--accent-emerald) 12%, transparent);
+  color: var(--tint-emerald-text);
+  border: 1px solid color-mix(in srgb, var(--accent-emerald) 25%, transparent);
+}
+.badge-amber {
+  background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+  color: var(--tint-amber-text);
+  border: 1px solid color-mix(in srgb, var(--accent-amber) 25%, transparent);
+}
+.badge-rose {
+  background: color-mix(in srgb, var(--accent-rose) 12%, transparent);
+  color: var(--tint-rose-text);
+  border: 1px solid color-mix(in srgb, var(--accent-rose) 25%, transparent);
+}
+.badge-cyan {
+  background: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  color: var(--tint-cyan-text);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 25%, transparent);
+}
+.badge-indigo {
+  background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
+  color: var(--tint-indigo-text);
+  border: 1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent);
+}
+
+/* ── Focus ring ─────────────────────────────────────────────────────────────── */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 35%, transparent);
+}
+
+/* ── Hover row (tables) ─────────────────────────────────────────────────────── */
+.hover-row {
+  transition: background 0.15s ease;
+}
+.hover-row:hover {
+  background: color-mix(in srgb, var(--accent-purple) 5%, transparent);
+}
+
+/* ── Select / Textarea theme-aware ─────────────────────────────────────────── */
+.select-theme {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8ba0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+.select-theme:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-purple) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 12%, transparent);
+}
+.select-theme option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.textarea-theme {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  resize: vertical;
+  min-height: 100px;
+}
+.textarea-theme:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent-purple) 60%, transparent);
+  background: color-mix(in srgb, var(--accent-purple) 5%, var(--bg-card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-purple) 12%, transparent);
+}
+.textarea-theme::placeholder { color: var(--text-muted); }
+
+/* ── Status badges (attempt lifecycle) ─────────────────────────────────────── */
+.badge-status-completed {
+  background: color-mix(in srgb, var(--accent-emerald) 12%, transparent);
+  color: var(--tint-emerald-text);
+  border: 1px solid color-mix(in srgb, var(--accent-emerald) 25%, transparent);
+}
+.badge-status-in-progress {
+  background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
+  color: var(--tint-indigo-text);
+  border: 1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent);
+}
+.badge-status-terminated {
+  background: color-mix(in srgb, var(--accent-rose) 12%, transparent);
+  color: var(--tint-rose-text);
+  border: 1px solid color-mix(in srgb, var(--accent-rose) 25%, transparent);
+}
+.badge-status-abandoned {
+  background: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+  color: var(--tint-amber-text);
+  border: 1px solid color-mix(in srgb, var(--accent-amber) 25%, transparent);
+}
+.badge-status-evaluated {
+  background: color-mix(in srgb, var(--accent-purple) 12%, transparent);
+  color: var(--tint-purple-text);
+  border: 1px solid color-mix(in srgb, var(--accent-purple) 25%, transparent);
+}
+.badge-status-pending {
+  background: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  color: var(--tint-cyan-text);
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 25%, transparent);
+}
+
+/* ── Table theme-aware ──────────────────────────────────────────────────────── */
+.table-theme { width: 100%; border-collapse: collapse; }
+.table-theme th {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.table-theme td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.table-theme tr:hover td {
+  background: color-mix(in srgb, var(--accent-purple) 4%, transparent);
+}
+.table-theme tr:last-child td { border-bottom: none; }
+
+/* ── Label utility ─────────────────────────────────────────────────────────── */
+.label-theme {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* ── Form group ────────────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 1.25rem; }

@@ -38,16 +38,16 @@ const Section: React.FC<{
   onToggle: () => void;
   children: React.ReactNode;
 }> = ({ title, subtitle, badge, badgeColor = 'bg-indigo-50 text-indigo-700', open, onToggle, children }) => (
-  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <div className="card-surface rounded-xl border shadow-sm overflow-hidden">
     <button
       type="button"
       onClick={onToggle}
-      className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors text-left"
+      className="w-full flex items-center justify-between px-6 py-4 hover:/50 transition-colors text-left"
     >
       <div className="flex items-center gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-900 text-sm">{title}</span>
+            <span className="font-semibold text-heading text-sm">{title}</span>
             {badge && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>{badge}</span>
             )}
@@ -58,7 +58,7 @@ const Section: React.FC<{
       {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
     </button>
     {open && (
-      <div className="border-t border-gray-100 px-6 py-5">
+      <div className="border-t px-6 py-5">
         {children}
       </div>
     )}
@@ -303,7 +303,7 @@ const CreateCodingQuestion: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3" />
           <p className="text-sm text-gray-500">Loading question...</p>
@@ -315,9 +315,9 @@ const CreateCodingQuestion: React.FC = () => {
   const hasErrors = Object.keys(errors).length > 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Sticky top bar */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
+      <div className="sticky top-0 z-20 card-surface border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ const CreateCodingQuestion: React.FC = () => {
                 <ChevronLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h1 className="text-sm font-semibold text-gray-900">
+                <h1 className="text-sm font-semibold text-heading">
                   {isEdit ? 'Edit Coding Question' : 'New Coding Question'}
                 </h1>
                 <p className="text-xs text-gray-500 hidden sm:block">
@@ -337,7 +337,7 @@ const CreateCodingQuestion: React.FC = () => {
               {isEdit && (
                 <Link
                   to={`/teacher/coding-questions/${questionId}/preview`}
-                  className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-300 card-surface px-3 py-2 text-sm font-medium text-gray-700 hover: transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                   Preview
@@ -454,7 +454,7 @@ const CreateCodingQuestion: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsActive(true)}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'card-surface text-gray-600 border-gray-300 hover:'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     Active
@@ -462,7 +462,7 @@ const CreateCodingQuestion: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsActive(false)}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${!isActive ? 'bg-gray-100 text-gray-700 border-gray-400' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium border transition-colors ${!isActive ? ' text-gray-700 border-gray-400' : 'card-surface text-gray-600 border-gray-300 hover:'}`}
                   >
                     <span className="w-2 h-2 rounded-full bg-gray-400" />
                     Draft
@@ -484,7 +484,7 @@ const CreateCodingQuestion: React.FC = () => {
                       className="w-full rounded-lg border border-gray-300 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                   </div>
-                  <button type="button" onClick={addTag} className="px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50">
+                  <button type="button" onClick={addTag} className="px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:">
                     Add
                   </button>
                 </div>
@@ -579,9 +579,9 @@ const CreateCodingQuestion: React.FC = () => {
                 onDragStart={() => onDragStart(i)}
                 onDragOver={e => e.preventDefault()}
                 onDrop={() => onDrop(i)}
-                className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden"
+                className="rounded-lg border overflow-hidden"
               >
-                <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-gray-100">
+                <div className="flex items-center justify-between px-4 py-2.5 card-surface border-b">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                     <GripVertical className="w-4 h-4 text-gray-400 cursor-grab" />
                     Example {i + 1}
@@ -641,7 +641,7 @@ const CreateCodingQuestion: React.FC = () => {
             <button
               type="button"
               onClick={addExample}
-              className="w-full rounded-lg border-2 border-dashed border-gray-200 py-3 text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 transition-colors flex items-center justify-center gap-2"
+              className="w-full rounded-lg border-2 border-dashed py-3 text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 transition-colors flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Add Example
@@ -672,7 +672,7 @@ const CreateCodingQuestion: React.FC = () => {
                   onClick={() => toggleLanguage(lang)}
                   className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border-2 transition-all ${selected
                     ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-600'
+                    : ' card-surface text-gray-600 hover:border-indigo-300 hover:text-indigo-600'
                     }`}
                 >
                   <Code2 className="w-3.5 h-3.5" />
@@ -703,7 +703,7 @@ const CreateCodingQuestion: React.FC = () => {
           ) : (
             <>
               {/* Language tabs */}
-              <div className="flex flex-wrap gap-1 mb-0 border-b border-gray-200 pb-0">
+              <div className="flex flex-wrap gap-1 mb-0 border-b pb-0">
                 {supportedLanguages.map(lang => {
                   const hasCode = Boolean(starterCode[lang]?.trim());
                   const hasError = Boolean(errors[`starter_${lang}`]);
@@ -736,7 +736,7 @@ const CreateCodingQuestion: React.FC = () => {
               )}
 
               {/* Monaco editor */}
-              <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
+              <div className="mt-3 rounded-lg overflow-hidden border">
                 <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-700">
                   <span className="text-xs text-gray-400 font-mono">{activeStarterLang} — starter code</span>
                   <button
@@ -773,7 +773,7 @@ const CreateCodingQuestion: React.FC = () => {
         <div className="flex items-center justify-between pt-2 pb-8">
           <Link
             to="/teacher/coding-questions"
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="rounded-lg border border-gray-300 card-surface px-4 py-2 text-sm font-medium text-gray-700 hover: transition-colors"
           >
             Cancel
           </Link>

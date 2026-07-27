@@ -175,30 +175,30 @@ const ManageTestCases: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-sm text-gray-500">Loading test cases...</p>
+          <p className="text-sm text-muted">Loading test cases...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+      <div className="sticky top-0 z-10 card-surface border-b">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3 min-w-0">
-              <Link to="/teacher/coding-questions" className="text-gray-400 hover:text-gray-600 shrink-0">
+              <Link to="/teacher/coding-questions" className="text-muted hover:text-gray-600 shrink-0">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
               <div className="min-w-0">
-                <h1 className="text-sm font-semibold text-gray-900 truncate">
+                <h1 className="text-sm font-semibold text-heading truncate">
                   {question?.title || 'Manage Test Cases'}
                 </h1>
-                <nav className="flex items-center gap-1.5 text-xs text-gray-500">
+                <nav className="flex items-center gap-1.5 text-xs text-muted">
                   <Link to="/teacher/coding-questions" className="hover:text-indigo-600">Coding Questions</Link>
                   <span>/</span>
                   <span className="text-gray-700 truncate max-w-xs">{question?.title}</span>
@@ -211,7 +211,7 @@ const ManageTestCases: React.FC = () => {
               {question && (
                 <Link
                   to={`/teacher/coding-questions/edit/${questionId}`}
-                  className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-1.5 rounded-lg border border-gray-300 card-surface px-3 py-2 text-sm font-medium text-gray-700 hover: transition-colors"
                 >
                   Edit Question
                 </Link>
@@ -266,9 +266,9 @@ const ManageTestCases: React.FC = () => {
         </div>
 
         {/* Main panel */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="card-surface overflow-hidden">
           {/* Tab bar */}
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b">
             {(['visible', 'hidden'] as TabType[]).map(tab => (
               <button
                 key={tab}
@@ -276,7 +276,7 @@ const ManageTestCases: React.FC = () => {
                 onClick={() => { setActiveTab(tab); resetForm(); }}
                 className={`flex items-center gap-2 px-6 py-3.5 text-sm font-medium border-b-2 transition-colors ${activeTab === tab
                   ? 'border-indigo-600 text-indigo-700 bg-indigo-50/30'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-muted hover:text-gray-700 hover:border-gray-300'
                   }`}
               >
                 {tab === 'visible' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -299,10 +299,10 @@ const ManageTestCases: React.FC = () => {
                   ? <Eye className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                   : <EyeOff className="w-10 h-10 text-gray-300 mx-auto mb-3" />
                 }
-                <p className="text-sm text-gray-500 font-medium">
+                <p className="text-sm text-muted font-medium">
                   No {activeTab} test cases yet
                 </p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted mt-1">
                   {activeTab === 'hidden' ? 'Hidden test cases are used for grading and never shown to students.' : 'Add visible test cases that students can see as samples.'}
                 </p>
               </div>
@@ -314,23 +314,23 @@ const ManageTestCases: React.FC = () => {
                   onDragStart={() => onDragStart(idx)}
                   onDragOver={e => e.preventDefault()}
                   onDrop={() => void onDrop(idx)}
-                  className={`group ${editingId === tc._id ? 'bg-indigo-50/30' : 'hover:bg-gray-50/50'} transition-colors`}
+                  className={`group ${editingId === tc._id ? 'bg-indigo-50/30' : 'hover:/50'} transition-colors`}
                 >
                   <div className="flex items-start gap-3 p-4">
                     <div className="flex flex-col items-center gap-1 shrink-0 pt-1">
-                      <GripVertical className="w-4 h-4 text-gray-300 cursor-grab group-hover:text-gray-400" />
-                      <span className="text-xs font-mono text-gray-400">{idx + 1}</span>
+                      <GripVertical className="w-4 h-4 text-gray-300 cursor-grab group-hover:text-muted" />
+                      <span className="text-xs font-mono text-muted">{idx + 1}</span>
                     </div>
 
                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Input</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-1">Input</p>
                         <pre className="bg-gray-950 text-gray-100 rounded-lg px-3 py-2 text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
                           {tc.input}
                         </pre>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Expected Output</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-1">Expected Output</p>
                         <pre className="bg-gray-950 text-emerald-300 rounded-lg px-3 py-2 text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
                           {tc.expectedOutput}
                         </pre>
@@ -362,12 +362,12 @@ const ManageTestCases: React.FC = () => {
           </div>
 
           {/* Add / Edit Form */}
-          <div className="border-t border-gray-200 bg-gray-50/50 p-5">
+          <div className="border-t /50 p-5">
             <div className="flex items-center gap-2 mb-4">
               {editingId ? (
                 <>
                   <Pencil className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-sm font-semibold text-gray-900">
+                  <h3 className="text-sm font-semibold text-heading">
                     Edit Test Case
                     <span className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${activeTab === 'visible' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
                       {activeTab}
@@ -377,7 +377,7 @@ const ManageTestCases: React.FC = () => {
               ) : (
                 <>
                   <Plus className="w-4 h-4 text-indigo-600" />
-                  <h3 className="text-sm font-semibold text-gray-900">
+                  <h3 className="text-sm font-semibold text-heading">
                     Add {activeTab === 'visible' ? 'Visible' : 'Hidden'} Test Case
                     <span className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${activeTab === 'visible' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
                       {activeTab === 'hidden' ? 'Hidden from students' : 'Shown as sample'}
@@ -390,7 +390,7 @@ const ManageTestCases: React.FC = () => {
             <form onSubmit={(e) => void saveTestCase(e)}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Input <span className="text-red-400">*</span>
                   </label>
                   <textarea
@@ -403,7 +403,7 @@ const ManageTestCases: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted">
                     Expected Output <span className="text-red-400">*</span>
                   </label>
                   <textarea
@@ -432,7 +432,7 @@ const ManageTestCases: React.FC = () => {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover: transition-colors"
                   >
                     Cancel
                   </button>
@@ -446,7 +446,7 @@ const ManageTestCases: React.FC = () => {
         <div className="flex items-center justify-between pb-8">
           <Link
             to="/teacher/coding-questions"
-            className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+            className="flex items-center gap-1 text-sm text-muted hover:text-gray-700"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Questions
@@ -466,12 +466,12 @@ const ManageTestCases: React.FC = () => {
 };
 
 const StatCard: React.FC<{ label: string; value: string | number; color?: string; icon?: React.ReactNode; small?: boolean }> = ({
-  label, value, color = 'text-gray-900', icon, small
+  label, value, color = 'text-heading', icon, small
 }) => (
-  <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+  <div className="card-surface rounded-xl border px-4 py-3">
     <div className="flex items-center gap-2 mb-1">
       {icon && <span className={color}>{icon}</span>}
-      <p className="text-xs text-gray-500 font-medium">{label}</p>
+      <p className="text-xs text-muted font-medium">{label}</p>
     </div>
     <p className={`font-semibold ${color} ${small ? 'text-sm truncate' : 'text-xl'}`}>{value}</p>
   </div>
@@ -483,7 +483,7 @@ const IconBtn: React.FC<{
   disabled?: boolean;
   className?: string;
   children: React.ReactNode;
-}> = ({ onClick, title, disabled, className = 'text-gray-500 hover:bg-gray-100', children }) => (
+}> = ({ onClick, title, disabled, className = 'text-muted hover:', children }) => (
   <button
     type="button"
     onClick={onClick}
