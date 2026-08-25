@@ -52,7 +52,7 @@ const CodingSubmissions: React.FC = () => {
   }, [submissions, searchQuery]);
 
   return (
-    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"}}>
       <TeacherNavbar />
       <Toast toast={toast} onClose={() => setToast(null)} />
 
@@ -63,8 +63,7 @@ const CodingSubmissions: React.FC = () => {
             <Link to="/teacher/exams" className="inline-flex items-center text-xs font-semibold text-violet-600 hover:text-violet-800 mb-2">
               <ArrowLeft size={14} className="mr-1" /> Back to Assessments
             </Link>
-            <h1 className="text-2xl font-bold" style={{color:"var(--text-heading)" tracking-tight">Coding Submissions Review</h1>
-            <p className="text-sm text-muted mt-1">Review source code, execution logs, and testcase pass/fail ratios</p>
+            <h1 className="text-2xl font-bold tracking-tight" style={{color:"var(--text-heading)"}}>Coding Submissions Review</h1>
           </div>
 
           <Link
@@ -94,7 +93,7 @@ const CodingSubmissions: React.FC = () => {
         {loading ? (
           <div className="text-center py-12 text-sm text-muted">Loading code submissions...</div>
         ) : filteredSubmissions.length === 0 ? (
-          <div className="card-surface" style={{padding:"3rem",textAlign:"center"">
+          <div className="card-surface" style={{padding:"3rem",textAlign:"center"}}>
             <Code2 className="mx-auto h-12 w-12 text-gray-300 mb-3" />
             <h3 className="text-base font-semibold text-heading">No coding submissions found</h3>
             <p className="text-xs text-muted mt-1">When students submit code for this assessment, their source code will appear here.</p>
@@ -102,7 +101,7 @@ const CodingSubmissions: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {filteredSubmissions.map(sub => (
-              <div key={sub._id} className="card-surface" style={{padding:"1.5rem" hover:shadow-md transition-all">
+              <div key={sub._id} className="card-surface hover:shadow-md transition-all" style={{padding:"1.5rem"}}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 mb-4">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold text-xs">

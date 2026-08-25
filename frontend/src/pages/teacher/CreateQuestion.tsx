@@ -120,9 +120,9 @@ const CreateQuestion: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"}}>
       {/* Navigation */}
-      <nav className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"">
+      <nav className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -133,10 +133,7 @@ const CreateQuestion: React.FC = () => {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
               </Link>
-              <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"">Create Question</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
+              <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"}}>Create Question</h1>
               <Button variant="ghost" size="sm" onClick={logout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout

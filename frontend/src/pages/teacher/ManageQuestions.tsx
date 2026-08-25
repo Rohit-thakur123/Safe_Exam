@@ -10,7 +10,7 @@ import type { Question } from '../../types';
 const TeacherNavbar: React.FC = () => {
   const { user, logout } = useAuth();
   return (
-    <nav className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"">
+    <nav className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
@@ -153,7 +153,7 @@ const ManageQuestions: React.FC = () => {
                         </div>
 
                         {question.explanation && (
-                          <p className="text-sm" style={{color:"var(--text-secondary)" mb-3">
+                          <p className="text-sm mb-3" style={{color:"var(--text-secondary)"}}>
                             <span className="font-medium">Explanation:</span> {question.explanation}
                           </p>
                         )}

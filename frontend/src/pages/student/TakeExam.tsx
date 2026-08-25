@@ -153,7 +153,7 @@ const TakeExam: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <div className="text-lg">Starting exam...</div>
       </div>
     );
@@ -161,7 +161,7 @@ const TakeExam: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <Card className="max-w-md">
           <CardContent className="p-6">
             <div className="text-center mb-6">
@@ -191,7 +191,7 @@ const TakeExam: React.FC = () => {
               )}
             </div>
 
-            <div className="mt-4 p-3 bg-blue-50 rounded text-sm" style={{color:"var(--text-secondary)"">
+            <div className="mt-4 p-3 bg-blue-50 rounded text-sm" style={{color:"var(--text-secondary)"}}>
               <p><strong>Note:</strong> If you have an incomplete exam, you may need to complete or abandon it before starting a new attempt.</p>
             </div>
           </CardContent>
@@ -202,14 +202,14 @@ const TakeExam: React.FC = () => {
 
   if (!attempt || !attempt.exam || !currentQ) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <div className="text-lg">Loading exam...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"}}>
       <SecurityOverlay
         securityState={securityState}
         onDismissWarning={dismissWarning}
@@ -217,11 +217,11 @@ const TakeExam: React.FC = () => {
         requireFullscreen={!!attempt?.exam?.securityPolicy?.requireFullscreen}
       />
       {/* Header */}
-      <div className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"">
+      <div className="border-b" style={{background:"var(--surface-elevated)",borderBottom:"1px solid var(--border)"}}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"">{attempt.exam.title}</h1>
+              <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"}}>{attempt.exam.title}</h1>
               <p className="text-sm text-muted">
                 Question {currentQuestion + 1} of {questions.length}
               </p>
@@ -335,7 +335,7 @@ const TakeExam: React.FC = () => {
             Previous
           </Button>
 
-          <div className="flex items-center space-x-2 text-sm" style={{color:"var(--text-secondary)"">
+          <div className="flex items-center space-x-2 text-sm" style={{color:"var(--text-secondary)"}}>
             <span>Answered: {Object.keys(answers).length}/{questions.length}</span>
           </div>
 

@@ -60,7 +60,7 @@ const Result: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <div className="text-lg">Loading results...</div>
       </div>
     );
@@ -68,7 +68,7 @@ const Result: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
             <div className="text-red-600 mb-4">{error}</div>
@@ -84,7 +84,7 @@ const Result: React.FC = () => {
 
   if (!result) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <div className="text-lg">No result found</div>
       </div>
     );
@@ -94,7 +94,7 @@ const Result: React.FC = () => {
   const isPassed = result.passed;
 
   return (
-    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"}}>
       <div className="max-w-4xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
@@ -123,21 +123,21 @@ const Result: React.FC = () => {
                 <div className={`text-4xl font-bold ${getGradeColor(percentage)}`}>
                   {getGradeLetter(percentage)}
                 </div>
-                <div className="text-sm" style={{color:"var(--text-secondary)"">Grade</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"}}>Grade</div>
               </div>
               
               <div className="text-center">
                 <div className={`text-4xl font-bold ${getGradeColor(percentage)}`}>
                   {percentage}%
                 </div>
-                <div className="text-sm" style={{color:"var(--text-secondary)"">Score</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"}}>Score</div>
               </div>
               
               <div className="text-center">
                 <div className="text-4xl font-bold text-heading">
                   {result.score} / {result.totalMarks || result.totalQuestions}
                 </div>
-                <div className="text-sm" style={{color:"var(--text-secondary)"">Marks Achieved</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"}}>Marks Achieved</div>
               </div>
               
               <div className="text-center">
@@ -145,7 +145,7 @@ const Result: React.FC = () => {
                   <Clock className="w-8 h-8 mr-2 text-blue-600" />
                   {formatTime(result.timeSpent)}
                 </div>
-                <div className="text-sm" style={{color:"var(--text-secondary)"">Time Spent</div>
+                <div className="text-sm" style={{color:"var(--text-secondary)"}}>Time Spent</div>
               </div>
             </div>
             

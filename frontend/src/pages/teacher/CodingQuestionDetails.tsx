@@ -175,7 +175,7 @@ const ManageTestCases: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <div className="text-center">
           <div className="inline-block w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3" />
           <p className="text-sm text-muted">Loading test cases...</p>
@@ -185,7 +185,7 @@ const ManageTestCases: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"}}>
       {/* Header */}
       <div className="sticky top-0 z-10 card-surface border-b">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -121,14 +121,14 @@ const CreateSubjectiveQuestion: React.FC = () => {
 
   if (isFetching) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"">
+      <div className="min-h-screen flex items-center justify-center" style={{background:"var(--bg-primary)"}}>
         <p className="text-muted">Loading question...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{background:"var(--bg-primary)"">
+    <div className="min-h-screen" style={{background:"var(--bg-primary)"}}>
       <TeacherNavbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -154,7 +154,7 @@ const CreateSubjectiveQuestion: React.FC = () => {
             <BookOpen size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"">
+            <h1 className="text-xl font-bold" style={{color:"var(--text-heading)"}}>
               {isEditMode ? 'Edit Subjective Question' : 'Create Subjective Question'}
             </h1>
             <p className="text-sm text-muted">Students write open-ended answers graded manually by you.</p>
@@ -163,7 +163,7 @@ const CreateSubjectiveQuestion: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Core Question Fields */}
-          <div className="card-surface" style={{borderRadius:"1rem" p-6">
+          <div className="card-surface p-6" style={{borderRadius:"1rem"}}>
             <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Question Content</h2>
 
             <div className="space-y-4">
@@ -210,7 +210,7 @@ const CreateSubjectiveQuestion: React.FC = () => {
           </div>
 
           {/* Marks & Limits */}
-          <div className="card-surface" style={{borderRadius:"1rem" p-6">
+          <div className="card-surface p-6" style={{borderRadius:"1rem"}}>
             <h2 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Marks & Limits</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -283,13 +283,13 @@ const CreateSubjectiveQuestion: React.FC = () => {
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full card-surface shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
-                <span className="text-sm" style={{color:"var(--text-secondary)"">{isActive ? 'Active' : 'Inactive'}</span>
+                <span className="text-sm" style={{color:"var(--text-secondary)"}}>{isActive ? 'Active' : 'Inactive'}</span>
               </div>
             )}
           </div>
 
           {/* Teacher-only Fields */}
-          <div className="card-surface" style={{borderRadius:"1rem" p-6">
+          <div className="card-surface p-6" style={{borderRadius:"1rem"}}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Teacher Notes <span className="text-xs text-muted normal-case">(hidden from students)</span></h2>
               <button
